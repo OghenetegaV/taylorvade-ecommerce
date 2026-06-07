@@ -1,14 +1,11 @@
 // src/middleware.ts
-// Runs on every request — refreshes auth session and protects private routes
 
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Routes that require a logged-in user
 const PROTECTED_ROUTES = ["/account", "/checkout", "/orders"];
-
-// Routes only accessible when NOT logged in
-const AUTH_ROUTES = ["/login", "/register"];
+const AUTH_ROUTES      = ["/login", "/register"];
+const ADMIN_ROUTES     = ["/admin"];
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -34,25 +31,29 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session — critical, do not remove
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // CRITICAL: always call getUser() to refresh the session
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
-  // Redirect unauthenticated users away from protected routes
-  const isProtected = PROTECTED_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  );
-  if (isProtected && !user) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+  // ── Admin routes — require auth (role check is done in layout.tsx) ──
+  const isAdminRoute = ADMIN_ROUTES.some((r) => pathname.startsWith(r));
+  if (isAdminRoute && !user) {
+    const url = new URL("/login", request.url);
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
-  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+  // ── Protected customer routes ────────────────────────────────────
+  const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));
+  if (isProtected && !user) {
+    const url = new URL("/login", request.url);
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // ── Auth pages — redirect if already logged in ───────────────────
+  const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r));
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL("/account", request.url));
   }
