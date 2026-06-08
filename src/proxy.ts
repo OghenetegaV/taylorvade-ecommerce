@@ -1,4 +1,4 @@
-// src/middleware.ts
+// src/proxy.ts
 
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
@@ -7,7 +7,7 @@ const PROTECTED_ROUTES = ["/account", "/checkout", "/orders"];
 const AUTH_ROUTES      = ["/login", "/register"];
 const ADMIN_ROUTES     = ["/admin"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {  // ← renamed from middleware
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -31,12 +31,9 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // CRITICAL: always call getUser() to refresh the session
   const { data: { user } } = await supabase.auth.getUser();
-
   const { pathname } = request.nextUrl;
 
-  // ── Admin routes — require auth (role check is done in layout.tsx) ──
   const isAdminRoute = ADMIN_ROUTES.some((r) => pathname.startsWith(r));
   if (isAdminRoute && !user) {
     const url = new URL("/login", request.url);
@@ -44,7 +41,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // ── Protected customer routes ────────────────────────────────────
   const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));
   if (isProtected && !user) {
     const url = new URL("/login", request.url);
@@ -52,7 +48,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // ── Auth pages — redirect if already logged in ───────────────────
   const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r));
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL("/account", request.url));

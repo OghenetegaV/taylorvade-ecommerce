@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
-import {
-  Cormorant_Garamond,
-  Great_Vibes,
-} from "next/font/google";
-import Footer from "@/components/layout/Footer";
+import { Cormorant_Garamond, Great_Vibes } from "next/font/google";
+import ConditionalFooter from "@/components/layout/ConditionalFooter";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -24,18 +20,15 @@ export const metadata: Metadata = {
   description: "Luxury Fashion Ecommerce",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body
+        suppressHydrationWarning
         className={`${cormorant.variable} ${greatVibes.variable} antialiased`}
       >
         {children}
-        <Footer/>
+        <ConditionalFooter />
       </body>
     </html>
   );

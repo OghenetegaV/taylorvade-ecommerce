@@ -1,14 +1,10 @@
 // src/lib/admin.ts
-
 import { getServerUser } from "@/lib/supabase/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function requireAdmin(): Promise<
-  { profile: { id: string; email: string; fullName: string | null } } | NextResponse
-> {
+export async function requireAdmin() {
   const user = await getServerUser();
-
   if (!user) {
     return NextResponse.json(
       { success: false, error: "Authentication required" },
