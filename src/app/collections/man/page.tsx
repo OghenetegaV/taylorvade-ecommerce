@@ -4,5 +4,5 @@ import CollectionPage from "@/components/CollectionPage";
 export const metadata = { title: "Man — Taylor Vade" };
 
 export default function ManPage() {
-  return <CollectionPage title="Man" gender="MEN" />;
+  return <CollectionPage title="Men" gender="MEN" />;
 }

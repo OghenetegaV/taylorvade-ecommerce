@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createSupabaseAdminClient();
+    const supabase = createSupabaseAdminClient();
 
     // ── Generate unique file path ─────────────────────────────────────
     const ext      = file.name.split(".").pop()?.toLowerCase() ?? "jpg";

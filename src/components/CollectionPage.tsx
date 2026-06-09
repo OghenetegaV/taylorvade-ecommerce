@@ -128,12 +128,12 @@ export default function CollectionPage({ title, gender }: Props) {
       <div className="h-[76px] md:h-[88px]" />
 
       {/* ── Collection title ── */}
-      <div className="text-center py-5 px-4 border-b border-[#f0eeeb]">
+      <div className="text-center py-5 px-4">
         <h1
           className="text-[32px] md:text-[40px] text-[#1a1008] leading-none"
           style={{ fontFamily: "var(--font-script), cursive" }}
         >
-          Taylor Vade {title}
+          {title}
         </h1>
         {!loading && (
           <p className="text-[10px] tracking-[0.15em] text-[#9a8a7a] uppercase mt-1.5">
@@ -143,7 +143,7 @@ export default function CollectionPage({ title, gender }: Props) {
       </div>
 
       {/* ── Sticky sort / filter bar ── */}
-      <div className="sticky top-[76px] md:top-[88px] z-20 bg-white border-b border-[#f0eeeb]
+      <div className="sticky top-[76px] md:top-[88px] z-20 bg-white 
         flex items-center px-3 md:px-5 py-2.5 gap-4">
 
         {/* Sort By */}
