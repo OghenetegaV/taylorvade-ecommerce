@@ -1,185 +1,178 @@
+// src/components/CollectionPage.tsx
+// Matches Manière De Voir collection page:
+// - sticky sub-header: item count + sort/filter
+// - edge-to-edge 4-col (desktop) / 2-col (mobile) grid
+// - 3px gap between cards
+// - fade-up animation on card entry
+// - infinite scroll via "Load More"
+
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import { useState, useEffect, useCallback, useRef } from "react";
+import ProductCard from "./ProductCard";
 
-/* ── Types ── */
-export interface Product {
-  slug: string;
-  name: string;
-  description: string;
-  price?: number;
-  notifyMe?: boolean;
-  isNew?: boolean;
-  swatches?: { color: string }[];
-  image: string;
-  hoverImage?: string;
+type Product = {
+  id: string; name: string; slug: string; type: string;
+  basePrice: number; gender: string; isNew: boolean;
+  isFeatured: boolean; isPublished: boolean;
+  images: { url: string }[];
+  variants: {
+    id: string; size: string; colorLabel: string;
+    colorHex?: string | null; stockQuantity: number; priceOverride?: number | null;
+  }[];
+};
+
+type SortOption = {
+  label: string;
+  sortBy: string;
+  order: "asc" | "desc";
+};
+
+const SORT_OPTIONS: SortOption[] = [
+  { label: "Newest",              sortBy: "createdAt", order: "desc" },
+  { label: "Price: Low to High",  sortBy: "basePrice", order: "asc"  },
+  { label: "Price: High to Low",  sortBy: "basePrice", order: "desc" },
+  { label: "Name: A–Z",           sortBy: "name",      order: "asc"  },
+];
+
+const ITEMS_PER_PAGE = 24;
+
+interface Props {
+  title:  string;  // "Woman" | "Man" | "Unisex"
+  gender: "WOMEN" | "MEN" | "UNISEX";
 }
 
-interface CollectionPageProps {
-  title: string;
-  products: Product[];
-}
+export default function CollectionPage({ title, gender }: Props) {
+  const [products,     setProducts]     = useState<Product[]>([]);
+  const [total,        setTotal]        = useState(0);
+  const [page,         setPage]         = useState(1);
+  const [loading,      setLoading]      = useState(true);
+  const [loadingMore,  setLoadingMore]  = useState(false);
+  const [sortIdx,      setSortIdx]      = useState(0);
+  const [sortOpen,     setSortOpen]     = useState(false);
+  const [filterOpen,   setFilterOpen]   = useState(false);
+  const [search,       setSearch]       = useState("");
+  const [loaded,       setLoaded]       = useState(false);
+  const sortRef   = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
 
-/* ── Chevron ── */
-const ChevronDown = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-    <path d="M6 9l6 6 6-6"/>
-  </svg>
-);
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false);
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
 
-/* ── Star icon ── */
-const StarIcon = ({ filled }: { filled: boolean }) => (
-  <svg viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.2" className="w-3.5 h-3.5">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
-  </svg>
-);
+  const sort = SORT_OPTIONS[sortIdx];
 
-/* ── Eiffel watermark ── */
-const EiffelWatermark = () => (
-  <svg width="60" height="86" viewBox="0 0 32 46" fill="none" className="opacity-10">
-    <rect x="15" y="0" width="2" height="4" fill="#3a2e22"/>
-    <polygon points="16,4 12,14 20,14" fill="#3a2e22"/>
-    <polygon points="12,14 8,22 24,22 20,14" fill="#3a2e22"/>
-    <line x1="8" y1="18" x2="24" y2="18" stroke="#3a2e22" strokeWidth="1.2"/>
-    <polygon points="8,22 4,32 28,32 24,22" fill="#3a2e22"/>
-    <line x1="4" y1="28" x2="28" y2="28" stroke="#3a2e22" strokeWidth="1.2"/>
-    <polygon points="4,32 2,44 30,44 28,32" fill="#3a2e22"/>
-  </svg>
-);
+  const fetchProducts = useCallback(async (pageNum: number, reset = false) => {
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
 
-/* ── Single product card (grid variant — full bleed) ── */
-function GridCard({ product }: { product: Product }) {
-  const [wished, setWished] = useState(false);
-  const [hovered, setHovered] = useState(false);
+    const params = new URLSearchParams({
+      gender,
+      sortBy:  sort.sortBy,
+      order:   sort.order,
+      page:    String(pageNum),
+      limit:   String(ITEMS_PER_PAGE),
+      ...(search ? { q: search } : {}),
+    });
 
-  return (
-    <div className="group flex flex-col">
-      {/* Image */}
-      <Link
-        href={`/products/${product.slug}`}
-        className="block relative overflow-hidden bg-[#f0eeeb]"
-        style={{ aspectRatio: "2/3" }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-      >
-        <Image
-          src={hovered && product.hoverImage ? product.hoverImage : product.image}
-          alt={product.description}
-          fill
-          className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
-          sizes="(max-width: 640px) 50vw, 25vw"
-        />
-      </Link>
+    try {
+      const res  = await fetch(`/api/products?${params}`);
+      const data = await res.json();
+      if (data.success) {
+        setProducts(prev => reset ? data.data.products : [...prev, ...data.data.products]);
+        setTotal(data.data.pagination.total);
+      }
+    } catch {}
 
-      {/* Info */}
-      <div className="px-2 pt-2 pb-3">
-        {/* Tags */}
-        {(product.notifyMe || product.isNew) && (
-          <div className="flex items-center gap-2 mb-0.5">
-            {product.notifyMe && (
-              <span className="text-[9.5px] tracking-wide text-[#1a1008] italic font-serif underline underline-offset-2">
-                Notify Me When Available
-              </span>
-            )}
-            {product.isNew && (
-              <span className="text-[9.5px] tracking-wide text-[#1a1008] italic font-serif">
-                New In
-              </span>
-            )}
-          </div>
-        )}
+    if (reset) { setLoading(false); setLoaded(true); }
+    else setLoadingMore(false);
+  }, [gender, sort.sortBy, sort.order, search]);
 
-        {/* Name row */}
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Link
-              href={`/products/${product.slug}`}
-              className="font-script text-[17px] text-[#1a1008] leading-tight truncate hover:opacity-60 transition-opacity"
-              style={{ fontFamily: "var(--font-script), cursive" }}
-            >
-              {product.name}
-            </Link>
-            {product.swatches && product.swatches.length > 0 && (
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                {product.swatches.map((s, i) => (
-                  <div
-                    key={i}
-                    className="w-3 h-3 border border-[#c8c0b8]"
-                    style={{ backgroundColor: s.color }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => setWished(w => !w)}
-            className="flex-shrink-0 text-[#1a1008] hover:opacity-50 transition-opacity"
-          >
-            <StarIcon filled={wished} />
-          </button>
-        </div>
+  // Reset and refetch when sort/search changes
+  useEffect(() => {
+    setPage(1);
+    fetchProducts(1, true);
+  }, [fetchProducts]);
 
-        <p className="text-[10.5px] text-[#1a1008] leading-snug tracking-wide mt-0.5 font-serif pr-4 line-clamp-2">
-          {product.description}
-        </p>
+  function loadMore() {
+    const next = page + 1;
+    setPage(next);
+    fetchProducts(next, false);
+  }
 
-        {product.price && (
-          <p className="text-[10.5px] text-[#1a1008] tracking-wide mt-1 font-serif">
-            £{product.price.toLocaleString()}
-          </p>
-        )}
+  const hasMore = products.length < total;
+
+  // Skeleton cards while loading
+  const Skeleton = () => (
+    <div className="animate-pulse">
+      <div className="bg-[#f0eeeb]" style={{ aspectRatio: "2/3" }} />
+      <div className="pt-2 px-0.5 space-y-1.5">
+        <div className="h-2 bg-[#f0eeeb] rounded w-1/3" />
+        <div className="h-3 bg-[#f0eeeb] rounded w-2/3" />
+        <div className="h-2 bg-[#f0eeeb] rounded w-1/2" />
+        <div className="h-2 bg-[#f0eeeb] rounded w-1/4" />
       </div>
     </div>
   );
-}
-
-/* ── Main collection page ── */
-export default function CollectionPage({ title, products }: CollectionPageProps) {
-  const [sortOpen,   setSortOpen]   = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortValue,  setSortValue]  = useState("Featured");
-
-  const sortOptions = ["Featured", "Newest", "Price: Low to High", "Price: High to Low"];
 
   return (
-    <div className="min-h-screen bg-white font-serif">
+    <div className="bg-white min-h-screen font-serif">
 
-      {/* ── Page title area ── */}
-      <div className="pt-32 pb-4 text-center">
+      {/* ── Spacer for fixed main header ── */}
+      <div className="h-[76px] md:h-[88px]" />
+
+      {/* ── Collection title ── */}
+      <div className="text-center py-5 px-4 border-b border-[#f0eeeb]">
         <h1
-          className="text-[42px] md:text-[52px] leading-tight text-[#1a1008]"
+          className="text-[32px] md:text-[40px] text-[#1a1008] leading-none"
           style={{ fontFamily: "var(--font-script), cursive" }}
         >
-          {title}
+          Taylor Vade {title}
         </h1>
-        <p className="text-[11px] tracking-[0.1em] text-[#8a7a6a] mt-1 font-serif">
-          {products.length} Items
-        </p>
+        {!loading && (
+          <p className="text-[10px] tracking-[0.15em] text-[#9a8a7a] uppercase mt-1.5">
+            {total} {total === 1 ? "Item" : "Items"}
+          </p>
+        )}
       </div>
 
-      {/* ── Sort / Filter bar ── */}
-      <div className="flex items-center gap-0 px-4 md:px-6 py-3 border-b border-[#e8e2db]">
+      {/* ── Sticky sort / filter bar ── */}
+      <div className="sticky top-[76px] md:top-[88px] z-20 bg-white border-b border-[#f0eeeb]
+        flex items-center px-3 md:px-5 py-2.5 gap-4">
+
         {/* Sort By */}
-        <div className="relative">
+        <div ref={sortRef} className="relative">
           <button
             onClick={() => { setSortOpen(o => !o); setFilterOpen(false); }}
-            className="flex items-center gap-1.5 text-[11px] tracking-[0.08em] text-[#1a1008] font-serif hover:opacity-60 transition-opacity py-1 pr-4"
+            className="flex items-center gap-1.5 text-[10.5px] tracking-[0.1em]
+              text-[#3a2e22] uppercase hover:opacity-60 transition-opacity"
           >
-            Sort By <ChevronDown />
+            Sort By
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none"
+              stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+              className={`transition-transform duration-200 ${sortOpen ? "rotate-180" : ""}`}>
+              <path d="M2 4l4 4 4-4"/>
+            </svg>
           </button>
+
           {sortOpen && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-[#e8e2db] z-30 min-w-[180px] shadow-md">
-              {sortOptions.map(opt => (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-[#e8e2db]
+              shadow-sm z-30 min-w-[170px]">
+              {SORT_OPTIONS.map((opt, i) => (
                 <button
-                  key={opt}
-                  onClick={() => { setSortValue(opt); setSortOpen(false); }}
-                  className={`block w-full text-left px-4 py-2.5 text-[11px] tracking-[0.06em] font-serif hover:bg-[#f7f3ef] transition-colors ${
-                    sortValue === opt ? "text-[#1a1008] font-medium" : "text-[#5a4a3a]"
-                  }`}
+                  key={i}
+                  onClick={() => { setSortIdx(i); setSortOpen(false); }}
+                  className={`block w-full text-left px-4 py-2.5 text-[10.5px] tracking-[0.06em]
+                    hover:bg-[#f7f5f2] transition-colors font-serif
+                    ${i === sortIdx ? "text-[#1a1008] font-semibold" : "text-[#5a4a3a]"}`}
                 >
-                  {opt}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -187,61 +180,111 @@ export default function CollectionPage({ title, products }: CollectionPageProps)
         </div>
 
         {/* Divider */}
-        <span className="text-[#c8c0b8] text-sm mx-1 select-none">|</span>
+        <span className="text-[#e8e2db] text-[14px]">|</span>
 
         {/* All Filters */}
-        <button
-          onClick={() => { setFilterOpen(o => !o); setSortOpen(false); }}
-          className="flex items-center gap-1.5 text-[11px] tracking-[0.08em] text-[#1a1008] font-serif hover:opacity-60 transition-opacity py-1 pl-4"
-        >
-          All Filters <ChevronDown />
-        </button>
+        <div ref={filterRef} className="relative">
+          <button
+            onClick={() => { setFilterOpen(o => !o); setSortOpen(false); }}
+            className="flex items-center gap-1.5 text-[10.5px] tracking-[0.1em]
+              text-[#3a2e22] uppercase hover:opacity-60 transition-opacity"
+          >
+            All Filters
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none"
+              stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+              className={`transition-transform duration-200 ${filterOpen ? "rotate-180" : ""}`}>
+              <path d="M2 4l4 4 4-4"/>
+            </svg>
+          </button>
+
+          {filterOpen && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-[#e8e2db]
+              shadow-sm z-30 w-[200px] p-4">
+              <p className="text-[9px] tracking-[0.2em] text-[#9a8a7a] uppercase mb-3">
+                Coming Soon
+              </p>
+              <p className="text-[10.5px] text-[#5a4a3a] font-serif">
+                Size and colour filters will be available here.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Spacer + item count on desktop */}
+        <span className="ml-auto text-[10px] tracking-[0.12em] text-[#9a8a7a] hidden md:block">
+          {loading ? "" : `${total} ${total === 1 ? "Item" : "Items"}`}
+        </span>
       </div>
 
-      {/* ── Filter panel (expandable) ── */}
-      {filterOpen && (
-        <div className="border-b border-[#e8e2db] px-6 py-5 flex flex-wrap gap-8 bg-[#faf9f7]">
-          {[
-            { label: "Size", opts: ["XS", "S", "M", "L", "XL", "XXL"] },
-            { label: "Colour", opts: ["Black", "White", "Brown", "Cream", "Olive", "Navy"] },
-            { label: "Price", opts: ["Under £50", "£50–£100", "£100–£200", "Over £200"] },
-          ].map(group => (
-            <div key={group.label}>
-              <p className="text-[10px] tracking-[0.15em] text-[#8a7a6a] uppercase mb-2 font-serif">{group.label}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {group.opts.map(opt => (
-                  <button key={opt}
-                    className="px-3 py-1 border border-[#c8c0b8] text-[10px] tracking-[0.06em] text-[#1a1008] font-serif hover:border-[#1a1008] transition-colors">
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+      {/* ── Product grid ────────────────────────────────────────────────
+          gap-[3px] matches the tight 3px gap in the inspo.
+          Edge-to-edge: no horizontal padding on the grid wrapper.
+      ─────────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-[3px] bg-[#e8e2db]">
+
+        {loading
+          ? Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white"><Skeleton /></div>
+            ))
+          : products.length === 0
+            ? (
+                <div className="col-span-2 md:col-span-4 bg-white py-24 text-center">
+                  <p className="text-[12px] tracking-[0.1em] text-[#9a8a7a] font-serif mb-2">
+                    No products in this collection yet.
+                  </p>
+                  <p className="text-[10.5px] text-[#c8c0b8] font-serif">
+                    Add products via the admin panel.
+                  </p>
+                </div>
+              )
+            : products.map((product, i) => (
+                <div
+                  key={product.id}
+                  className="bg-white"
+                  style={{
+                    opacity: loaded ? 1 : 0,
+                    animation: loaded
+                      ? `tvCardIn 0.5s cubic-bezier(0.16,1,0.3,1) ${Math.min(i * 0.04, 0.4)}s both`
+                      : undefined,
+                  }}
+                >
+                  <ProductCard
+                    id={product.id}
+                    slug={product.slug}
+                    name={product.name}
+                    type={product.type}
+                    basePrice={product.basePrice}
+                    isNew={product.isNew}
+                    images={product.images}
+                    variants={product.variants}
+                  />
+                </div>
+              ))
+        }
+      </div>
+
+      {/* ── Load More ── */}
+      {!loading && hasMore && (
+        <div className="flex justify-center py-10">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="border border-[#3a2e22] px-10 py-3 text-[10.5px] tracking-[0.2em]
+              uppercase text-[#3a2e22] font-serif hover:bg-[#3a2e22] hover:text-white
+              transition-colors disabled:opacity-50"
+          >
+            {loadingMore ? "Loading…" : "Load More"}
+          </button>
         </div>
       )}
 
-      {/* ── Product grid — seamless, no gaps ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4">
-        {products.map((product, i) => (
-          <div
-            key={product.slug}
-            className={`border-r border-b border-[#e8e2db] ${
-              (i + 1) % 4 === 0 ? "border-r-0" : ""
-            } ${
-              (i + 1) % 2 === 0 ? "md:border-r-0 border-r-0 md:[&:not(:nth-child(4n))]:border-r" : ""
-            }`}
-          >
-            <GridCard product={product} />
-          </div>
-        ))}
-      </div>
-
-      {/* ── Eiffel watermark ── */}
-      <div className="flex justify-center py-16">
-        <EiffelWatermark />
-      </div>
-
+      {/* ── Card entry animation keyframes ── */}
+      <style>{`
+        @keyframes tvCardIn {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

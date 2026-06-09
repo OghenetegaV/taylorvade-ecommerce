@@ -19,7 +19,7 @@ const products = [
 
 export default function CollectionsPage() {
   return (
-    <main className="px-4 py-10">
+    <main className="px-4 py-0">
       <ProductGrid products={products} columns={4} />
     </main>
   );
