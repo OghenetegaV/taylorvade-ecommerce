@@ -1,13 +1,35 @@
-import AnnouncementBar from "@/components/layout/AnnouncementBar";
-import Header from "@/components/layout/Header";
-import HeroSection from "@/components/home/HeroSection";
+// src/app/page.tsx
+// Homepage — editorial build, full order:
+// Hero → Campaign Film → Ticker → New In → Type Wall → Lookbook
+// → Made in Lagos → The Vaders → Exit Doors → Newsletter band
+// (Footer + popup come from ConditionalFooter in layout.tsx)
 
-export default function HomePage() {
+import Header             from "@/components/layout/Header";
+import HeroSection        from "@/components/home/HeroSection";
+import CampaignFilm       from "@/components/home/CampaignFilm";
+import BrandTicker        from "@/components/home/BrandTicker";
+import NewInRail          from "@/components/home/NewInRail";
+import TypeWall           from "@/components/home/TypeWall";
+import HorizontalLookbook from "@/components/home/HorizontalLookbook";
+import MadeInLagos        from "@/components/home/MadeInLagos";
+import VadersStrip        from "@/components/home/VadersStrip";
+import ExitDoors          from "@/components/home/ExitDoors";
+import NewsletterBand     from "@/components/home/NewsletterBand";
+
+export default function Home() {
   return (
-    <main className="bg-[#f7f2eb] overflow-hidden">
-      {/* <AnnouncementBar /> */}
+    <main>
       <Header />
       <HeroSection />
+      <CampaignFilm />
+      <BrandTicker />
+      <NewInRail />
+      <TypeWall />
+      <HorizontalLookbook />
+      <MadeInLagos />
+      <VadersStrip />
+      <ExitDoors />
+      <NewsletterBand />
     </main>
   );
 }

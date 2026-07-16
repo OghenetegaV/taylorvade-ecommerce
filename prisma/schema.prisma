@@ -81,8 +81,8 @@ model Product {
   name        String
   slug        String   @unique
   description String?
-  editorNotes     String? @map("editor_notes")
-  sizeFit         String? @map("size_fit")
+  editorNotes     String? @map("editor_notes")      
+  sizeFit         String? @map("size_fit")           
   deliveryReturns String? @map("delivery_returns")
   type        String
   basePrice   Decimal  @map("base_price") @db.Decimal(10, 2)

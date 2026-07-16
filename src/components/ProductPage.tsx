@@ -1,452 +1,512 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface SwatchImage  { src: string; colorLabel: string; }
+interface ShopItem     { slug: string; image: string; name: string; }
+interface RelatedItem  { slug: string; image: string; name: string; description: string; }
+interface Variant      { id: string; size: string; colorLabel: string; stockQuantity: number; priceOverride?: number | null; }
+
 export interface ProductPageProps {
-  name: string;
-  colorLabel: string;
-  type: string;
-  price: number;
-  isNew?: boolean;
-  images: string[];
-  swatchImages?: { src: string; colorLabel: string }[];
-  sizes?: string[];
-  editorNotes?: string;
-  sizeFit?: string;
+  name:             string;
+  colorLabel:       string;
+  type:             string;
+  price:            number;
+  currency?:        string;
+  isNew?:           boolean;
+  images:           string[];
+  swatchImages?:    SwatchImage[];
+  sizes?:           string[];
+  orderDeadline?:   { hrs: number; mins: number; date: string };
+  editorNotes?:     string;
+  sizeFit?:         string;
   deliveryReturns?: string;
-  shopTheLook?: { slug: string; image: string; name: string }[];
-  selectedForYou?: { slug: string; image: string; name: string; description: string }[];
-  orderDeadline?: { hrs: number; mins: number; date: string };
+  shopTheLook?:     ShopItem[];
+  selectedForYou?:  RelatedItem[];
+  // Cart integration
+  productId?:       string;
+  variants?:        Variant[];
 }
 
-/* ── Icons ── */
-const PlusIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-    <path d="M12 5v14M5 12h14"/>
-  </svg>
+// ── Small icon components ─────────────────────────────────────────────────────
+const Plus = ({ rotated }: { rotated: boolean }) => (
+  <span className={`text-[18px] leading-none text-[#3a2e22] transition-transform duration-300 inline-block ${rotated ? "rotate-45" : ""}`}>+</span>
 );
 
 const StarIcon = ({ filled }: { filled: boolean }) => (
-  <svg width="17" height="17" viewBox="0 0 24 24"
-    fill={filled ? "#1a1008" : "none"} stroke="#1a1008" strokeWidth="1.3"
-    strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+  <svg viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"}
+    stroke="currentColor" strokeWidth="0.9" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round"
+      d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
   </svg>
 );
 
 const ClockIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-    <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"
+    strokeLinecap="round" className="w-[13px] h-[13px] flex-shrink-0">
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 7v5l3 3"/>
   </svg>
 );
 
-const EiffelIcon = () => (
-  <svg width="22" height="34" viewBox="0 0 30 46" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="15" y1="0" x2="15" y2="3"/>
-    <path d="M15 3 L11.5 11 L18.5 11 Z"/>
-    <line x1="10.5" y1="13.5" x2="19.5" y2="13.5"/>
-    <path d="M11.5 11 L7.5 21 L22.5 21 L18.5 11"/>
-    <line x1="6.5" y1="24" x2="23.5" y2="24"/>
-    <path d="M7.5 21 L3 36 L27 36 L22.5 21"/>
-    <path d="M3 36 L1 44 L29 44 L27 36"/>
+const EiffelMark = () => (
+  <svg width="20" height="28" viewBox="0 0 32 46" fill="none" className="mx-auto mb-2 opacity-40">
+    <rect x="15" y="0" width="2" height="4" fill="#3a2e22"/>
+    <polygon points="16,4 12,14 20,14" fill="#3a2e22"/>
+    <polygon points="12,14 8,22 24,22 20,14" fill="#3a2e22"/>
+    <line x1="8" y1="18" x2="24" y2="18" stroke="#3a2e22" strokeWidth="1.2"/>
+    <polygon points="8,22 4,32 28,32 24,22" fill="#3a2e22"/>
+    <line x1="4" y1="28" x2="28" y2="28" stroke="#3a2e22" strokeWidth="1.2"/>
+    <polygon points="4,32 2,44 30,44 28,32" fill="#3a2e22"/>
   </svg>
 );
 
-/* ── Accordion ── */
-function Accordion({ label, content }: { label: string; content: string }) {
-  const [open, setOpen] = useState(false);
+// ── Accordion item ────────────────────────────────────────────────────────────
+function Accordion({ label, content, isOpen, onToggle }: {
+  label: string; content?: string; isOpen: boolean; onToggle: () => void;
+}) {
+  const bodyRef = useRef<HTMLDivElement>(null);
   return (
     <div className="border-b border-[#e8e2db]">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex justify-between items-center py-4 text-[11.5px] tracking-[0.05em] text-[#1a1008] font-serif text-left"
-      >
-        {label}
-        <span className={`transition-transform duration-200 ${open ? "rotate-45" : ""}`}>
-          <PlusIcon />
+      <button onClick={onToggle}
+        className="w-full flex items-center justify-between py-4 group">
+        <span className="text-[11px] tracking-[0.14em] text-[#3a2e22] uppercase font-serif
+          group-hover:opacity-60 transition-opacity">
+          {label}
         </span>
+        <Plus rotated={isOpen} />
       </button>
-      {open && (
-        <p className="pb-5 text-[11px] text-[#5a4a3a] font-serif leading-relaxed tracking-wide">
-          {content}
-        </p>
-      )}
+      <div
+        ref={bodyRef}
+        className="overflow-hidden transition-all duration-400 ease-in-out"
+        style={{ maxHeight: isOpen ? (bodyRef.current?.scrollHeight ?? 400) + "px" : "0px" }}
+      >
+        {content ? (
+          <p className="text-[12px] leading-[1.85] tracking-[0.03em] text-[#5a4a3a] font-serif pb-5 pr-4">
+            {content}
+          </p>
+        ) : (
+          <p className="text-[11.5px] text-[#9a8a7a] font-serif pb-5 italic">Not provided.</p>
+        )}
+      </div>
     </div>
   );
 }
 
-/* ── Countdown ── */
-function useCountdown(hrs: number, mins: number) {
-  const end = useRef(Date.now() + (hrs * 3600 + mins * 60) * 1000);
-  const [t, setT] = useState({ hrs, mins });
-  useEffect(() => {
-    const iv = setInterval(() => {
-      const d = Math.max(0, end.current - Date.now());
-      setT({ hrs: Math.floor(d / 3600000), mins: Math.floor((d % 3600000) / 60000) });
-    }, 1000);
-    return () => clearInterval(iv);
-  }, []);
-  return t;
-}
-
+// ── Main component ────────────────────────────────────────────────────────────
 export default function ProductPage({
-  name,
-  colorLabel,
-  type,
-  price,
-  isNew = false,
-  images = [],
-  swatchImages = [],
-  sizes = [],
-  editorNotes = "A beautifully crafted piece with attention to every detail. Elevated essentials for the modern wardrobe.",
-  sizeFit = "Model wears a size M. We recommend sizing true to size for a regular fit.",
-  deliveryReturns = "Free UK delivery on orders over £150. Free in-store returns. Postal returns £2.99 within 28 days.",
-  shopTheLook = [],
-  selectedForYou = [],
-  orderDeadline = { hrs: 13, mins: 46, date: "1 June" },
+  name, colorLabel, type, price, currency = "£",
+  isNew, images = [], swatchImages = [], sizes = [],
+  orderDeadline, editorNotes, sizeFit, deliveryReturns,
+  shopTheLook = [], selectedForYou = [],
+  productId, variants = [],
 }: ProductPageProps) {
-  const [activeImage,  setActiveImage]  = useState(0);
-  const [activeSwatch, setActiveSwatch] = useState(0);
-  const [activeSize,   setActiveSize]   = useState<string | null>(null);
-  const [wished,       setWished]       = useState(false);
-  const [mobileSlide,  setMobileSlide]  = useState(0);
-  const countdown = useCountdown(orderDeadline.hrs, orderDeadline.mins);
-  const pad = (n: number) => String(n).padStart(2, "0");
 
-  const mainSrc = images[activeImage] ?? "/images/men.jpg";
+  const [imgIdx,      setImgIdx]      = useState(0);
+  const [swatchIdx,   setSwatchIdx]   = useState(0);
+  const [selSize,     setSelSize]     = useState<string | null>(null);
+  const [accordion,   setAccordion]   = useState<string | null>(null);
+  const [wished,      setWished]      = useState(false);
+  const [cartMsg,     setCartMsg]     = useState<"idle"|"adding"|"added"|"error">("idle");
+  const [countdown,   setCountdown]   = useState(orderDeadline ?? null);
+  const [imgFade,     setImgFade]     = useState(true);
+  const [loaded,      setLoaded]      = useState(false);
+  const [isPending,   startTransition] = useTransition();
+  const touchStartX = useRef<number | null>(null);
 
+  // Entry animation
+  useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
+
+  // Live countdown
+  useEffect(() => {
+    if (!orderDeadline) return;
+    const end = new Date();
+    end.setHours(end.getHours() + orderDeadline.hrs);
+    end.setMinutes(end.getMinutes() + orderDeadline.mins);
+
+    const tick = () => {
+      const diff = end.getTime() - Date.now();
+      if (diff <= 0) { setCountdown(null); return; }
+      setCountdown({
+        hrs:  Math.floor(diff / 3_600_000),
+        mins: Math.floor((diff % 3_600_000) / 60_000),
+        date: orderDeadline.date,
+      });
+    };
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, [orderDeadline]);
+
+  // Which images to show (changes when swatch changes)
+  const activeImages = swatchImages.length > 0 && swatchImages[swatchIdx]
+    ? [swatchImages[swatchIdx].src, ...images.filter(s => s !== swatchImages[swatchIdx].src)]
+    : images;
+
+  const currentImg = activeImages[imgIdx] ?? "";
+
+  function changeImg(idx: number) {
+    if (idx === imgIdx) return;
+    setImgFade(false);
+    setTimeout(() => { setImgIdx(idx); setImgFade(true); }, 120);
+  }
+
+  function changeSwatch(idx: number) {
+    setSwatchIdx(idx);
+    setImgIdx(0);
+    setImgFade(false);
+    setTimeout(() => setImgFade(true), 120);
+  }
+
+  // Mobile swipe
+  function onTouchStart(e: React.TouchEvent) { touchStartX.current = e.touches[0].clientX; }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(delta) > 44) {
+      const next = delta < 0
+        ? Math.min(imgIdx + 1, activeImages.length - 1)
+        : Math.max(imgIdx - 1, 0);
+      changeImg(next);
+    }
+    touchStartX.current = null;
+  }
+
+  // Add to cart
+  async function handleAddToCart() {
+    if (!selSize) { setSelSize("__highlight__"); setTimeout(() => setSelSize(null), 800); return; }
+    if (!productId) return;
+
+    const variant = variants.find(v =>
+      v.size === selSize &&
+      (swatchImages[swatchIdx]
+        ? v.colorLabel === swatchImages[swatchIdx].colorLabel
+        : true)
+    ) ?? variants.find(v => v.size === selSize);
+
+    if (!variant) return;
+
+    setCartMsg("adding");
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, variantId: variant.id, quantity: 1 }),
+      });
+      const data = await res.json();
+      setCartMsg(data.success ? "added" : "error");
+    } catch { setCartMsg("error"); }
+    setTimeout(() => setCartMsg("idle"), 2500);
+  }
+
+  const isSizeUnavailable = (size: string) => {
+    if (!variants.length) return false;
+    const col = swatchImages[swatchIdx]?.colorLabel;
+    return !variants.some(v =>
+      v.size === size &&
+      v.stockQuantity > 0 &&
+      (!col || v.colorLabel === col)
+    );
+  };
+
+  const ctaLabel = cartMsg === "adding" ? "Adding…"
+    : cartMsg === "added" ? "Added to Bag ✓"
+    : cartMsg === "error" ? "Please try again"
+    : selSize ? `Add to Bag — ${selSize}`
+    : "Select a Size";
+
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="bg-white min-h-screen font-serif">
+    <>
+      <style>{`
+        @keyframes ppFadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes ppShake {
+          0%,100% { transform: translateX(0); }
+          20%     { transform: translateX(-6px); }
+          40%     { transform: translateX(6px); }
+          60%     { transform: translateX(-4px); }
+          80%     { transform: translateX(4px); }
+        }
+        .pp-anim-1 { animation: ppFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
+        .pp-anim-2 { animation: ppFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s both; }
+        .pp-anim-3 { animation: ppFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.32s both; }
+        .pp-anim-4 { animation: ppFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.44s both; }
+        .size-shake { animation: ppShake 0.4s ease; }
+      `}</style>
 
-      {/* ══ DESKTOP: image left, details right ══ */}
-      <div className="hidden md:flex min-h-screen">
+      <div className="min-h-screen bg-[#faf9f7] font-serif">
+        {/* Fixed header spacer */}
+        <div className="h-[76px] md:h-[88px]" />
 
-        {/* LEFT — images */}
-        <div className="w-[55%] flex flex-col">
+        {/* ── Main product section ──────────────────────────────────────── */}
+        <div className="flex flex-col md:flex-row">
 
-          {/* Main image */}
-          <div className="relative flex-1 bg-[#f0eeeb] min-h-[80vh]">
-            <Image
-              src={mainSrc}
-              alt={name}
-              fill
-              priority
-              className="object-cover object-top"
-              sizes="55vw"
-            />
-          </div>
+          {/* ════ LEFT: Image gallery ════════════════════════════════════ */}
+          <div className="md:w-[58%] md:sticky md:top-[88px] md:self-start">
 
-          {/* Thumbnail strip below main image */}
-          {images.length > 1 && (
-            <div className="flex gap-1 p-2 bg-white border-t border-[#e8e2db]">
-              {images.map((img, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImage(i)}
-                  className="relative flex-shrink-0 overflow-hidden"
-                  style={{
-                    width: 72, height: 96,
-                    outline: activeImage === i ? "1.5px solid #1a1008" : "1.5px solid transparent",
-                    outlineOffset: "1px",
-                  }}
-                >
-                  <Image src={img} alt="" fill className="object-cover object-top" sizes="72px"/>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT — product details */}
-        <div className="w-[45%] overflow-y-auto bg-white px-10 py-10 border-l border-[#e8e2db]">
-
-          {isNew && (
-            <p className="text-[10.5px] italic tracking-[0.18em] text-[#8a7a6a] font-serif mb-1">
-              New In
-            </p>
-          )}
-
-          {/* Name */}
-          <h1
-            className="text-[#1a1008] leading-none mb-0"
-            style={{ fontFamily: "var(--font-script), cursive", fontSize: 52 }}
-          >
-            {name}
-          </h1>
-
-          {/* Colour */}
-          <p
-            className="text-[#4a3a2a] italic mb-3"
-            style={{ fontFamily: "var(--font-script), cursive", fontSize: 20 }}
-          >
-            in {colorLabel}
-          </p>
-
-          <p className="text-[11.5px] tracking-[0.07em] text-[#1a1008] font-serif mb-1">{type}</p>
-          <p className="text-[14px] tracking-[0.04em] text-[#1a1008] font-serif mb-6">£{price}</p>
-
-          {/* Swatches */}
-          {swatchImages.length > 0 && (
-            <div className="flex gap-2 mb-6">
-              {swatchImages.map((sw, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveSwatch(i)}
-                  className="relative overflow-hidden flex-shrink-0"
-                  style={{
-                    width: 56, height: 72,
-                    outline: activeSwatch === i ? "1.5px solid #1a1008" : "1.5px solid #d5cec4",
-                    outlineOffset: "2px",
-                  }}
-                >
-                  <Image src={sw.src} alt={sw.colorLabel} fill className="object-cover object-top" sizes="56px"/>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Sizes */}
-          {sizes.length > 0 && (
-            <div className="flex items-center gap-5 flex-wrap mb-5">
-              {sizes.map(s => (
-                <button
-                  key={s}
-                  onClick={() => setActiveSize(activeSize === s ? null : s)}
-                  className={`text-[11.5px] tracking-[0.06em] font-serif pb-0.5 transition-all ${
-                    activeSize === s
-                      ? "text-[#1a1008] border-b border-[#1a1008]"
-                      : "text-[#1a1008] border-b border-transparent hover:opacity-50"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Countdown */}
-          <div className="flex items-center gap-1.5 mb-5 text-[#1a1008]">
-            <ClockIcon />
-            <p className="text-[10.5px] font-serif tracking-wide">
-              Order within{" "}
-              <span className="text-[#8B3A3A]">
-                {pad(countdown.hrs)} Hrs {pad(countdown.mins)} Mins
-              </span>{" "}
-              to receive {orderDeadline.date}
-            </p>
-          </div>
-
-          {/* CTA */}
-          <div className="flex gap-[6px] mb-7">
-            <button
-              className="flex-1 bg-[#2d1f14] hover:bg-[#3a2a1e] text-white text-[11.5px] tracking-[0.14em] font-serif transition-colors"
-              style={{ height: 50 }}
-            >
-              {activeSize ? `Add to Bag — ${activeSize}` : "Select a Size"}
-            </button>
-            <button
-              onClick={() => setWished(w => !w)}
-              className="flex items-center justify-center border border-[#c8c0b8] hover:border-[#1a1008] transition-colors"
-              style={{ width: 50, height: 50 }}
-            >
-              <StarIcon filled={wished} />
-            </button>
-          </div>
-
-          {/* Accordions */}
-          <Accordion label="Editor's Notes"     content={editorNotes} />
-          <Accordion label="Size & Fit"         content={sizeFit} />
-          <Accordion label="Delivery & Returns" content={deliveryReturns} />
-
-          {/* Shop the Look */}
-          {shopTheLook.length > 0 && (
-            <div className="mt-8">
-              <p
-                className="text-center text-[#1a1008] mb-1"
-                style={{ fontFamily: "var(--font-script), cursive", fontSize: 24 }}
-              >
-                Shop the Look
-              </p>
-              <div className="h-px bg-[#e8e2db] mb-4"/>
-              <div className="grid grid-cols-2 gap-2">
-                {shopTheLook.slice(0, 2).map(p => (
-                  <Link
-                    key={p.slug}
-                    href={`/products/${p.slug}`}
-                    className="relative block overflow-hidden group"
-                    style={{ aspectRatio: "3/4" }}
-                  >
-                    <Image
-                      src={p.image} alt={p.name} fill
-                      className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                      sizes="20vw"
-                    />
-                  </Link>
+            {/* DESKTOP: thumbnail strip + main image */}
+            <div className="hidden md:flex">
+              {/* Thumbnails */}
+              <div className="w-[82px] flex-shrink-0 flex flex-col gap-[3px] p-[3px]">
+                {activeImages.map((src, i) => (
+                  <button key={i} onClick={() => changeImg(i)}
+                    className={`relative overflow-hidden transition-opacity duration-200 ${
+                      i === imgIdx ? "opacity-100 ring-1 ring-[#3a2e22]" : "opacity-60 hover:opacity-90"
+                    }`}
+                    style={{ aspectRatio: "2/3" }}>
+                    <Image src={src} alt={`${name} view ${i + 1}`} fill
+                      className="object-cover object-top" sizes="82px" />
+                  </button>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* ══ MOBILE: carousel top, details below ══ */}
-      <div className="md:hidden">
-
-        {/* Carousel */}
-        <div className="relative w-full overflow-hidden bg-[#f0eeeb]" style={{ aspectRatio: "3/4" }}>
-          <div
-            className="flex h-full transition-transform duration-500 ease-in-out"
-            style={{
-              width: `${images.length * 100}%`,
-              transform: `translateX(-${(mobileSlide * 100) / images.length}%)`,
-            }}
-          >
-            {images.map((img, i) => (
-              <div
-                key={i}
-                className="relative flex-shrink-0 h-full"
-                style={{ width: `${100 / images.length}%` }}
-              >
-                <Image src={img} alt="" fill className="object-cover object-top" sizes="100vw"/>
+              {/* Main image */}
+              <div className="flex-1 relative overflow-hidden bg-[#f0eeeb]"
+                style={{ aspectRatio: "2/3" }}>
+                {currentImg && (
+                  <Image src={currentImg} alt={name} fill priority
+                    className="object-cover object-top transition-opacity duration-200"
+                    style={{ opacity: imgFade ? 1 : 0 }}
+                    sizes="(max-width:1280px) 50vw, 700px" />
+                )}
               </div>
-            ))}
+            </div>
+
+            {/* MOBILE: swipeable carousel */}
+            <div className="md:hidden relative overflow-hidden bg-[#f0eeeb]"
+              style={{ aspectRatio: "2/3" }}
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}>
+              {activeImages.map((src, i) => (
+                <div key={i}
+                  className="absolute inset-0 transition-opacity duration-300"
+                  style={{ opacity: i === imgIdx ? 1 : 0, zIndex: i === imgIdx ? 1 : 0 }}>
+                  <Image src={src} alt={`${name} ${i + 1}`} fill priority={i === 0}
+                    className="object-cover object-top" sizes="100vw" />
+                </div>
+              ))}
+
+              {/* Dot indicators */}
+              {activeImages.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                  {activeImages.map((_, i) => (
+                    <button key={i} onClick={() => changeImg(i)} aria-label={`Image ${i + 1}`}
+                      className={`rounded-full transition-all duration-300 ${
+                        i === imgIdx ? "w-4 h-[3px] bg-[#3a2e22]" : "w-[3px] h-[3px] bg-[#3a2e22]/40"
+                      }`} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Dots */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-            {images.map((_, i) => (
+          {/* ════ RIGHT: Product info ══════════════════════════════════════ */}
+          <div className={`md:w-[42%] px-5 md:px-8 lg:px-12 py-6 md:py-8
+            ${loaded ? "" : "opacity-0"}`}
+            style={loaded ? { animation: "ppFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both" } : {}}>
+
+            {/* New In tag */}
+            {isNew && (
+              <p className="text-[10.5px] italic tracking-[0.06em] text-[#3a2e22] mb-2 pp-anim-1">
+                New In
+              </p>
+            )}
+
+            {/* Name */}
+            <h1 className={`leading-[1.0] text-[#1a1008] pp-anim-1`}
+              style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(36px, 5vw, 52px)" }}>
+              {name}
+            </h1>
+
+            {/* Colour */}
+            <p className={`italic text-[#5a4a3a] leading-tight mt-0.5 pp-anim-1`}
+              style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(16px, 2.5vw, 22px)" }}>
+              in {swatchImages[swatchIdx]?.colorLabel ?? colorLabel}
+            </p>
+
+            {/* Type */}
+            <p className="text-[10.5px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-2 pp-anim-2">
+              {type}
+            </p>
+
+            {/* Price */}
+            <p className="text-[14px] tracking-[0.06em] text-[#1a1008] font-serif mt-3 pp-anim-2">
+              {currency}{Number(price).toLocaleString()}
+            </p>
+
+            {/* ── Colour swatches ── */}
+            {swatchImages.length > 1 && (
+              <div className="flex gap-2 mt-4 pp-anim-3">
+                {swatchImages.map((sw, i) => (
+                  <button key={i} onClick={() => changeSwatch(i)}
+                    className={`relative overflow-hidden transition-all duration-200 flex-shrink-0 ${
+                      i === swatchIdx
+                        ? "ring-1 ring-[#3a2e22] ring-offset-1"
+                        : "opacity-55 hover:opacity-85"
+                    }`}
+                    style={{ width: 44, height: 60 }}>
+                    <Image src={sw.src} alt={sw.colorLabel} fill
+                      className="object-cover object-top" sizes="44px" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ── Size selector ── */}
+            {sizes.length > 0 && (
+              <div className="mt-5 pp-anim-3">
+                <div className="flex flex-wrap gap-x-5 gap-y-2">
+                  {sizes.map(size => {
+                    const unavailable = isSizeUnavailable(size);
+                    const isSelected  = selSize === size;
+                    return (
+                      <button key={size}
+                        onClick={() => setSelSize(isSelected ? null : size)}
+                        disabled={unavailable}
+                        className={`text-[11.5px] tracking-[0.08em] font-serif pb-0.5 transition-all duration-150
+                          border-b ${
+                          unavailable
+                            ? "text-[#c8c0b8] line-through border-transparent cursor-not-allowed"
+                            : isSelected
+                              ? "text-[#1a1008] border-[#1a1008]"
+                              : "text-[#5a4a3a] border-transparent hover:text-[#1a1008] hover:border-[#1a1008]"
+                        }`}>
+                        {size}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── Countdown ── */}
+            {countdown && (
+              <div className="flex items-center gap-1.5 mt-4 pp-anim-3">
+                <ClockIcon />
+                <p className="text-[10.5px] tracking-[0.04em] text-[#3a2e22] font-serif">
+                  Order within{" "}
+                  <span className="text-[#c45a2a] font-semibold">
+                    {countdown.hrs} Hrs {countdown.mins} Mins
+                  </span>
+                  {" "}to receive {countdown.date}
+                </p>
+              </div>
+            )}
+
+            {/* ── CTA row ── */}
+            <div className={`flex gap-2 mt-5 pp-anim-4 ${selSize === "__highlight__" ? "size-shake" : ""}`}>
               <button
-                key={i}
-                onClick={() => setMobileSlide(i)}
-                className="rounded-full transition-all duration-300"
-                style={{
-                  width: mobileSlide === i ? 14 : 5,
-                  height: 3,
-                  backgroundColor: mobileSlide === i ? "#1a1008" : "rgba(26,16,8,0.3)",
-                }}
-              />
-            ))}
-          </div>
+                onClick={handleAddToCart}
+                disabled={cartMsg === "adding"}
+                className={`flex-1 py-[13px] text-[10.5px] tracking-[0.22em] uppercase font-serif
+                  transition-all duration-200 ${
+                  cartMsg === "added"
+                    ? "bg-green-700 text-white"
+                    : cartMsg === "error"
+                      ? "bg-red-700 text-white"
+                      : "bg-[#3a2e22] text-white hover:bg-[#1a1008]"
+                } disabled:opacity-70`}>
+                {ctaLabel}
+              </button>
+              <button
+                onClick={() => setWished(w => !w)}
+                aria-label="Add to wishlist"
+                className={`w-[46px] border flex items-center justify-center transition-colors duration-200 ${
+                  wished
+                    ? "border-[#3a2e22] bg-[#3a2e22] text-white"
+                    : "border-[#3a2e22] text-[#3a2e22] hover:bg-[#3a2e22] hover:text-white"
+                }`}>
+                <StarIcon filled={wished} />
+              </button>
+            </div>
 
-          {/* Eiffel watermark */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 opacity-20 text-[#3a2e22] pointer-events-none">
-            <EiffelIcon />
-          </div>
-        </div>
-
-        {/* Mobile details */}
-        <div className="bg-white px-5 pt-6 pb-14">
-          {isNew && (
-            <p className="text-[10.5px] italic tracking-[0.18em] text-[#8a7a6a] font-serif mb-1">New In</p>
-          )}
-
-          <h1
-            className="text-[#1a1008] leading-none mb-0"
-            style={{ fontFamily: "var(--font-script), cursive", fontSize: 42 }}
-          >
-            {name}
-          </h1>
-          <p
-            className="text-[#4a3a2a] italic mb-2"
-            style={{ fontFamily: "var(--font-script), cursive", fontSize: 18 }}
-          >
-            in {colorLabel}
-          </p>
-          <p className="text-[11.5px] tracking-[0.06em] text-[#1a1008] font-serif mb-1">{type}</p>
-          <p className="text-[13px] tracking-[0.04em] text-[#1a1008] font-serif mb-5">£{price}</p>
-
-          {swatchImages.length > 0 && (
-            <div className="flex gap-2 mb-4">
-              {swatchImages.map((sw, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveSwatch(i)}
-                  className="relative overflow-hidden flex-shrink-0"
-                  style={{
-                    width: 48, height: 64,
-                    outline: activeSwatch === i ? "1.5px solid #1a1008" : "1.5px solid #d5cec4",
-                    outlineOffset: "2px",
-                  }}
-                >
-                  <Image src={sw.src} alt={sw.colorLabel} fill className="object-cover object-top" sizes="48px"/>
-                </button>
+            {/* ── Accordions ── */}
+            <div className="mt-6 pp-anim-4">
+              {[
+                { key: "editor",   label: "Editor's Notes",      content: editorNotes },
+                { key: "size",     label: "Size & Fit",           content: sizeFit },
+                { key: "delivery", label: "Delivery & Returns",   content: deliveryReturns },
+              ].map(a => (
+                <Accordion key={a.key} label={a.label} content={a.content}
+                  isOpen={accordion === a.key}
+                  onToggle={() => setAccordion(accordion === a.key ? null : a.key)} />
               ))}
             </div>
-          )}
 
-          {sizes.length > 0 && (
-            <div className="flex items-center gap-4 flex-wrap mb-4">
-              {sizes.map(s => (
-                <button
-                  key={s}
-                  onClick={() => setActiveSize(activeSize === s ? null : s)}
-                  className={`text-[11.5px] tracking-[0.06em] font-serif pb-0.5 transition-all ${
-                    activeSize === s
-                      ? "text-[#1a1008] border-b border-[#1a1008]"
-                      : "text-[#1a1008] border-b border-transparent hover:opacity-50"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="flex items-center gap-1.5 mb-4 text-[#1a1008]">
-            <ClockIcon />
-            <p className="text-[10.5px] font-serif tracking-wide">
-              Order within{" "}
-              <span className="text-[#8B3A3A]">
-                {pad(countdown.hrs)} Hrs {pad(countdown.mins)} Mins
-              </span>{" "}
-              to receive {orderDeadline.date}
-            </p>
-          </div>
-
-          <div className="flex gap-[6px] mb-6">
-            <button
-              className="flex-1 bg-[#2d1f14] text-white text-[11.5px] tracking-[0.14em] font-serif"
-              style={{ height: 48 }}
-            >
-              {activeSize ? `Add to Bag — ${activeSize}` : "Select a Size"}
-            </button>
-            <button
-              onClick={() => setWished(w => !w)}
-              className="flex items-center justify-center border border-[#c8c0b8]"
-              style={{ width: 48, height: 48 }}
-            >
-              <StarIcon filled={wished} />
-            </button>
-          </div>
-
-          <Accordion label="Editor's Notes"     content={editorNotes} />
-          <Accordion label="Size & Fit"         content={sizeFit} />
-          <Accordion label="Delivery & Returns" content={deliveryReturns} />
-
-          {shopTheLook.length > 0 && (
-            <div className="mt-6">
-              <p
-                className="text-center text-[#1a1008] mb-1"
-                style={{ fontFamily: "var(--font-script), cursive", fontSize: 22 }}
-              >
-                Shop the Look
-              </p>
-              <div className="h-px bg-[#e8e2db] mb-3"/>
-              <div className="grid grid-cols-2 gap-1.5">
-                {shopTheLook.slice(0, 2).map(p => (
-                  <Link key={p.slug} href={`/products/${p.slug}`}
-                    className="relative block overflow-hidden" style={{ aspectRatio: "3/4" }}>
-                    <Image src={p.image} alt={p.name} fill
-                      className="object-cover object-top" sizes="45vw"/>
-                  </Link>
-                ))}
+            {/* ── Shop the Look ── */}
+            {shopTheLook.length > 0 && (
+              <div className="mt-8 pp-anim-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex-1 h-px bg-[#e8e2db]" />
+                  <p className="text-[20px] text-[#1a1008] flex-shrink-0"
+                    style={{ fontFamily: "var(--font-script), cursive" }}>
+                    Shop the Look
+                  </p>
+                  <div className="flex-1 h-px bg-[#e8e2db]" />
+                </div>
+                <div className="grid grid-cols-2 gap-[3px]">
+                  {shopTheLook.slice(0, 4).map((item, i) => (
+                    <Link key={i} href={`/products/${item.slug}`}
+                      className="relative overflow-hidden group block bg-[#f0eeeb]"
+                      style={{ aspectRatio: "2/3" }}>
+                      <Image src={item.image} alt={item.name} fill
+                        className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+                        sizes="150px" />
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* ════ SELECTED FOR YOU ═══════════════════════════════════════════ */}
+        {selectedForYou.length > 0 && (
+          <div className="mt-8 md:mt-16 pb-12">
+            {/* Section header */}
+            <div className="text-center py-6 border-t border-b border-[#e8e2db] mb-[3px]">
+              <EiffelMark />
+              <p className="text-[26px] md:text-[32px] text-[#1a1008]"
+                style={{ fontFamily: "var(--font-script), cursive" }}>
+                Selected for You
+              </p>
+            </div>
+
+            {/* Grid — matches MDV 6-col desktop / 2-col mobile */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-[3px] bg-[#e8e2db]">
+              {selectedForYou.map((item, i) => (
+                <Link key={i} href={`/products/${item.slug}`}
+                  className="block bg-white group"
+                  style={{
+                    opacity: 0,
+                    animation: `ppFadeUp 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.05}s both`,
+                  }}>
+                  {/* Image */}
+                  <div className="relative overflow-hidden" style={{ aspectRatio: "2/3" }}>
+                    <Image src={item.image} alt={item.name} fill
+                      className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
+                      sizes="(max-width:640px) 50vw, (max-width:768px) 33vw, 17vw" />
+                  </div>
+                  {/* Name */}
+                  <div className="px-1 pt-2 pb-3">
+                    <p className="leading-tight hover:opacity-60 transition-opacity truncate"
+                      style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(12px,1.6vw,14px)", color: "#1a1008" }}>
+                      {item.name}
+                    </p>
+                    <p className="text-[10px] text-[#8a7a6a] tracking-wide mt-0.5 truncate">{item.description}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }

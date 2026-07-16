@@ -1,88 +1,141 @@
 // src/app/admin/products/new/page.tsx
+// 5-step wizard: Basics → Content → Variants → Images → Publish
+// Designed to feel light — one focused section at a time.
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  ArrowLeft, ArrowRight, Check, Plus, Trash2, Loader2,
+  UploadCloud, Star, AlertCircle, Sparkles, RefreshCw,
+} from "lucide-react";
 
-type Category = { id: string; name: string; gender: string };
-type Variant   = {
-  colorLabel: string; colorHex: string; size: string;
-  sku: string; stockQuantity: string; priceOverride: string;
+// ── Constants ────────────────────────────────────────────────────────────────
+const STEPS = ["Basics", "Content", "Variants", "Images", "Publish"];
+const SIZES   = ["XS", "S", "M", "L", "XL", "XXL"];
+const GENDERS = [
+  { value: "WOMEN",  label: "Women"  },
+  { value: "MEN",    label: "Men"    },
+  { value: "UNISEX", label: "Unisex" },
+];
+
+type Category   = { id: string; name: string; gender: string };
+type ColorEntry = {
+  key:   string;
+  label: string;
+  hex:   string;
+  sizes: Record<string, { enabled: boolean; stock: string; sku: string }>;
 };
-type ImgEntry  = { url: string; altText: string; isPrimary: boolean; variantId: string };
+type ImgEntry = { key: string; url: string; uploading: boolean; isPrimary: boolean };
 
-const SIZES    = ["XS","S","M","L","XL","XXL","XXXL","One Size"];
-const GENDERS  = ["MEN","WOMEN","UNISEX"];
-
-const emptyVariant: Variant = {
-  colorLabel: "", colorHex: "#000000", size: "M",
-  sku: "", stockQuantity: "0", priceOverride: "",
-};
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const uid = () => Math.random().toString(36).slice(2, 9);
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-white border border-[#e8e2db] rounded-lg p-6">
-      <h3 className="text-[10px] tracking-[0.2em] text-[#8a7a6a] uppercase font-serif mb-4">{title}</h3>
-      {children}
-    </div>
-  );
+function makeSku(productName: string, colorLabel: string, size: string) {
+  const p = productName.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PROD";
+  const c = colorLabel.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3)  || "COL";
+  return `TV-${p}-${c}-${size}`;
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-[10px] tracking-[0.15em] text-[#8a7a6a] uppercase mb-1.5 font-serif">
-        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
-  );
+function emptyColor(): ColorEntry {
+  return {
+    key:   uid(),
+    label: "",
+    hex:   "#8B7355",
+    sizes: Object.fromEntries(
+      SIZES.map(s => [s, { enabled: false, stock: "10", sku: "" }])
+    ),
+  };
 }
 
-const inputClass = "w-full border border-[#e8e2db] px-4 py-2.5 text-[12px] text-[#1a1008] outline-none focus:border-[#1a1008] transition-colors font-serif bg-white";
+// ── Shared styles ────────────────────────────────────────────────────────────
+const inputClass = `w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm
+  text-slate-800 placeholder:text-slate-400 outline-none
+  focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all`;
 const textareaClass = `${inputClass} resize-none`;
+const labelClass = "block text-xs font-semibold text-slate-600 mb-1.5";
 
+// ── Step indicator ───────────────────────────────────────────────────────────
+function StepIndicator({ current }: { current: number }) {
+  return (
+    <div className="flex items-center justify-between mb-8">
+      {STEPS.map((label, i) => {
+        const done   = i < current;
+        const active = i === current;
+        return (
+          <div key={label} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-1.5">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
+                transition-all duration-300 ${
+                done   ? "bg-emerald-500 text-white" :
+                active ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-110" :
+                         "bg-slate-100 text-slate-400"
+              }`}>
+                {done ? <Check className="w-4 h-4" /> : i + 1}
+              </div>
+              <span className={`text-[10px] font-semibold hidden sm:block ${
+                active ? "text-blue-600" : done ? "text-emerald-600" : "text-slate-400"
+              }`}>
+                {label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-colors duration-300 ${
+                done ? "bg-emerald-400" : "bg-slate-100"
+              }`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
 export default function NewProductPage() {
   const router = useRouter();
 
-  // ── State ─────────────────────────────────────────────────────────
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [saving,     setSaving]     = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
+  const [step,    setStep]    = useState(0);
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
 
-  // Basic info
-  const [name,            setName]            = useState("");
-  const [slug,            setSlug]            = useState("");
-  const [slugManual,      setSlugManual]      = useState(false);
-  const [type,            setType]            = useState("");
+  // Step 1 — Basics
+  const [name,       setName]       = useState("");
+  const [slug,       setSlug]       = useState("");
+  const [slugTouched,setSlugTouched]= useState(false);
+  const [type,       setType]       = useState("");
+  const [basePrice,  setBasePrice]  = useState("");
+  const [gender,     setGender]     = useState("WOMEN");
+  const [categoryId, setCategoryId] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCat,     setNewCat]     = useState("");
+  const [addingCat,  setAddingCat]  = useState(false);
+  const [deletingCat, setDeletingCat] = useState<string | null>(null);
+
+  // Step 2 — Content
   const [description,     setDescription]     = useState("");
   const [editorNotes,     setEditorNotes]     = useState("");
   const [sizeFit,         setSizeFit]         = useState("");
   const [deliveryReturns, setDeliveryReturns] = useState("");
-  const [basePrice,       setBasePrice]       = useState("");
-  const [gender,          setGender]          = useState("UNISEX");
-  const [categoryId,      setCategoryId]      = useState("");
 
-  // Flags
-  const [isNew,       setIsNew]       = useState(false);
+  // Step 3 — Variants (colour-first)
+  const [colors, setColors] = useState<ColorEntry[]>([emptyColor()]);
+
+  // Step 4 — Images
+  const [images,   setImages]   = useState<ImgEntry[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+
+  // Step 5 — Publish
+  const [isPublished, setIsPublished] = useState(true);
+  const [isNew,       setIsNew]       = useState(true);
   const [isFeatured,  setIsFeatured]  = useState(false);
-  const [isPublished, setIsPublished] = useState(false);
-
-  // Variants
-  const [variants, setVariants] = useState<Variant[]>([{ ...emptyVariant }]);
-
-  // Images (URLs — uploaded separately via /api/upload or pasted)
-  const [images,        setImages]        = useState<ImgEntry[]>([{ url:"", altText:"", isPrimary:true, variantId:"" }]);
-  const [uploadingIdx,  setUploadingIdx]  = useState<number | null>(null);
-
-  // New category inline
-  const [newCatName,   setNewCatName]   = useState("");
-  const [newCatGender, setNewCatGender] = useState("UNISEX");
-  const [addingCat,    setAddingCat]    = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/categories").then(r => r.json()).then(d => {
@@ -90,402 +143,670 @@ export default function NewProductPage() {
     });
   }, []);
 
-  // Auto-generate slug from name
   useEffect(() => {
-    if (!slugManual) setSlug(slugify(name));
-  }, [name, slugManual]);
+    if (!slugTouched) setSlug(slugify(name));
+  }, [name, slugTouched]);
 
-  // ── Variant helpers ────────────────────────────────────────────────
-  function updateVariant(i: number, field: keyof Variant, value: string) {
-    setVariants(prev => prev.map((v, idx) => idx === i ? { ...v, [field]: value } : v));
-  }
-
-  function addVariant() {
-    setVariants(prev => [...prev, { ...emptyVariant }]);
-  }
-
-  function removeVariant(i: number) {
-    if (variants.length === 1) return;
-    setVariants(prev => prev.filter((_, idx) => idx !== i));
-  }
-
-  function duplicateVariant(i: number) {
-    const copy = { ...variants[i], sku: "" };
-    setVariants(prev => [...prev.slice(0, i + 1), copy, ...prev.slice(i + 1)]);
-  }
-
-  // ── Image helpers ──────────────────────────────────────────────────
-  function updateImage(i: number, field: keyof ImgEntry, value: any) {
-    setImages(prev => prev.map((img, idx) => {
-      if (idx === i) return { ...img, [field]: value };
-      if (field === "isPrimary" && value === true) return { ...img, isPrimary: false };
-      return img;
-    }));
-  }
-
-  function addImage() {
-    setImages(prev => [...prev, { url:"", altText:"", isPrimary:false, variantId:"" }]);
-  }
-
-  function removeImage(i: number) {
-    if (images.length === 1) return;
-    setImages(prev => prev.filter((_, idx) => idx !== i));
-  }
-
-  async function uploadImage(i: number, file: File) {
-    setUploadingIdx(i);
-    const form = new FormData();
-    form.append("file", file);
-    form.append("folder", "products");
-    const r = await fetch("/api/upload", { method: "POST", body: form });
-    const d = await r.json();
-    if (d.success) updateImage(i, "url", d.data.url);
-    else alert(d.error ?? "Upload failed");
-    setUploadingIdx(null);
-  }
-
-  // ── Add category inline ────────────────────────────────────────────
+  // ── Category quick-add ─────────────────────────────────────────────
   async function handleAddCategory() {
-    if (!newCatName.trim()) return;
+    if (!newCat.trim()) return;
     setAddingCat(true);
     const r = await fetch("/api/admin/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newCatName, gender: newCatGender }),
+      body: JSON.stringify({ name: newCat, gender }),
     });
     const d = await r.json();
     if (d.success) {
       setCategories(prev => [...prev, d.data]);
       setCategoryId(d.data.id);
-      setNewCatName("");
-    } else {
-      alert(d.error ?? "Failed to create category");
-    }
+      setNewCat("");
+    } else alert(d.error ?? "Failed to create category");
     setAddingCat(false);
   }
 
+  async function handleDeleteCategory(id: string, catName: string) {
+    if (!confirm(`Delete category "${catName}"?\nThis only works if no products use it.`)) return;
+    setDeletingCat(id);
+    const r = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
+    const d = await r.json();
+    if (d.success) {
+      setCategories(prev => prev.filter(c => c.id !== id));
+      if (categoryId === id) setCategoryId("");
+    } else {
+      alert(d.error ?? "Failed to delete category");
+    }
+    setDeletingCat(null);
+  }
+
+  // ── Colour helpers ─────────────────────────────────────────────────
+  function updateColor(key: string, patch: Partial<Pick<ColorEntry, "label" | "hex">>) {
+    setColors(prev => prev.map(c => c.key === key ? { ...c, ...patch } : c));
+  }
+  function toggleSize(key: string, size: string) {
+    setColors(prev => prev.map(c => {
+      if (c.key !== key) return c;
+      const cur = c.sizes[size];
+      const enabled = !cur.enabled;
+      return {
+        ...c,
+        sizes: {
+          ...c.sizes,
+          [size]: {
+            ...cur,
+            enabled,
+            sku: enabled && !cur.sku ? makeSku(name, c.label, size) : cur.sku,
+          },
+        },
+      };
+    }));
+  }
+  function setSizeField(key: string, size: string, field: "stock" | "sku", value: string) {
+    setColors(prev => prev.map(c =>
+      c.key === key
+        ? { ...c, sizes: { ...c.sizes, [size]: { ...c.sizes[size], [field]: value } } }
+        : c
+    ));
+  }
+  function enableAllSizes(key: string) {
+    setColors(prev => prev.map(c => {
+      if (c.key !== key) return c;
+      return {
+        ...c,
+        sizes: Object.fromEntries(SIZES.map(s => [s, {
+          ...c.sizes[s],
+          enabled: true,
+          sku: c.sizes[s].sku || makeSku(name, c.label, s),
+        }])),
+      };
+    }));
+  }
+  function regenSkus(key: string) {
+    setColors(prev => prev.map(c => {
+      if (c.key !== key) return c;
+      return {
+        ...c,
+        sizes: Object.fromEntries(SIZES.map(s => [s, {
+          ...c.sizes[s],
+          sku: c.sizes[s].enabled ? makeSku(name, c.label, s) : c.sizes[s].sku,
+        }])),
+      };
+    }));
+  }
+
+  // ── Image helpers ──────────────────────────────────────────────────
+  async function uploadFiles(files: FileList | File[]) {
+    const arr = Array.from(files).filter(f => f.type.startsWith("image/"));
+    for (const file of arr) {
+      const key = uid();
+      setImages(prev => [...prev, { key, url: "", uploading: true, isPrimary: prev.length === 0 }]);
+      const form = new FormData();
+      form.append("file", file);
+      form.append("folder", "products");
+      try {
+        const r = await fetch("/api/upload", { method: "POST", body: form });
+        const d = await r.json();
+        if (d.success) {
+          setImages(prev => prev.map(img => img.key === key ? { ...img, url: d.data.url, uploading: false } : img));
+        } else {
+          setImages(prev => prev.filter(img => img.key !== key));
+          alert(d.error ?? "Upload failed");
+        }
+      } catch {
+        setImages(prev => prev.filter(img => img.key !== key));
+        alert("Upload failed — check your connection");
+      }
+    }
+  }
+  function addUrlImage() {
+    if (!urlInput.trim()) return;
+    setImages(prev => [...prev, { key: uid(), url: urlInput.trim(), uploading: false, isPrimary: prev.length === 0 }]);
+    setUrlInput("");
+  }
+  function removeImage(key: string) {
+    setImages(prev => {
+      const next = prev.filter(img => img.key !== key);
+      if (next.length && !next.some(i => i.isPrimary)) next[0].isPrimary = true;
+      return [...next];
+    });
+  }
+  function setPrimary(key: string) {
+    setImages(prev => prev.map(img => ({ ...img, isPrimary: img.key === key })));
+  }
+
+  // ── Validation per step ────────────────────────────────────────────
+  function stepError(s: number): string | null {
+    if (s === 0) {
+      if (!name.trim())      return "Product name is required.";
+      if (!type.trim())      return "Product type is required.";
+      if (!basePrice || parseFloat(basePrice) <= 0) return "Enter a valid price.";
+      if (!categoryId)       return "Select or create a category.";
+      return null;
+    }
+    if (s === 2) {
+      if (colors.length === 0) return "Add at least one colour.";
+      for (const c of colors) {
+        if (!c.label.trim()) return "Every colour needs a name.";
+        const enabled = SIZES.filter(sz => c.sizes[sz].enabled);
+        if (enabled.length === 0) return `Select at least one size for "${c.label}".`;
+        for (const sz of enabled) {
+          if (!c.sizes[sz].sku.trim()) return `SKU missing for ${c.label} / ${sz}.`;
+        }
+      }
+      return null;
+    }
+    if (s === 3) {
+      if (images.length === 0)            return "Add at least one product image.";
+      if (images.some(i => i.uploading))  return "Wait for uploads to finish.";
+      return null;
+    }
+    return null;
+  }
+
+  function next() {
+    const err = stepError(step);
+    if (err) { setError(err); return; }
+    setError(null);
+    setStep(s => Math.min(s + 1, STEPS.length - 1));
+  }
+  function back() {
+    setError(null);
+    setStep(s => Math.max(s - 1, 0));
+  }
+
   // ── Submit ─────────────────────────────────────────────────────────
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit() {
+    for (let s = 0; s < STEPS.length; s++) {
+      const err = stepError(s);
+      if (err) { setError(err); setStep(s); return; }
+    }
+    setSaving(true);
     setError(null);
 
-    if (!name || !type || !basePrice || !categoryId) {
-      setError("Please fill in all required fields (Name, Type, Price, Category).");
-      return;
-    }
-    if (variants.some(v => !v.colorLabel || !v.size || !v.sku)) {
-      setError("All variants must have a Colour, Size, and SKU.");
-      return;
-    }
-    if (images.some(img => !img.url.trim())) {
-      setError("All image entries must have a URL. Remove empty rows or upload an image.");
-      return;
-    }
+    const variants = colors.flatMap(c =>
+      SIZES.filter(sz => c.sizes[sz].enabled).map(sz => ({
+        colorLabel:    c.label.trim(),
+        colorHex:      c.hex,
+        size:          sz,
+        sku:           c.sizes[sz].sku.trim(),
+        stockQuantity: c.sizes[sz].stock || "0",
+        priceOverride: "",
+      }))
+    );
 
-    setSaving(true);
+    const imagePayload = images.map((img, i) => ({
+      url:       img.url,
+      altText:   name,
+      position:  i,
+      isPrimary: img.isPrimary,
+    }));
+
     const res = await fetch("/api/admin/products", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name, slug, type, description, editorNotes, sizeFit, deliveryReturns,
+        name: name.trim(), slug, type: type.trim(),
+        description, editorNotes, sizeFit, deliveryReturns,
         basePrice: parseFloat(basePrice), gender, categoryId,
         isNew, isFeatured, isPublished,
-        variants, images,
+        variants, images: imagePayload,
       }),
     });
     const data = await res.json();
     setSaving(false);
 
-    if (data.success) {
-      router.push("/admin/products");
-    } else {
-      setError(data.error ?? "Failed to create product.");
-    }
+    if (data.success) router.push("/admin/products");
+    else setError(data.error ?? "Failed to create product.");
   }
+
+  const totalVariants = colors.reduce(
+    (n, c) => n + SIZES.filter(sz => c.sizes[sz].enabled).length, 0
+  );
 
   // ── Render ─────────────────────────────────────────────────────────
   return (
-    <div className="p-4 md:p-8 font-serif max-w-4xl">
-      <div className="mb-6">
-        <button onClick={() => router.back()} className="text-[10px] tracking-[0.15em] text-[#8a7a6a] hover:text-[#1a1008] transition-colors">
-          ← Products
-        </button>
-        <h1 className="text-[20px] md:text-[22px] text-[#1a1008] tracking-wide mt-2">Add New Product</h1>
-      </div>
+    <div className="max-w-2xl mx-auto pb-16">
+
+      <Link href="/admin/products"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500
+          hover:text-slate-800 transition-colors mb-6">
+        <ArrowLeft className="w-4 h-4" /> Back to Products
+      </Link>
+
+      <StepIndicator current={step} />
 
       {error && (
-        <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 text-[11.5px] text-red-700 rounded">
-          {error}
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200
+          rounded-xl px-4 py-3 text-sm text-red-700 mb-5">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-7">
 
-        {/* ── Basic Info ── */}
-        <Section title="Basic Information">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Product Name" required>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} required
-                placeholder="e.g. Salim" className={inputClass} />
-            </Field>
-            <Field label="Slug (URL)" required>
-              <input type="text" value={slug}
-                onChange={e => { setSlug(slugify(e.target.value)); setSlugManual(true); }}
-                placeholder="auto-generated from name" className={inputClass} />
-              <p className="text-[10px] text-[#8a7a6a] mt-1">
-                Will appear at: /products/<strong>{slug || "..."}</strong>
-              </p>
-            </Field>
-            <Field label="Product Type" required>
-              <input type="text" value={type} onChange={e => setType(e.target.value)} required
-                placeholder="e.g. Contrast Raglan Shirt" className={inputClass} />
-            </Field>
-            <Field label="Base Price (₦)" required>
-              <input type="number" value={basePrice} onChange={e => setBasePrice(e.target.value)} required
-                min="0" step="0.01" placeholder="e.g. 45000" className={inputClass} />
-            </Field>
-            <Field label="Gender">
-              <select value={gender} onChange={e => setGender(e.target.value)} className={inputClass}>
-                {GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
-              </select>
-            </Field>
-            <Field label="Category" required>
-              <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputClass} required>
-                <option value="">Select a category…</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.gender})</option>)}
-              </select>
+        {/* ════ STEP 1 — BASICS ════ */}
+        {step === 0 && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">The essentials</h2>
+              <p className="text-sm text-slate-500 mt-0.5">Just the core details to get started.</p>
+            </div>
+
+            <div>
+              <label className={labelClass}>Product Name <span className="text-red-500">*</span></label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)}
+                placeholder="e.g. Salim" className={inputClass} autoFocus />
+              {slug && (
+                <p className="text-[11px] text-slate-400 mt-1.5">
+                  URL: /products/<span className="font-medium text-slate-500">{slug}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Product Type <span className="text-red-500">*</span></label>
+                <input type="text" value={type} onChange={e => setType(e.target.value)}
+                  placeholder="e.g. Contrast Raglan Shirt" className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Base Price (₦) <span className="text-red-500">*</span></label>
+                <input type="number" value={basePrice} onChange={e => setBasePrice(e.target.value)}
+                  min="0" step="0.01" placeholder="45000" className={inputClass} />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Gender</label>
+              <div className="grid grid-cols-3 gap-2">
+                {GENDERS.map(g => (
+                  <button key={g.value} type="button" onClick={() => setGender(g.value)}
+                    className={`py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                      gender === g.value
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/25"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
+                    }`}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Category <span className="text-red-500">*</span></label>
+              {categories.length === 0 ? (
+                <p className="text-xs text-slate-400 py-1.5">No categories yet — create one below.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {categories.map(c => {
+                    const selected = categoryId === c.id;
+                    return (
+                      <div key={c.id}
+                        className={`group flex items-center rounded-xl border transition-all overflow-hidden ${
+                          selected
+                            ? "bg-blue-600 border-blue-600 shadow-sm shadow-blue-500/25"
+                            : "bg-white border-slate-200 hover:border-blue-300"
+                        }`}>
+                        <button type="button" onClick={() => setCategoryId(selected ? "" : c.id)}
+                          className={`pl-3.5 pr-2 py-2 text-xs font-semibold transition-colors ${
+                            selected ? "text-white" : "text-slate-600"
+                          }`}>
+                          {c.name}
+                          <span className={`ml-1 text-[9px] uppercase ${
+                            selected ? "text-blue-200" : "text-slate-400"
+                          }`}>{c.gender}</span>
+                        </button>
+                        <button type="button"
+                          disabled={deletingCat === c.id}
+                          onClick={() => handleDeleteCategory(c.id, c.name)}
+                          title="Delete category"
+                          className={`pr-2.5 pl-1 py-2 transition-all ${
+                            selected
+                              ? "text-blue-200 hover:text-white"
+                              : "text-slate-300 hover:text-red-500"
+                          }`}>
+                          {deletingCat === c.id
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <Trash2 className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               <div className="flex gap-2 mt-2">
-                <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)}
-                  placeholder="New category name" className="flex-1 border border-[#e8e2db] px-3 py-1.5 text-[11px] outline-none focus:border-[#1a1008] font-serif" />
-                <select value={newCatGender} onChange={e => setNewCatGender(e.target.value)}
-                  className="border border-[#e8e2db] px-2 py-1.5 text-[11px] outline-none font-serif bg-white">
-                  {GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-                <button type="button" disabled={addingCat || !newCatName.trim()} onClick={handleAddCategory}
-                  className="border border-[#1a1008] px-3 py-1.5 text-[10px] tracking-wide text-[#1a1008]
-                    hover:bg-[#1a1008] hover:text-white transition-colors disabled:opacity-40">
-                  {addingCat ? "…" : "Add"}
+                <input type="text" value={newCat} onChange={e => setNewCat(e.target.value)}
+                  placeholder="Or create a new category…"
+                  className={`${inputClass} flex-1`} />
+                <button type="button" disabled={addingCat || !newCat.trim()} onClick={handleAddCategory}
+                  className="flex items-center gap-1.5 px-4 rounded-xl bg-slate-900 text-white
+                    text-xs font-semibold hover:bg-slate-700 transition-colors disabled:opacity-40">
+                  {addingCat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  Add
                 </button>
               </div>
-            </Field>
+            </div>
           </div>
-          <div className="mt-4">
-            <Field label="Short Description">
-              <textarea value={description} onChange={e => setDescription(e.target.value)}
-                rows={2} placeholder="Brief product description shown in listings…" className={textareaClass} />
-            </Field>
-          </div>
-        </Section>
+        )}
 
-        {/* ── Flags ── */}
-        <Section title="Status & Labels">
-          <div className="flex flex-wrap gap-6">
-            {[
-              { label:"Published (visible on site)", val:isPublished, set:setIsPublished },
-              { label:"New In (shows 'New In' badge)",  val:isNew,       set:setIsNew },
-              { label:"Featured",                       val:isFeatured,  set:setIsFeatured },
-            ].map(({ label, val, set }) => (
-              <label key={label} className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={val} onChange={e => set(e.target.checked)}
-                  className="w-4 h-4 accent-[#1a1008]" />
-                <span className="text-[11.5px] text-[#3a2e22]">{label}</span>
-              </label>
-            ))}
-          </div>
-        </Section>
+        {/* ════ STEP 2 — CONTENT ════ */}
+        {step === 1 && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Tell the story</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                All optional — you can fill these in later from the Edit page.
+              </p>
+            </div>
 
-        {/* ── Product page content ── */}
-        <Section title="Product Page Content">
-          <div className="space-y-4">
-            <Field label="Editor's Notes (accordion on product page)">
-              <textarea value={editorNotes} onChange={e => setEditorNotes(e.target.value)} rows={3}
-                placeholder="e.g. A modern essential reimagined with contrast raglan sleeves…"
+            <div>
+              <label className={labelClass}>Short Description</label>
+              <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
+                placeholder="Shown under the product name in collection listings…"
                 className={textareaClass} />
-            </Field>
-            <Field label="Size & Fit">
-              <textarea value={sizeFit} onChange={e => setSizeFit(e.target.value)} rows={2}
-                placeholder="e.g. Model is 6ft 1in and wears a size M. We recommend sizing true to size…"
+            </div>
+            <div>
+              <label className={labelClass}>Editor&apos;s Notes</label>
+              <textarea value={editorNotes} onChange={e => setEditorNotes(e.target.value)} rows={4}
+                placeholder="The detailed description shown in the product page accordion…"
                 className={textareaClass} />
-            </Field>
-            <Field label="Delivery & Returns">
-              <textarea value={deliveryReturns} onChange={e => setDeliveryReturns(e.target.value)} rows={2}
-                placeholder="e.g. Free UK delivery on orders over £150. Returns within 28 days…"
-                className={textareaClass} />
-            </Field>
+            </div>
+            <div>
+              <label className={labelClass}>Size &amp; Fit</label>
+              <textarea value={sizeFit} onChange={e => setSizeFit(e.target.value)} rows={3}
+                placeholder="Model measurements, fit guidance…" className={textareaClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Delivery &amp; Returns</label>
+              <textarea value={deliveryReturns} onChange={e => setDeliveryReturns(e.target.value)} rows={3}
+                placeholder="Shipping options, returns policy…" className={textareaClass} />
+            </div>
           </div>
-        </Section>
+        )}
 
-        {/* ── Variants ── */}
-        <Section title="Variants (Colour × Size)">
-          <p className="text-[10.5px] text-[#8a7a6a] mb-4">
-            Each row is one Colour + Size combination. Add one row per size per colour.
-          </p>
+        {/* ════ STEP 3 — VARIANTS ════ */}
+        {step === 2 && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Colours &amp; sizes</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Add each colour, then tick the sizes it comes in. SKUs are generated automatically.
+              </p>
+            </div>
 
-          {/* Header - desktop only */}
-          <div className="hidden md:grid grid-cols-[1fr_80px_90px_120px_80px_100px_auto] gap-2 mb-2">
-            {["Colour Label","Hex","Size","SKU","Stock","Price Override",""].map(h => (
-              <p key={h} className="text-[9.5px] tracking-[0.15em] text-[#8a7a6a] uppercase">{h}</p>
-            ))}
-          </div>
-
-          <div className="space-y-3">
-            {variants.map((v, i) => (
-              <div key={i} className="p-3 border border-[#e8e2db] rounded md:p-0 md:border-0">
-                {/* Mobile label */}
-                <p className="md:hidden text-[10px] tracking-[0.1em] text-[#8a7a6a] uppercase mb-2">
-                  Variant {i + 1}
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-[1fr_80px_90px_120px_80px_100px_auto] gap-2">
-                  <div>
-                    <label className="md:hidden text-[9.5px] text-[#8a7a6a] tracking-wide block mb-1">Colour Label</label>
-                    <input type="text" value={v.colorLabel} placeholder="Brown/Cream"
-                      onChange={e => updateVariant(i, "colorLabel", e.target.value)}
-                      className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="md:hidden text-[9.5px] text-[#8a7a6a] tracking-wide block mb-1">Hex</label>
-                    <input type="color" value={v.colorHex}
-                      onChange={e => updateVariant(i, "colorHex", e.target.value)}
-                      className="w-full h-[42px] border border-[#e8e2db] cursor-pointer bg-white" />
-                  </div>
-                  <div>
-                    <label className="md:hidden text-[9.5px] text-[#8a7a6a] tracking-wide block mb-1">Size</label>
-                    <select value={v.size} onChange={e => updateVariant(i, "size", e.target.value)}
-                      className={inputClass}>
-                      {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="md:hidden text-[9.5px] text-[#8a7a6a] tracking-wide block mb-1">SKU</label>
-                    <input type="text" value={v.sku} placeholder="TV-SALIM-BROWN-M"
-                      onChange={e => updateVariant(i, "sku", e.target.value)}
-                      className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="md:hidden text-[9.5px] text-[#8a7a6a] tracking-wide block mb-1">Stock</label>
-                    <input type="number" value={v.stockQuantity} min="0"
-                      onChange={e => updateVariant(i, "stockQuantity", e.target.value)}
-                      className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="md:hidden text-[9.5px] text-[#8a7a6a] tracking-wide block mb-1">Price Override</label>
-                    <input type="number" value={v.priceOverride} min="0" step="0.01"
-                      placeholder="Optional"
-                      onChange={e => updateVariant(i, "priceOverride", e.target.value)}
-                      className={inputClass} />
-                  </div>
-                  <div className="flex items-center gap-1.5 col-span-2 md:col-span-1">
-                    <button type="button" onClick={() => duplicateVariant(i)} title="Duplicate"
-                      className="text-[10px] text-[#8a7a6a] hover:text-[#1a1008] border border-[#e8e2db] px-2 py-1.5 hover:border-[#1a1008] transition-colors">
-                      ⊕
-                    </button>
-                    <button type="button" onClick={() => removeVariant(i)} title="Remove"
-                      disabled={variants.length === 1}
-                      className="text-[10px] text-red-400 hover:text-red-600 border border-[#e8e2db] px-2 py-1.5 hover:border-red-300 transition-colors disabled:opacity-30">
-                      ×
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button type="button" onClick={addVariant}
-            className="mt-3 border border-dashed border-[#c8c0b8] px-4 py-2 text-[10.5px]
-              tracking-wide text-[#8a7a6a] hover:border-[#1a1008] hover:text-[#1a1008]
-              transition-colors w-full text-center">
-            + Add Variant Row
-          </button>
-
-          <div className="mt-3 bg-[#faf9f7] border border-[#e8e2db] rounded p-3">
-            <p className="text-[10px] text-[#8a7a6a] tracking-wide">
-              <strong className="text-[#1a1008]">Tip:</strong> Use the ⊕ button to duplicate a row, then just change the Size.
-              For example: add "Brown/Cream" in XS, duplicate 5 times, then change each to S, M, L, XL, XXL.
-            </p>
-          </div>
-        </Section>
-
-        {/* ── Images ── */}
-        <Section title="Product Images">
-          <p className="text-[10.5px] text-[#8a7a6a] mb-4">
-            Upload images or paste URLs. The first image (marked Primary) will show in product listings.
-          </p>
-
-          <div className="space-y-3">
-            {images.map((img, i) => (
-              <div key={i} className="border border-[#e8e2db] rounded p-3">
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-3 items-end">
-                  <div>
-                    <label className="block text-[9.5px] tracking-[0.15em] text-[#8a7a6a] uppercase mb-1">
-                      Image URL
+            {colors.map((color, ci) => {
+              const enabledSizes = SIZES.filter(sz => color.sizes[sz].enabled);
+              return (
+                <div key={color.key} className="border border-slate-200 rounded-2xl p-4 space-y-4">
+                  {/* Colour header */}
+                  <div className="flex items-center gap-3">
+                    <label className="relative cursor-pointer flex-shrink-0">
+                      <input type="color" value={color.hex}
+                        onChange={e => updateColor(color.key, { hex: e.target.value })}
+                        className="absolute inset-0 opacity-0 cursor-pointer" />
+                      <span className="block w-10 h-10 rounded-xl border-2 border-white shadow-md"
+                        style={{ backgroundColor: color.hex }} />
                     </label>
-                    <div className="flex gap-2">
-                      <input type="text" value={img.url} placeholder="https://… or upload below"
-                        onChange={e => updateImage(i, "url", e.target.value)}
-                        className="flex-1 border border-[#e8e2db] px-3 py-2 text-[11px] outline-none focus:border-[#1a1008] font-serif bg-white" />
-                      <label className={`border border-[#c8c0b8] px-3 py-2 text-[10px] cursor-pointer
-                        hover:border-[#1a1008] transition-colors flex items-center whitespace-nowrap ${
-                          uploadingIdx === i ? "opacity-50 pointer-events-none" : ""
-                        }`}>
-                        {uploadingIdx === i ? "Uploading…" : "Upload"}
-                        <input type="file" accept="image/*" className="hidden"
-                          onChange={e => e.target.files?.[0] && uploadImage(i, e.target.files[0])} />
-                      </label>
+                    <input type="text" value={color.label}
+                      onChange={e => updateColor(color.key, { label: e.target.value })}
+                      placeholder={`Colour name, e.g. Brown/Cream`}
+                      className={`${inputClass} flex-1`} />
+                    {colors.length > 1 && (
+                      <button type="button"
+                        onClick={() => setColors(prev => prev.filter(c => c.key !== color.key))}
+                        className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Size checkboxes */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-slate-600">Available sizes</p>
+                      <div className="flex items-center gap-3">
+                        <button type="button" onClick={() => enableAllSizes(color.key)}
+                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-700">
+                          All sizes
+                        </button>
+                        {enabledSizes.length > 0 && (
+                          <button type="button" onClick={() => regenSkus(color.key)}
+                            className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-700"
+                            title="Regenerate SKUs from current name + colour">
+                            <RefreshCw className="w-3 h-3" /> Regen SKUs
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-6 gap-2">
+                      {SIZES.map(sz => {
+                        const on = color.sizes[sz].enabled;
+                        return (
+                          <button key={sz} type="button" onClick={() => toggleSize(color.key, sz)}
+                            className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                              on
+                                ? "bg-blue-600 text-white border-blue-600"
+                                : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                            }`}>
+                            {sz}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-[9.5px] tracking-[0.15em] text-[#8a7a6a] uppercase mb-1">Alt text</label>
-                    <input type="text" value={img.altText} placeholder="Description"
-                      onChange={e => updateImage(i, "altText", e.target.value)}
-                      className="w-full border border-[#e8e2db] px-3 py-2 text-[11px] outline-none focus:border-[#1a1008] font-serif bg-white" />
-                  </div>
-                  <label className="flex items-center gap-1.5 cursor-pointer self-end pb-2">
-                    <input type="radio" name="primaryImage" checked={img.isPrimary}
-                      onChange={() => updateImage(i, "isPrimary", true)}
-                      className="accent-[#1a1008]" />
-                    <span className="text-[10.5px] text-[#3a2e22] whitespace-nowrap">Primary</span>
-                  </label>
-                  <button type="button" onClick={() => removeImage(i)} disabled={images.length === 1}
-                    className="text-red-400 hover:text-red-600 border border-[#e8e2db] px-2 py-2
-                      hover:border-red-300 transition-colors disabled:opacity-30 self-end text-[12px]">
-                    ×
-                  </button>
+
+                  {/* Stock + SKU per enabled size */}
+                  {enabledSizes.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="hidden sm:grid grid-cols-[44px_1fr_90px] gap-2 px-1">
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase">Size</p>
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase">SKU</p>
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase">Stock</p>
+                      </div>
+                      {enabledSizes.map(sz => (
+                        <div key={sz} className="grid grid-cols-[44px_1fr_90px] gap-2 items-center">
+                          <span className="text-xs font-bold text-slate-700 text-center bg-slate-100
+                            rounded-lg py-2">{sz}</span>
+                          <input type="text" value={color.sizes[sz].sku}
+                            onChange={e => setSizeField(color.key, sz, "sku", e.target.value)}
+                            className={`${inputClass} !py-2 !text-xs font-mono`} />
+                          <input type="number" min="0" value={color.sizes[sz].stock}
+                            onChange={e => setSizeField(color.key, sz, "stock", e.target.value)}
+                            className={`${inputClass} !py-2 !text-xs text-center`} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+              );
+            })}
 
-                {/* Preview */}
-                {img.url && (
-                  <div className="mt-2 flex items-center gap-3">
-                    <img src={img.url} alt="preview" className="w-14 h-20 object-cover object-top border border-[#e8e2db]" />
-                    <p className="text-[10px] text-green-600">✓ Image loaded</p>
-                  </div>
-                )}
-              </div>
-            ))}
+            <button type="button" onClick={() => setColors(prev => [...prev, emptyColor()])}
+              className="w-full flex items-center justify-center gap-2 border-2 border-dashed
+                border-slate-200 rounded-2xl py-3.5 text-sm font-semibold text-slate-500
+                hover:border-blue-300 hover:text-blue-600 transition-all">
+              <Plus className="w-4 h-4" /> Add Another Colour
+            </button>
+
+            {totalVariants > 0 && (
+              <p className="text-xs text-slate-400 text-center">
+                {totalVariants} variant{totalVariants !== 1 ? "s" : ""} will be created
+              </p>
+            )}
           </div>
+        )}
 
-          <button type="button" onClick={addImage}
-            className="mt-3 border border-dashed border-[#c8c0b8] px-4 py-2 text-[10.5px]
-              tracking-wide text-[#8a7a6a] hover:border-[#1a1008] hover:text-[#1a1008]
-              transition-colors w-full text-center">
-            + Add Image Row
-          </button>
-        </Section>
+        {/* ════ STEP 4 — IMAGES ════ */}
+        {step === 3 && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Product images</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Drop files below or paste URLs. Star one image as the primary.
+              </p>
+            </div>
 
-        {/* ── Submit ── */}
-        <div className="flex gap-3 pb-12">
-          <button type="submit" disabled={saving}
-            className="bg-[#1a1008] text-white text-[11px] tracking-[0.2em] uppercase
-              px-8 py-3.5 hover:bg-[#3a2e22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            {saving ? "Creating product…" : "Create Product"}
-          </button>
-          <button type="button" onClick={() => router.back()}
-            className="border border-[#e8e2db] text-[11px] tracking-[0.15em] uppercase
-              px-6 py-3.5 text-[#8a7a6a] hover:border-[#1a1008] hover:text-[#1a1008] transition-colors">
-            Cancel
-          </button>
+            {/* Drop zone */}
+            <label
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => {
+                e.preventDefault(); setDragOver(false);
+                if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+              }}
+              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed
+                rounded-2xl py-10 cursor-pointer transition-all ${
+                dragOver
+                  ? "border-blue-400 bg-blue-50"
+                  : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
+              }`}>
+              <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center">
+                <UploadCloud className="w-5 h-5 text-blue-600" />
+              </div>
+              <p className="text-sm font-semibold text-slate-700">
+                Drop images here or <span className="text-blue-600">browse</span>
+              </p>
+              <p className="text-xs text-slate-400">PNG, JPG, WEBP — multiple files welcome</p>
+              <input type="file" accept="image/*" multiple className="hidden"
+                onChange={e => e.target.files?.length && uploadFiles(e.target.files)} />
+            </label>
+
+            {/* URL input */}
+            <div className="flex gap-2">
+              <input type="text" value={urlInput} onChange={e => setUrlInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addUrlImage())}
+                placeholder="…or paste an image URL"
+                className={`${inputClass} flex-1`} />
+              <button type="button" onClick={addUrlImage} disabled={!urlInput.trim()}
+                className="px-4 rounded-xl bg-slate-900 text-white text-xs font-semibold
+                  hover:bg-slate-700 transition-colors disabled:opacity-40">
+                Add
+              </button>
+            </div>
+
+            {/* Image grid */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {images.map(img => (
+                  <div key={img.key} className="relative group rounded-xl overflow-hidden
+                    border border-slate-200 bg-slate-50" style={{ aspectRatio: "2/3" }}>
+                    {img.uploading ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                      </div>
+                    ) : (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.url} alt="" className="w-full h-full object-cover object-top" />
+                        {/* Primary badge / set-primary */}
+                        <button type="button" onClick={() => setPrimary(img.key)}
+                          className={`absolute top-1.5 left-1.5 p-1 rounded-lg transition-all ${
+                            img.isPrimary
+                              ? "bg-amber-400 text-white"
+                              : "bg-black/40 text-white opacity-0 group-hover:opacity-100 hover:bg-amber-400"
+                          }`}
+                          title={img.isPrimary ? "Primary image" : "Set as primary"}>
+                          <Star className="w-3 h-3" fill={img.isPrimary ? "currentColor" : "none"} />
+                        </button>
+                        {/* Remove */}
+                        <button type="button" onClick={() => removeImage(img.key)}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/40 text-white
+                            opacity-0 group-hover:opacity-100 hover:bg-red-500 transition-all">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ════ STEP 5 — PUBLISH ════ */}
+        {step === 4 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Review &amp; publish</h2>
+              <p className="text-sm text-slate-500 mt-0.5">One last look before it goes live.</p>
+            </div>
+
+            {/* Summary */}
+            <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4 space-y-2.5">
+              {[
+                ["Name",     name || "—"],
+                ["Type",     type || "—"],
+                ["Price",    basePrice ? `₦${Number(basePrice).toLocaleString()}` : "—"],
+                ["Gender",   GENDERS.find(g => g.value === gender)?.label ?? gender],
+                ["Category", categories.find(c => c.id === categoryId)?.name ?? "—"],
+                ["Colours",  colors.map(c => c.label).filter(Boolean).join(", ") || "—"],
+                ["Variants", String(totalVariants)],
+                ["Images",   String(images.length)],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-start justify-between gap-4">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{k}</span>
+                  <span className="text-sm font-medium text-slate-800 text-right">{v}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Toggles */}
+            <div className="space-y-3">
+              {[
+                { label: "Publish immediately", desc: "Product will be visible on the store", val: isPublished, set: setIsPublished },
+                { label: "New In badge",        desc: "Shows the 'New In' tag on cards",       val: isNew,       set: setIsNew       },
+                { label: "Featured",            desc: "Highlight in featured sections",        val: isFeatured,  set: setIsFeatured  },
+              ].map(({ label, desc, val, set }) => (
+                <button key={label} type="button" onClick={() => set(!val)}
+                  className="w-full flex items-center justify-between gap-4 p-3.5 rounded-xl
+                    border border-slate-200 hover:border-blue-300 transition-all text-left">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{label}</p>
+                    <p className="text-xs text-slate-400">{desc}</p>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full p-0.5 transition-colors flex-shrink-0 ${
+                    val ? "bg-blue-600" : "bg-slate-200"
+                  }`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                      val ? "translate-x-4" : ""
+                    }`} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Navigation ── */}
+        <div className="flex items-center justify-between mt-8 pt-5 border-t border-slate-100">
+          {step > 0 ? (
+            <button type="button" onClick={back}
+              className="flex items-center gap-1.5 text-sm font-semibold text-slate-500
+                hover:text-slate-800 transition-colors px-3 py-2">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+          ) : <span />}
+
+          {step < STEPS.length - 1 ? (
+            <button type="button" onClick={next}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white
+                text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors
+                shadow-sm shadow-blue-500/25">
+              Continue <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button type="button" onClick={handleSubmit} disabled={saving}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-violet-600
+                hover:from-blue-700 hover:to-violet-700 text-white text-sm font-semibold
+                px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-500/30
+                disabled:opacity-60">
+              {saving
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</>
+                : <><Sparkles className="w-4 h-4" /> Create Product</>}
+            </button>
+          )}
         </div>
-
-      </form>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 // src/app/admin/layout.tsx
-
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import prisma from "@/lib/prisma";

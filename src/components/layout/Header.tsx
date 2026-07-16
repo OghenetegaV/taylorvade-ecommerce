@@ -99,7 +99,7 @@ const FULL_TEXT = "Taylor Vade";
 
 // Shared responsive icon size class
 // mobile: 16×16  |  desktop: 18×18
-const ICON = "w-[16px] h-[16px] md:w-[18px] md:h-[18px]";
+const ICON = "w-[16px] h-[16px] md:w-[20px] md:h-[20px]";
 
 export default function Header() {
   const router = useRouter();
@@ -193,7 +193,7 @@ export default function Header() {
 
           {/* Centered logo */}
           <Link href="/" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="relative w-[150px] md:w-[360px] h-[30px] md:h-[40px]">
+            <div className="relative w-[150px] md:w-[400px] h-[40px] md:h-[50px]">
               <Image src="/logo.png" alt="Taylor Vade" fill priority className="object-contain"/>
             </div>
           </Link>
