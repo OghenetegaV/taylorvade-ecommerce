@@ -1,7 +1,7 @@
 // src/types/index.ts
 // Shared TypeScript types used across the app
 
-export type ApiResponse<T = null> = {
+export type ApiResponse<T = unknown> = {
   success: boolean;
   data?: T;
   error?: string;

@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import type { ApiResponse } from "@/types";
+import type { Prisma } from "@/generated/prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,8 +23,7 @@ export async function GET(request: NextRequest) {
     const skip      = (page - 1) * limit;
     // ──────────────────────────────────────────────────────────────
 
-    const where: Parameters<typeof prisma.product.findMany>[0]["where"] = {
-      isPublished: true,
+const where: Prisma.ProductWhereInput = {      isPublished: true,
       ...(gender && ["MEN", "WOMEN", "UNISEX"].includes(gender)
         ? { gender: gender as "MEN" | "WOMEN" | "UNISEX" }
         : {}),

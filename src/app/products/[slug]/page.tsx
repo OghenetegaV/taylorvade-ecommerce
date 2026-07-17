@@ -81,7 +81,7 @@ export default async function ProductRoute({
   const swatchImages = [...colorMap.values()];
 
   // Unique sizes, sorted
-  const sizes = [...new Set(product.variants.map((v: any) => v.size as string))]
+const sizes: string[] = [...new Set<string>(product.variants.map((v: any) => v.size as string))]
     .sort((a, b) => {
       const ai = SIZE_ORDER.indexOf(a);
       const bi = SIZE_ORDER.indexOf(b);

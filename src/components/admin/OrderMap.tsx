@@ -55,8 +55,8 @@ export default function OrderMap({ data }: Props) {
       >
         <ZoomableGroup>
           <Geographies geography={GEO_URL}>
-            {({ geographies }) =>
-              geographies.map(geo => {
+            {({ geographies }: { geographies: any[] }) =>
+  geographies.map((geo: any) => {
                 const numCode = parseInt(geo.id);
                 const count   = countryMap[numCode] ?? 0;
                 return (
