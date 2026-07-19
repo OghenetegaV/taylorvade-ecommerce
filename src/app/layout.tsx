@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "@/app/globals.css";
 import { Cormorant_Garamond, Great_Vibes } from "next/font/google";
 import ConditionalFooter from "@/components/layout/ConditionalFooter";
 // 1. Import your Header component here (adjust the path if yours is named differently or located elsewhere)
