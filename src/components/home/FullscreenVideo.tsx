@@ -43,24 +43,31 @@ export default function FullscreenVideo() {
         <video
           ref={videoRef1}
           className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 block ${
-            activeVideo === 1 ? "opacity-100 z-20 scale-100" : "opacity-5 z-10 scale-98 pointer-events-none"
+            activeVideo === 1 ? "opacity-100 z-20 scale-100" : "opacity-0 z-10 scale-98 pointer-events-none"
           }`}
-          src="/videos/video.mp4"
           poster="/videos/campaign-poster.jpg"
           autoPlay
           muted
           playsInline
-        />
+          preload="auto"
+        >
+          <source src="/videos/video.webm" type="video/webm" />
+          <source src="/videos/video.mp4" type="video/mp4" />
+        </video>
+
         <video
           ref={videoRef2}
           className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 block ${
-            activeVideo === 2 ? "opacity-100 z-20 scale-100" : "opacity-5 z-10 scale-98 pointer-events-none"
+            activeVideo === 2 ? "opacity-100 z-20 scale-100" : "opacity-0 z-10 scale-98 pointer-events-none"
           }`}
-          src="/videos/video.mp4"
           poster="/videos/campaign-poster.jpg"
           muted
           playsInline
-        />
+          preload="auto"
+        >
+          <source src="/videos/video.webm" type="video/webm" />
+          <source src="/videos/video.mp4" type="video/mp4" />
+        </video>
       </div>
     </section>
   );
