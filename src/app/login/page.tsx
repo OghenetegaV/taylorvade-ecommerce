@@ -45,7 +45,7 @@ function LoginForm() {
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-10">
           <Link href="/">
-            <h1 className="text-[38px] text-[#1a1008] leading-none" style={{ fontFamily: "var(--font-script), cursive" }}>Taylor Vade</h1>
+            {/* <h1 className="text-[38px] text-[#1a1008] leading-none" style={{ fontFamily: "var(--font-script), cursive" }}>Taylor Vade</h1> */}
           </Link>
           <p className="text-[10px] tracking-[0.3em] text-[#8a7a6a] uppercase mt-2">Sign in to your account</p>
         </div>
