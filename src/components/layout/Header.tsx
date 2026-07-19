@@ -1,5 +1,3 @@
-// src/components/layout/Header.tsx
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -24,13 +22,6 @@ const SearchIcon = ({ className }: { className?: string }) => (
     stroke="#3a2e22" strokeWidth="1" strokeLinecap="round">
     <circle cx="11" cy="11" r="7"/>
     <line x1="16.5" y1="16.5" x2="22" y2="22"/>
-  </svg>
-);
-
-const StarIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none"
-    stroke="#3a2e22" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
   </svg>
 );
 
@@ -78,7 +69,6 @@ const NigeriaFlag = () => (
   </svg>
 );
 
-// ── Nav data (unchanged) ──────────────────────────────────────────────────────
 const primaryLinks = [
   { label: "Taylor Vade Woman",  href: "/collections/woman" },
   { label: "Taylor Vade Man",    href: "/collections/man" },
@@ -96,9 +86,6 @@ const ALL_COUNTRIES: string[] = ["Afghanistan","Aland","Albania","Algeria","Amer
 const ALL_CURRENCIES: string[] = ["AED","AFN","ALL","AMD","ANG","AOA","ARS","AUD","AWG","AZN","BAM","BBD","BDT","BHD","BIF","BMD","BND","BOB","BOV","BRL","BSD","BTN","BWP","BYN","BZD","CAD","CDF","CHE","CHF","CHW","CLF","CLP","CNY","COP","CRC","CUP","CVE","CZK","DJF","DKK","DOP","DZD","EGP","ERN","ETB","EUR","FJD","FKP","GBP","GEL","GHS","GIP","GMD","GNF","GTQ","GYD","HKD","HNL","HTG","HUF","IDR","ILS","INR","IQD","IRR","ISK","JMD","JOD","JPY","KES","KGS","KHR","KMF","KPW","KRW","KWD","KYD","KZT","LAK","LBP","LKR","LRD","LSL","LYD","MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRU","MUR","MVR","MWK","MXN","MYR","MZN","NAD","NGN","NIO","NOK","NPR","NZD","OMR","PAB","PEN","PGK","PHP","PKR","PLN","PYG","QAR","RON","RSD","RUB","RWF","SAR","SBD","SCR","SDG","SEK","SGD","SHP","SLL","SOS","SRD","SSP","STN","SVC","SYP","SZL","THB","TJS","TMT","TND","TOP","TRY","TTD","TWD","TZS","UAH","UGX","USD","USN","USS","UYI","UYU","UZS","VES","VND","VUV","WST","XAF","XCD","XOF","XPF","YER","ZAR","ZMW"];
 
 const FULL_TEXT = "Taylor Vade";
-
-// Shared responsive icon size class
-// mobile: 16×16  |  desktop: 18×18
 const ICON = "w-[16px] h-[16px] md:w-[20px] md:h-[20px]";
 
 export default function Header() {
@@ -116,7 +103,6 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Typewriter effect (unchanged)
   useEffect(() => {
     if (!menuOpen) { setDisplayed(""); return; }
     let i = 0;
@@ -129,7 +115,6 @@ export default function Header() {
     return () => clearInterval(iv);
   }, [menuOpen]);
 
-  // Load saved region preferences
   useEffect(() => {
     const savedCountry  = localStorage.getItem("tv_country");
     const savedCurrency = localStorage.getItem("tv_currency");
@@ -137,7 +122,6 @@ export default function Header() {
     if (savedCurrency) setCurrency(savedCurrency);
   }, []);
 
-  // Auth state
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -149,7 +133,6 @@ export default function Header() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch cart count on mount
   useEffect(() => {
     fetch("/api/cart").then(r => r.json()).then(d => {
       if (d.success) setCartCount(d.data.itemCount);
@@ -178,52 +161,27 @@ export default function Header() {
 
   return (
     <>
-      {/* ── Header bar ────────────────────────────────────────────────── */}
       <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-[#FAF9F780]"
-          : "bg-transparent"
+        scrolled ? "bg-[#FAF9F780]" : "bg-transparent"
       }`}>
         <div className="relative flex items-center justify-between px-5 md:px-9 py-6">
-
-          {/* Hamburger */}
           <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="flex items-center">
             <HamburgerIcon />
           </button>
 
-          {/* Centered logo */}
           <Link href="/" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <div className="relative w-[150px] md:w-[400px] h-[40px] md:h-[50px]">
               <Image src="/logo.png" alt="Taylor Vade" fill priority className="object-contain"/>
             </div>
           </Link>
 
-          {/* Right icons — opacity-75 for refined, delicate look matching inspo */}
           <div className="flex items-center gap-[10px] md:gap-[14px] opacity-75">
-
-            {/*
-              CHANGE: SearchIcon now opens the hamburger drawer (where the search bar lives).
-              CHANGE: Hidden on mobile — md:flex only.
-            */}
-            <button
-              aria-label="Search"
-              onClick={() => setMenuOpen(true)}
-              className="hidden md:flex"
-            >
+            <button aria-label="Search" onClick={() => setMenuOpen(true)} className="hidden md:flex">
               <SearchIcon className={ICON} />
             </button>
-
-            {/* Wishlist — links to account or login */}
-            {/* <Link href={isLoggedIn ? "/account" : "/login"} aria-label="Wishlist">
-              <StarIcon className={ICON} />
-            </Link> */}
-
-            {/* Account */}
             <Link href={isLoggedIn ? "/account" : "/login"} aria-label="Account">
               <UserIcon className={ICON} />
             </Link>
-
-            {/* Bag + count badge */}
             <button aria-label="Bag" onClick={() => setCartOpen(true)} className="relative">
               <BagIcon className={ICON} />
               {cartCount > 0 && (
@@ -234,8 +192,6 @@ export default function Header() {
                 </span>
               )}
             </button>
-
-            {/* Region flag (unchanged) */}
             <button
               aria-label="Region"
               onClick={() => setRegionOpen(true)}
@@ -245,11 +201,9 @@ export default function Header() {
               <NigeriaFlag />
             </button>
           </div>
-
         </div>
       </header>
 
-      {/* ── Menu backdrop (unchanged) ─────────────────────────────────── */}
       <div
         onClick={() => setMenuOpen(false)}
         className={`fixed inset-0 z-[90] bg-black/40 transition-opacity duration-300 ${
@@ -257,7 +211,6 @@ export default function Header() {
         }`}
       />
 
-      {/* ── Drawer (unchanged) ───────────────────────────────────────── */}
       <div className={`fixed top-0 left-0 h-full w-[290px] max-w-[80vw] z-[100] flex flex-col
         bg-[#FAF9F7] transition-transform duration-300 ease-in-out ${
         menuOpen ? "translate-x-0" : "-translate-x-full"
@@ -309,77 +262,69 @@ export default function Header() {
         </div>
       </div>
 
-      {/* ── Region modal backdrop (unchanged) ────────────────────────── */}
-      <div
-        onClick={() => setRegionOpen(false)}
-        className={`fixed inset-0 z-[110] bg-black/50 transition-opacity duration-300 ${
-          regionOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-      />
-
-      {/* ── Region modal (unchanged except "Update Preferences" saves) ── */}
-      <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
-        <div
-          className={`relative bg-[#FAF9F7] w-[90vw] max-w-[420px] px-10 py-10
-            pointer-events-auto transition-all duration-300 ${
-            regionOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
-          style={{ boxShadow: "0 8px 40px 0 rgba(58,46,34,0.18), 0 1.5px 8px 0 rgba(58,46,34,0.10)" }}
-        >
-          <button onClick={() => setRegionOpen(false)}
-            className="absolute top-4 right-4 text-[#3a2e22] hover:opacity-50 transition-opacity">
-            <X size={16} strokeWidth={1.3} />
-          </button>
-
-          <div className="flex justify-center mb-5"><EiffelIcon /></div>
-
-          <p className="text-center text-[11px] tracking-[0.12em] text-[#3a2e22] mb-2 font-serif">Ship To:</p>
-          <div className="relative mb-5">
-            <select value={country} onChange={e => setCountry(e.target.value)}
-              className="w-full border border-[#3a2e22] bg-[#FAF9F7] px-4 py-2.5
-                text-[11px] text-center tracking-[0.06em] text-[#3a2e22] font-serif
-                appearance-none outline-none cursor-pointer">
-              {ALL_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"><ChevronDown /></div>
-          </div>
-
-          <p className="text-center text-[11px] tracking-[0.12em] text-[#3a2e22] mb-2 font-serif">View Currency In:</p>
-          <div className="relative mb-6">
-            <select value={currency} onChange={e => setCurrency(e.target.value)}
-              className="w-full border border-[#3a2e22] bg-[#FAF9F7] px-4 py-2.5
-                text-[11px] text-center tracking-[0.06em] text-[#3a2e22] font-serif
-                appearance-none outline-none cursor-pointer">
-              <optgroup label="Suggested Currencies">
-                {SUGGESTED_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </optgroup>
-              <optgroup label="All Currencies">
-                {ALL_CURRENCIES.filter(c => !SUGGESTED_CURRENCIES.includes(c)).map(c => <option key={c} value={c}>{c}</option>)}
-              </optgroup>
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"><ChevronDown /></div>
-          </div>
-
-          <div className="text-center text-[10px] tracking-[0.06em] text-[#3a2e22] leading-loose mb-6 font-serif">
-            <p>Free Delivery Over £150</p>
-            <p>£2.99 Fixed-Fee UK Postal Returns</p>
-            <p>Free In-Store Returns</p>
-          </div>
-
-          <div className="text-center">
-            <button onClick={handleUpdatePreferences}
-              className="text-[11px] tracking-[0.12em] text-[#3a2e22] font-serif
-                underline underline-offset-4 hover:opacity-50 transition-opacity">
-              Update Preferences
+      {regionOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center">
+          <div
+            onClick={() => setRegionOpen(false)}
+            className="fixed inset-0 z-[110] bg-black/50 transition-opacity duration-300"
+          />
+          <div
+            className="relative bg-[#FAF9F7] w-[90vw] max-w-[420px] px-10 py-10 z-[120] transition-all duration-300 opacity-100 translate-y-0"
+            style={{ boxShadow: "0 8px 40px 0 rgba(58,46,34,0.18), 0 1.5px 8px 0 rgba(58,46,34,0.10)" }}
+          >
+            <button onClick={() => setRegionOpen(false)}
+              className="absolute top-4 right-4 text-[#3a2e22] hover:opacity-50 transition-opacity">
+              <X size={16} strokeWidth={1.3} />
             </button>
+
+            <div className="flex justify-center mb-5"><EiffelIcon /></div>
+
+            <p className="text-center text-[11px] tracking-[0.12em] text-[#3a2e22] mb-2 font-serif">Ship To:</p>
+            <div className="relative mb-5">
+              <select value={country} onChange={e => setCountry(e.target.value)}
+                className="w-full border border-[#3a2e22] bg-[#FAF9F7] px-4 py-2.5
+                  text-[11px] text-center tracking-[0.06em] text-[#3a2e22] font-serif
+                  appearance-none outline-none cursor-pointer">
+                {ALL_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"><ChevronDown /></div>
+            </div>
+
+            <p className="text-center text-[11px] tracking-[0.12em] text-[#3a2e22] mb-2 font-serif">View Currency In:</p>
+            <div className="relative mb-6">
+              <select value={currency} onChange={e => setCurrency(e.target.value)}
+                className="w-full border border-[#3a2e22] bg-[#FAF9F7] px-4 py-2.5
+                  text-[11px] text-center tracking-[0.06em] text-[#3a2e22] font-serif
+                  appearance-none outline-none cursor-pointer">
+                <optgroup label="Suggested Currencies">
+                  {SUGGESTED_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </optgroup>
+                <optgroup label="All Currencies">
+                  {ALL_CURRENCIES.filter(c => !SUGGESTED_CURRENCIES.includes(c)).map(c => <option key={c} value={c}>{c}</option>)}
+                </optgroup>
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"><ChevronDown /></div>
+            </div>
+
+            <div className="text-center text-[10px] tracking-[0.06em] text-[#3a2e22] leading-loose mb-6 font-serif">
+              <p>Free Delivery Over £150</p>
+              <p>£2.99 Fixed-Fee UK Postal Returns</p>
+              <p>Free In-Store Returns</p>
+            </div>
+
+            <div className="text-center">
+              <button onClick={handleUpdatePreferences}
+                className="text-[11px] tracking-[0.12em] text-[#3a2e22] font-serif
+                  underline underline-offset-4 hover:opacity-50 transition-opacity">
+                Update Preferences
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* SearchOverlay kept for desktop use via drawer, but kept available */}
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
 
-      {/* Cart sidebar */}
       <CartSidebar
         open={cartOpen}
         onClose={() => setCartOpen(false)}
