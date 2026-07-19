@@ -11,24 +11,23 @@ interface RelatedItem  { slug: string; image: string; name: string; description:
 interface Variant      { id: string; size: string; colorLabel: string; stockQuantity: number; priceOverride?: number | null; }
 
 export interface ProductPageProps {
-  name:             string;
-  colorLabel:       string;
-  type:             string;
-  price:            number;
-  currency?:        string;
-  isNew?:           boolean;
-  images:           string[];
-  swatchImages?:    SwatchImage[];
-  sizes?:           string[];
-  orderDeadline?:   { hrs: number; mins: number; date: string };
-  editorNotes?:     string;
-  sizeFit?:         string;
+  name:           string;
+  colorLabel:     string;
+  type:           string;
+  price:          number;
+  currency?:      string;
+  isNew?:         boolean;
+  images:         string[];
+  swatchImages?:  SwatchImage[];
+  sizes?:         string[];
+  orderDeadline?: { hrs: number; mins: number; date: string };
+  editorNotes?:   string;
+  sizeFit?:       string;
   deliveryReturns?: string;
-  shopTheLook?:     ShopItem[];
-  selectedForYou?:  RelatedItem[];
-  // Cart integration
-  productId?:       string;
-  variants?:        Variant[];
+  shopTheLook?:   ShopItem[];
+  selectedForYou?: RelatedItem[];
+  productId?:     string;
+  variants?:      Variant[];
 }
 
 // ── Small icon components ─────────────────────────────────────────────────────
@@ -64,7 +63,6 @@ const EiffelMark = () => (
   </svg>
 );
 
-// ── Accordion item ────────────────────────────────────────────────────────────
 function Accordion({ label, content, isOpen, onToggle }: {
   label: string; content?: string; isOpen: boolean; onToggle: () => void;
 }) {
@@ -96,7 +94,6 @@ function Accordion({ label, content, isOpen, onToggle }: {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
 export default function ProductPage({
   name, colorLabel, type, price, currency = "£",
   isNew, images = [], swatchImages = [], sizes = [],
@@ -105,43 +102,61 @@ export default function ProductPage({
   productId, variants = [],
 }: ProductPageProps) {
 
-  const [imgIdx,      setImgIdx]      = useState(0);
-  const [swatchIdx,   setSwatchIdx]   = useState(0);
-  const [selSize,     setSelSize]     = useState<string | null>(null);
-  const [accordion,   setAccordion]   = useState<string | null>(null);
-  const [wished,      setWished]      = useState(false);
-  const [cartMsg,     setCartMsg]     = useState<"idle"|"adding"|"added"|"error">("idle");
-  const [countdown,   setCountdown]   = useState(orderDeadline ?? null);
-  const [imgFade,     setImgFade]     = useState(true);
-  const [loaded,      setLoaded]      = useState(false);
-  const [isPending,   startTransition] = useTransition();
+  const [imgIdx,       setImgIdx]       = useState(0);
+  const [swatchIdx,    setSwatchIdx]    = useState(0);
+  const [selSize,      setSelSize]      = useState<string | null>(null);
+  const [accordion,    setAccordion]    = useState<string | null>(null);
+  const [wished,       setWished]       = useState(false);
+  const [cartMsg,      setCartMsg]      = useState<"idle"|"adding"|"added"|"error">("idle");
+  const [countdown,    setCountdown]    = useState(orderDeadline ?? null);
+  const [imgFade,      setImgFade]      = useState(true);
+  const [loaded,       setLoaded]       = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  // Entry animation
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
 
-  // Live countdown
-  useEffect(() => {
-    if (!orderDeadline) return;
-    const end = new Date();
-    end.setHours(end.getHours() + orderDeadline.hrs);
-    end.setMinutes(end.getMinutes() + orderDeadline.mins);
+  // Helper function defined INSIDE component scope
+  const isSizeUnavailable = (size: string) => {
+    if (!variants.length) return false;
+    const col = swatchImages[swatchIdx]?.colorLabel;
+    return !variants.some(v =>
+      v.size === size &&
+      v.stockQuantity > 0 &&
+      (!col || v.colorLabel === col)
+    );
+  };
 
-    const tick = () => {
-      const diff = end.getTime() - Date.now();
-      if (diff <= 0) { setCountdown(null); return; }
-      setCountdown({
-        hrs:  Math.floor(diff / 3_600_000),
-        mins: Math.floor((diff % 3_600_000) / 60_000),
-        date: orderDeadline.date,
+  async function handleAddToCart() {
+    if (!selSize) { setSelSize("__highlight__"); setTimeout(() => setSelSize(null), 800); return; }
+    if (!productId) return;
+
+    const variant = variants.find(v =>
+      v.size === selSize &&
+      (swatchImages[swatchIdx]
+        ? v.colorLabel === swatchImages[swatchIdx].colorLabel
+        : true)
+    ) ?? variants.find(v => v.size === selSize);
+
+    if (!variant) return;
+
+    setCartMsg("adding");
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, variantId: variant.id, quantity: 1 }),
       });
-    };
-    tick();
-    const id = setInterval(tick, 30_000);
-    return () => clearInterval(id);
-  }, [orderDeadline]);
+      const data = await res.json();
+      if (data.success) {
+        setCartMsg("added");
+        window.dispatchEvent(new Event("cartUpdated"));
+      } else {
+        setCartMsg("error");
+      }
+    } catch { setCartMsg("error"); }
+    setTimeout(() => setCartMsg("idle"), 2500);
+  }
 
-  // Which images to show (changes when swatch changes)
   const activeImages = swatchImages.length > 0 && swatchImages[swatchIdx]
     ? [swatchImages[swatchIdx].src, ...images.filter(s => s !== swatchImages[swatchIdx].src)]
     : images;
@@ -175,64 +190,17 @@ export default function ProductPage({
     touchStartX.current = null;
   }
 
-  // Add to cart
-  async function handleAddToCart() {
-    if (!selSize) { setSelSize("__highlight__"); setTimeout(() => setSelSize(null), 800); return; }
-    if (!productId) return;
-
-    const variant = variants.find(v =>
-      v.size === selSize &&
-      (swatchImages[swatchIdx]
-        ? v.colorLabel === swatchImages[swatchIdx].colorLabel
-        : true)
-    ) ?? variants.find(v => v.size === selSize);
-
-    if (!variant) return;
-
-    setCartMsg("adding");
-    try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, variantId: variant.id, quantity: 1 }),
-      });
-      const data = await res.json();
-      setCartMsg(data.success ? "added" : "error");
-    } catch { setCartMsg("error"); }
-    setTimeout(() => setCartMsg("idle"), 2500);
-  }
-
-  const isSizeUnavailable = (size: string) => {
-    if (!variants.length) return false;
-    const col = swatchImages[swatchIdx]?.colorLabel;
-    return !variants.some(v =>
-      v.size === size &&
-      v.stockQuantity > 0 &&
-      (!col || v.colorLabel === col)
-    );
-  };
-
   const ctaLabel = cartMsg === "adding" ? "Adding…"
     : cartMsg === "added" ? "Added to Bag ✓"
     : cartMsg === "error" ? "Please try again"
     : selSize ? `Add to Bag — ${selSize}`
     : "Select a Size";
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
-        @keyframes ppFadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes ppShake {
-          0%,100% { transform: translateX(0); }
-          20%     { transform: translateX(-6px); }
-          40%     { transform: translateX(6px); }
-          60%     { transform: translateX(-4px); }
-          80%     { transform: translateX(4px); }
-        }
+        @keyframes ppFadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes ppShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
         .pp-anim-1 { animation: ppFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
         .pp-anim-2 { animation: ppFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s both; }
         .pp-anim-3 { animation: ppFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.32s both; }
@@ -241,18 +209,10 @@ export default function ProductPage({
       `}</style>
 
       <div className="min-h-screen bg-[#faf9f7] font-serif">
-        {/* Fixed header spacer */}
         <div className="h-[76px] md:h-[88px]" />
-
-        {/* ── Main product section ──────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row">
-
-          {/* ════ LEFT: Image gallery ════════════════════════════════════ */}
           <div className="md:w-[58%] md:sticky md:top-[88px] md:self-start">
-
-            {/* DESKTOP: thumbnail strip + main image */}
             <div className="hidden md:flex">
-              {/* Thumbnails */}
               <div className="w-[82px] flex-shrink-0 flex flex-col gap-[3px] p-[3px]">
                 {activeImages.map((src, i) => (
                   <button key={i} onClick={() => changeImg(i)}
@@ -265,8 +225,6 @@ export default function ProductPage({
                   </button>
                 ))}
               </div>
-
-              {/* Main image */}
               <div className="flex-1 relative overflow-hidden bg-[#f0eeeb]"
                 style={{ aspectRatio: "2/3" }}>
                 {currentImg && (
@@ -278,7 +236,6 @@ export default function ProductPage({
               </div>
             </div>
 
-            {/* MOBILE: swipeable carousel */}
             <div className="md:hidden relative overflow-hidden bg-[#f0eeeb]"
               style={{ aspectRatio: "2/3" }}
               onTouchStart={onTouchStart}
@@ -291,74 +248,29 @@ export default function ProductPage({
                     className="object-cover object-top" sizes="100vw" />
                 </div>
               ))}
-
-              {/* Dot indicators */}
-              {activeImages.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                  {activeImages.map((_, i) => (
-                    <button key={i} onClick={() => changeImg(i)} aria-label={`Image ${i + 1}`}
-                      className={`rounded-full transition-all duration-300 ${
-                        i === imgIdx ? "w-4 h-[3px] bg-[#3a2e22]" : "w-[3px] h-[3px] bg-[#3a2e22]/40"
-                      }`} />
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
-          {/* ════ RIGHT: Product info ══════════════════════════════════════ */}
-          <div className={`md:w-[42%] px-5 md:px-8 lg:px-12 py-6 md:py-8
-            ${loaded ? "" : "opacity-0"}`}
+          <div className={`md:w-[42%] px-5 md:px-8 lg:px-12 py-6 md:py-8 ${loaded ? "" : "opacity-0"}`}
             style={loaded ? { animation: "ppFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both" } : {}}>
-
-            {/* New In tag */}
-            {isNew && (
-              <p className="text-[10.5px] italic tracking-[0.06em] text-[#3a2e22] mb-2 pp-anim-1">
-                New In
-              </p>
-            )}
-
-            {/* Name */}
-            <h1 className={`leading-[1.0] text-[#1a1008] pp-anim-1`}
-              style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(36px, 5vw, 52px)" }}>
-              {name}
-            </h1>
-
-            {/* Colour */}
-            <p className={`italic text-[#5a4a3a] leading-tight mt-0.5 pp-anim-1`}
-              style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(16px, 2.5vw, 22px)" }}>
-              in {swatchImages[swatchIdx]?.colorLabel ?? colorLabel}
-            </p>
-
-            {/* Type */}
-            <p className="text-[10.5px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-2 pp-anim-2">
-              {type}
-            </p>
-
-            {/* Price */}
-            <p className="text-[14px] tracking-[0.06em] text-[#1a1008] font-serif mt-3 pp-anim-2">
-              {currency}{Number(price).toLocaleString()}
-            </p>
-
-            {/* ── Colour swatches ── */}
+            {isNew && <p className="text-[10.5px] italic tracking-[0.06em] text-[#3a2e22] mb-2 pp-anim-1">New In</p>}
+            <h1 className="leading-[1.0] text-[#1a1008] pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(36px, 5vw, 52px)" }}>{name}</h1>
+            <p className="italic text-[#5a4a3a] leading-tight mt-0.5 pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(16px, 2.5vw, 22px)" }}>in {swatchImages[swatchIdx]?.colorLabel ?? colorLabel}</p>
+            <p className="text-[10.5px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-2 pp-anim-2">{type}</p>
+            <p className="text-[14px] tracking-[0.06em] text-[#1a1008] font-serif mt-3 pp-anim-2">{currency}{Number(price).toLocaleString()}</p>
+            
             {swatchImages.length > 1 && (
               <div className="flex gap-2 mt-4 pp-anim-3">
                 {swatchImages.map((sw, i) => (
                   <button key={i} onClick={() => changeSwatch(i)}
-                    className={`relative overflow-hidden transition-all duration-200 flex-shrink-0 ${
-                      i === swatchIdx
-                        ? "ring-1 ring-[#3a2e22] ring-offset-1"
-                        : "opacity-55 hover:opacity-85"
-                    }`}
+                    className={`relative overflow-hidden transition-all duration-200 flex-shrink-0 ${i === swatchIdx ? "ring-1 ring-[#3a2e22] ring-offset-1" : "opacity-55 hover:opacity-85"}`}
                     style={{ width: 44, height: 60 }}>
-                    <Image src={sw.src} alt={sw.colorLabel} fill
-                      className="object-cover object-top" sizes="44px" />
+                    <Image src={sw.src} alt={sw.colorLabel} fill className="object-cover object-top" sizes="44px" />
                   </button>
                 ))}
               </div>
             )}
 
-            {/* ── Size selector ── */}
             {sizes.length > 0 && (
               <div className="mt-5 pp-anim-3">
                 <div className="flex flex-wrap gap-x-5 gap-y-2">
@@ -369,13 +281,10 @@ export default function ProductPage({
                       <button key={size}
                         onClick={() => setSelSize(isSelected ? null : size)}
                         disabled={unavailable}
-                        className={`text-[11.5px] tracking-[0.08em] font-serif pb-0.5 transition-all duration-150
-                          border-b ${
-                          unavailable
-                            ? "text-[#c8c0b8] line-through border-transparent cursor-not-allowed"
-                            : isSelected
-                              ? "text-[#1a1008] border-[#1a1008]"
-                              : "text-[#5a4a3a] border-transparent hover:text-[#1a1008] hover:border-[#1a1008]"
+                        className={`text-[11.5px] tracking-[0.08em] font-serif pb-0.5 transition-all duration-150 border-b ${
+                          unavailable ? "text-[#c8c0b8] line-through border-transparent cursor-not-allowed"
+                          : isSelected ? "text-[#1a1008] border-[#1a1008]"
+                          : "text-[#5a4a3a] border-transparent hover:text-[#1a1008] hover:border-[#1a1008]"
                         }`}>
                         {size}
                       </button>
@@ -385,127 +294,37 @@ export default function ProductPage({
               </div>
             )}
 
-            {/* ── Countdown ── */}
-            {countdown && (
-              <div className="flex items-center gap-1.5 mt-4 pp-anim-3">
-                <ClockIcon />
-                <p className="text-[10.5px] tracking-[0.04em] text-[#3a2e22] font-serif">
-                  Order within{" "}
-                  <span className="text-[#c45a2a] font-semibold">
-                    {countdown.hrs} Hrs {countdown.mins} Mins
-                  </span>
-                  {" "}to receive {countdown.date}
-                </p>
-              </div>
-            )}
-
-            {/* ── CTA row ── */}
             <div className={`flex gap-2 mt-5 pp-anim-4 ${selSize === "__highlight__" ? "size-shake" : ""}`}>
               <button
                 onClick={handleAddToCart}
                 disabled={cartMsg === "adding"}
-                className={`flex-1 py-[13px] text-[10.5px] tracking-[0.22em] uppercase font-serif
-                  transition-all duration-200 ${
-                  cartMsg === "added"
-                    ? "bg-green-700 text-white"
-                    : cartMsg === "error"
-                      ? "bg-red-700 text-white"
-                      : "bg-[#3a2e22] text-white hover:bg-[#1a1008]"
+                className={`flex-1 py-[13px] text-[10.5px] tracking-[0.22em] uppercase font-serif transition-all duration-200 ${
+                  cartMsg === "added" ? "bg-green-700 text-white" : cartMsg === "error" ? "bg-red-700 text-white" : "bg-[#3a2e22] text-white hover:bg-[#1a1008]"
                 } disabled:opacity-70`}>
                 {ctaLabel}
               </button>
               <button
                 onClick={() => setWished(w => !w)}
-                aria-label="Add to wishlist"
                 className={`w-[46px] border flex items-center justify-center transition-colors duration-200 ${
-                  wished
-                    ? "border-[#3a2e22] bg-[#3a2e22] text-white"
-                    : "border-[#3a2e22] text-[#3a2e22] hover:bg-[#3a2e22] hover:text-white"
+                  wished ? "border-[#3a2e22] bg-[#3a2e22] text-white" : "border-[#3a2e22] text-[#3a2e22] hover:bg-[#3a2e22] hover:text-white"
                 }`}>
                 <StarIcon filled={wished} />
               </button>
             </div>
 
-            {/* ── Accordions ── */}
             <div className="mt-6 pp-anim-4">
               {[
-                { key: "editor",   label: "Editor's Notes",      content: editorNotes },
-                { key: "size",     label: "Size & Fit",           content: sizeFit },
-                { key: "delivery", label: "Delivery & Returns",   content: deliveryReturns },
+                { key: "editor",  label: "Editor's Notes",     content: editorNotes },
+                { key: "size",    label: "Size & Fit",         content: sizeFit },
+                { key: "delivery", label: "Delivery & Returns", content: deliveryReturns },
               ].map(a => (
                 <Accordion key={a.key} label={a.label} content={a.content}
                   isOpen={accordion === a.key}
                   onToggle={() => setAccordion(accordion === a.key ? null : a.key)} />
               ))}
             </div>
-
-            {/* ── Shop the Look ── */}
-            {shopTheLook.length > 0 && (
-              <div className="mt-8 pp-anim-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex-1 h-px bg-[#e8e2db]" />
-                  <p className="text-[20px] text-[#1a1008] flex-shrink-0"
-                    style={{ fontFamily: "var(--font-script), cursive" }}>
-                    Shop the Look
-                  </p>
-                  <div className="flex-1 h-px bg-[#e8e2db]" />
-                </div>
-                <div className="grid grid-cols-2 gap-[3px]">
-                  {shopTheLook.slice(0, 4).map((item, i) => (
-                    <Link key={i} href={`/products/${item.slug}`}
-                      className="relative overflow-hidden group block bg-[#f0eeeb]"
-                      style={{ aspectRatio: "2/3" }}>
-                      <Image src={item.image} alt={item.name} fill
-                        className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
-                        sizes="150px" />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
-
-        {/* ════ SELECTED FOR YOU ═══════════════════════════════════════════ */}
-        {selectedForYou.length > 0 && (
-          <div className="mt-8 md:mt-16 pb-12">
-            {/* Section header */}
-            <div className="text-center py-6 border-t border-b border-[#e8e2db] mb-[3px]">
-              <EiffelMark />
-              <p className="text-[26px] md:text-[32px] text-[#1a1008]"
-                style={{ fontFamily: "var(--font-script), cursive" }}>
-                Selected for You
-              </p>
-            </div>
-
-            {/* Grid — matches MDV 6-col desktop / 2-col mobile */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-[3px] bg-[#e8e2db]">
-              {selectedForYou.map((item, i) => (
-                <Link key={i} href={`/products/${item.slug}`}
-                  className="block bg-white group"
-                  style={{
-                    opacity: 0,
-                    animation: `ppFadeUp 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.05}s both`,
-                  }}>
-                  {/* Image */}
-                  <div className="relative overflow-hidden" style={{ aspectRatio: "2/3" }}>
-                    <Image src={item.image} alt={item.name} fill
-                      className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
-                      sizes="(max-width:640px) 50vw, (max-width:768px) 33vw, 17vw" />
-                  </div>
-                  {/* Name */}
-                  <div className="px-1 pt-2 pb-3">
-                    <p className="leading-tight hover:opacity-60 transition-opacity truncate"
-                      style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(12px,1.6vw,14px)", color: "#1a1008" }}>
-                      {item.name}
-                    </p>
-                    <p className="text-[10px] text-[#8a7a6a] tracking-wide mt-0.5 truncate">{item.description}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </>
   );

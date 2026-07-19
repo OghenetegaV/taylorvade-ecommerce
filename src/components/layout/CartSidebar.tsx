@@ -1,4 +1,3 @@
-// src/components/layout/CartSidebar.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -41,13 +40,22 @@ export default function CartSidebar({ open, onClose, onCountChange }: Props) {
         setItems(data.data.items);
         onCountChange?.(data.data.itemCount);
       }
-    } catch {}
+    } catch (e) {
+      console.error("Failed to fetch cart:", e);
+    }
     setLoading(false);
   }, [onCountChange]);
 
+  // 1. Fetch on open
   useEffect(() => {
     if (open) fetchCart();
   }, [open, fetchCart]);
+
+  // 2. NEW: Listen for 'cartUpdated' event from other parts of the app
+  useEffect(() => {
+    window.addEventListener("cartUpdated", fetchCart);
+    return () => window.removeEventListener("cartUpdated", fetchCart);
+  }, [fetchCart]);
 
   // Close on Escape
   useEffect(() => {
@@ -91,7 +99,7 @@ export default function CartSidebar({ open, onClose, onCountChange }: Props) {
         }`}
       />
 
-      {/* Drawer — slides in from right, matching existing drawer aesthetic */}
+      {/* Drawer */}
       <div className={`fixed top-0 right-0 h-full w-[320px] max-w-[90vw] z-[100] flex flex-col
         bg-[#FAF9F7] transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
@@ -131,7 +139,6 @@ export default function CartSidebar({ open, onClose, onCountChange }: Props) {
                 const isBusy = busy === item.id;
                 return (
                   <div key={item.id} className="flex gap-3">
-                    {/* Image */}
                     <Link href={`/products/${item.product.slug}`} onClick={onClose}
                       className="relative w-[70px] h-[95px] flex-shrink-0 overflow-hidden bg-[#f0eeeb]">
                       {item.product.images[0] ? (
@@ -142,7 +149,6 @@ export default function CartSidebar({ open, onClose, onCountChange }: Props) {
                       )}
                     </Link>
 
-                    {/* Details */}
                     <div className="flex-1 min-w-0 flex flex-col justify-between">
                       <div>
                         <Link href={`/products/${item.product.slug}`} onClick={onClose}>
@@ -160,7 +166,6 @@ export default function CartSidebar({ open, onClose, onCountChange }: Props) {
                         </p>
                       </div>
 
-                      {/* Qty + Remove */}
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center border border-[#d5cec4]">
                           <button
@@ -198,7 +203,6 @@ export default function CartSidebar({ open, onClose, onCountChange }: Props) {
           )}
         </div>
 
-        {/* Footer — only shows when cart has items */}
         {items.length > 0 && (
           <div className="px-6 py-5 border-t border-[#d5cec4]">
             <div className="flex items-center justify-between mb-1">

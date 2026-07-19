@@ -75,17 +75,22 @@ const primaryLinks = [
   { label: "Taylor Vade Unisex", href: "/collections/unisex" },
 ];
 const secondaryLinks = [
-  { label: "Our Stores",  href: "/stores" },
-  { label: "Gift Cards",  href: "/gift-cards" },
-  { label: "TV Rewards",  href: "/rewards" },
-  { label: "About Us",    href: "/about" },
+  { label: "Our Story",  href: "/stores" },
+  { label: "Collection",  href: "/gift-cards" },
+  // { label: "",  href: "/rewards" },
+  // { label: "About Us",    href: "/about" },
+];
+
+// Added Socials
+const socialLinks = [
+  { label: "Instagram", href: "https://instagram.com/taylorvade" },
+  { label: "Twitter",   href: "https://twitter.com/taylorvade" },
 ];
 
 const SUGGESTED_CURRENCIES = ["NGN", "USD", "GBP", "CAD"];
 const ALL_COUNTRIES: string[] = ["Afghanistan","Aland","Albania","Algeria","American Samoa","Andorra","Angola","Anguilla","Antarctica","Antigua and Barbuda","Argentina","Armenia","Aruba","Ascension Island","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bonaire","Bosnia and Herzegovina","Botswana","Bouvet Island","Brazil","British Indian Ocean Territory","British Virgin Islands","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Cayman Islands","Central African Republic","Chad","Chile","China","Christmas Island","Cocos (Keeling) Islands","Colombia","Comoros","Cook Islands","Costa Rica","Croatia","Cuba","Curacao","Cyprus","Czech Republic","Democratic Republic of the Congo","Denmark","Djibouti","Dominica","Dominican Republic","East Timor","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Falkland Islands","Faroe Islands","Fiji","Finland","France","French Guiana","French Polynesia","French Southern Territories","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar","Greece","Greenland","Grenada","Guadeloupe","Guam","Guatemala","Guernsey","Guinea","Guinea-Bissau","Guyana","Haiti","Heard Island and McDonald Islands","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Isle of Man","Israel","Italy","Ivory Coast","Jamaica","Japan","Jersey","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macao","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Martinique","Mauritania","Mauritius","Mayotte","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar (Burma)","Namibia","Nauru","Nepal","Netherlands","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria","Niue","Norfolk Island","North Korea","North Macedonia","Northern Mariana Islands","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Pitcairn Islands","Poland","Portugal","Puerto Rico","Qatar","Republic of the Congo","Reunion","Romania","Russia","Rwanda","Saint Barthelemy","Saint Helena","Saint Kitts and Nevis","Saint Lucia","Saint Martin","Saint Pierre and Miquelon","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Sint Maarten","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Georgia and the South Sandwich Islands","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Svalbard and Jan Mayen","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Togo","Tokelau","Tonga","Trinidad and Tobago","Tristan da Cunha","Tunisia","Turkmenistan","Turks and Caicos Islands","Tuvalu","Türkiye","U.S. Minor Outlying Islands","U.S. Virgin Islands","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Wallis and Futuna","Western Sahara","Yemen","Zambia","Zimbabwe"];
 const ALL_CURRENCIES: string[] = ["AED","AFN","ALL","AMD","ANG","AOA","ARS","AUD","AWG","AZN","BAM","BBD","BDT","BHD","BIF","BMD","BND","BOB","BOV","BRL","BSD","BTN","BWP","BYN","BZD","CAD","CDF","CHE","CHF","CHW","CLF","CLP","CNY","COP","CRC","CUP","CVE","CZK","DJF","DKK","DOP","DZD","EGP","ERN","ETB","EUR","FJD","FKP","GBP","GEL","GHS","GIP","GMD","GNF","GTQ","GYD","HKD","HNL","HTG","HUF","IDR","ILS","INR","IQD","IRR","ISK","JMD","JOD","JPY","KES","KGS","KHR","KMF","KPW","KRW","KWD","KYD","KZT","LAK","LBP","LKR","LRD","LSL","LYD","MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRU","MUR","MVR","MWK","MXN","MYR","MZN","NAD","NGN","NIO","NOK","NPR","NZD","OMR","PAB","PEN","PGK","PHP","PKR","PLN","PYG","QAR","RON","RSD","RUB","RWF","SAR","SBD","SCR","SDG","SEK","SGD","SHP","SLL","SOS","SRD","SSP","STN","SVC","SYP","SZL","THB","TJS","TMT","TND","TOP","TRY","TTD","TWD","TZS","UAH","UGX","USD","USN","USS","UYI","UYU","UZS","VES","VND","VUV","WST","XAF","XCD","XOF","XPF","YER","ZAR","ZMW"];
 
-const FULL_TEXT = "Taylor Vade";
 const ICON = "w-[16px] h-[16px] md:w-[20px] md:h-[20px]";
 
 export default function Header() {
@@ -96,24 +101,11 @@ export default function Header() {
   const [search,     setSearch]     = useState("");
   const [country,    setCountry]    = useState("Nigeria");
   const [currency,   setCurrency]   = useState("NGN");
-  const [displayed,  setDisplayed]  = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen,   setCartOpen]   = useState(false);
   const [cartCount,  setCartCount]  = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    if (!menuOpen) { setDisplayed(""); return; }
-    let i = 0;
-    setDisplayed("");
-    const iv = setInterval(() => {
-      i++;
-      setDisplayed(FULL_TEXT.slice(0, i));
-      if (i >= FULL_TEXT.length) clearInterval(iv);
-    }, 90);
-    return () => clearInterval(iv);
-  }, [menuOpen]);
 
   useEffect(() => {
     const savedCountry  = localStorage.getItem("tv_country");
@@ -176,7 +168,7 @@ export default function Header() {
           </Link>
 
           <div className="flex items-center gap-[10px] md:gap-[14px] opacity-75">
-            <button aria-label="Search" onClick={() => setMenuOpen(true)} className="hidden md:flex">
+            <button aria-label="Search" onClick={() => setSearchOpen(true)} className="hidden md:flex">
               <SearchIcon className={ICON} />
             </button>
             <Link href={isLoggedIn ? "/account" : "/login"} aria-label="Account">
@@ -251,14 +243,18 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="mt-auto px-5 pb-8 select-none">
-          <span className="text-[38px] leading-none text-[#3a2e22]"
-            style={{ fontFamily: "var(--font-script), cursive" }}>
-            {displayed}
-            {displayed.length < FULL_TEXT.length && (
-              <span className="animate-pulse opacity-60">|</span>
-            )}
-          </span>
+        {/* Bottom Section: Socials + Static Logo */}
+        <div className="mt-auto px-5 pb-8">
+            <div className="flex gap-4 mb-6">
+                {socialLinks.map(l => (
+                    <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="text-[10px] uppercase tracking-[0.1em] text-[#9a8a7a] hover:text-[#3a2e22]">
+                        {l.label}
+                    </a>
+                ))}
+            </div>
+            <Link href="/" onClick={() => setMenuOpen(false)} className="block relative w-[120px] h-[40px]">
+                <Image src="/logo.png" alt="Taylor Vade" fill className="object-contain" />
+            </Link>
         </div>
       </div>
 
