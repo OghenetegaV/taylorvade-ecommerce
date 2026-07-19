@@ -19,14 +19,13 @@ const greatVibes = Great_Vibes({
 export const metadata: Metadata = {
   metadataBase: new URL("https://taylorvade.com"), // Replace with your actual domain
   title: {
-    default: "Taylor Vade | Luxury Handmade Leather Goods",
-    template: "%s | Taylor Vade",
+    default: "Taylor Vade Lagos | Designed for the Discerning",
+    template: "%s | Taylor Vade Lagos",
   },
-  description: "Handcrafted leather shoes, bags, and bespoke accessories from Lagos. Designed for the discerning.",
+  description: "Luxury fashion brand based in Lagos. Tailored craftsmanship and artisanal quality. Designed for the Discerning.",
   openGraph: {
-    title: "Taylor Vade | Luxury Handmade Leather",
-    description: "Handcrafted leather shoes, bags, and bespoke accessories from Lagos. Designed for the discerning.",
-    url: "https://taylorvade.com",
+    title: "Taylor Vade Lagos | Designed for the Discerning",
+    description: "Luxury fashion brand based in Lagos. Tailored craftsmanship and artisanal quality. Designed for the Discerning.",url: "https://taylorvade.com",
     siteName: "Taylor Vade",
     images: [
       {
@@ -41,8 +40,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Taylor Vade | Luxury Handmade Leather",
-    description: "Handcrafted leather shoes, bags, and bespoke accessories from Lagos. Designed for the discerning.",
+    title: "Taylor Vade Lagos | Designed for the Discerning",
+    description: "Luxury fashion brand based in Lagos. Tailored craftsmanship and artisanal quality. Designed for the Discerning.",
     images: ["/logo.png"],
   },
 };
