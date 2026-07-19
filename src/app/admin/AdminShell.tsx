@@ -3,10 +3,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Package, ShoppingCart, Boxes,
   Store, Menu, X, ChevronRight, Sparkles,
+  BarChart3, ExternalLink, LogOut, Loader2,
 } from "lucide-react";
 
 type Profile = { fullName: string | null; email: string; role: string };
@@ -18,13 +20,28 @@ const NAV = [
   { href: "/admin/inventory", label: "Inventory", icon: Boxes           },
 ];
 
+// Point this at the GA property once it's created:
+// e.g. https://analytics.google.com/analytics/web/#/pXXXXXXXXX/reports/intelligenthome
+const GA_URL = process.env.NEXT_PUBLIC_GA_DASHBOARD_URL ?? "https://analytics.google.com";
+
 function Sidebar({ profile, onClose }: { profile: Profile; onClose?: () => void }) {
   const pathname = usePathname();
+  const router   = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+
   const isActive = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
   const initials = (profile.fullName ?? profile.email)
     .split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+
+  async function handleLogout() {
+    setSigningOut(true);
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push("/admin-login");
+    router.refresh();
+  }
 
   return (
     <div className="flex flex-col h-full bg-slate-900">
@@ -75,6 +92,23 @@ function Sidebar({ profile, onClose }: { profile: Profile; onClose?: () => void 
             </Link>
           );
         })}
+
+        {/* Insights */}
+        <p className="text-[10px] font-semibold text-slate-500 tracking-widest uppercase px-3 mb-2 mt-6">
+          Insights
+        </p>
+        <a
+          href={GA_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onClose}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+            text-slate-400 hover:text-white hover:bg-white/8 transition-all duration-150 group"
+        >
+          <BarChart3 className="w-4 h-4 flex-shrink-0 text-slate-500 group-hover:text-slate-300" />
+          <span className="flex-1">Google Analytics</span>
+          <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-slate-400" />
+        </a>
       </nav>
 
       {/* Footer */}
@@ -88,6 +122,19 @@ function Sidebar({ profile, onClose }: { profile: Profile; onClose?: () => void 
           <Store className="w-4 h-4 text-slate-500" />
           View Store
         </Link>
+
+        {/* Sign out */}
+        <button
+          onClick={handleLogout}
+          disabled={signingOut}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+            text-slate-400 hover:text-red-300 hover:bg-red-500/10 transition-all disabled:opacity-50"
+        >
+          {signingOut
+            ? <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+            : <LogOut className="w-4 h-4 text-slate-500" />}
+          {signingOut ? "Signing out…" : "Sign Out"}
+        </button>
 
         {/* User */}
         <div className="flex items-center gap-3 px-3 py-2.5 mt-1">
@@ -113,7 +160,6 @@ export default function AdminShell({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
-  // Page title from route
   const pageTitle =
     pathname === "/admin"              ? "Dashboard"  :
     pathname.startsWith("/admin/products") && pathname.includes("/edit") ? "Edit Product" :
@@ -124,27 +170,22 @@ export default function AdminShell({
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
-      {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-[220px] flex-shrink-0 flex-col fixed top-0 left-0 h-full z-30 shadow-xl shadow-slate-900/20">
         <Sidebar profile={profile} />
       </aside>
 
-      {/* Mobile overlay */}
       {open && (
         <div className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setOpen(false)} />
       )}
 
-      {/* Mobile drawer */}
       <aside className={`fixed top-0 left-0 h-full w-[220px] z-50 shadow-2xl
         transform transition-transform duration-300 ease-in-out lg:hidden ${
         open ? "translate-x-0" : "-translate-x-full"}`}>
         <Sidebar profile={profile} onClose={() => setOpen(false)} />
       </aside>
 
-      {/* Content area */}
       <div className="flex-1 flex flex-col lg:ml-[220px]">
-        {/* Top bar */}
         <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-3.5
           flex items-center justify-between sticky top-0 z-20 shadow-sm">
           <div className="flex items-center gap-3">
