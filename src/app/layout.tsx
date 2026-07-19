@@ -29,10 +29,10 @@ export const metadata: Metadata = {
     siteName: "Taylor Vade",
     images: [
       {
-        url: "/logo.png",
+        url: "/og-image.png", // Update this to your new custom image filename
         width: 1200,
         height: 630,
-        alt: "Taylor Vade Logo",
+        alt: "Taylor Vade Lagos - Designed for the Discerning",
       },
     ],
     locale: "en_NG",
