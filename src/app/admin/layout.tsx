@@ -2,7 +2,7 @@
 // CHANGE: added GoogleAnalytics (only renders when NEXT_PUBLIC_GA_ID is set)
 
 import type { Metadata } from "next";
-import "./globals.css";
+import "../globals.css";
 import { Cormorant_Garamond, Great_Vibes } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import ConditionalFooter from "@/components/layout/ConditionalFooter";
