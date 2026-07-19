@@ -18,12 +18,13 @@ export default function FullscreenVideo() {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          // Assert that the target is an HTMLVideoElement
+          const videoElement = entry.target as HTMLVideoElement;
+
           if (entry.isIntersecting) {
-            // Start playing the active video when it becomes visible
-            entry.target.play().catch((err) => console.warn("Autoplay blocked:", err));
+            videoElement.play().catch((err) => console.warn("Autoplay blocked:", err));
           } else {
-            // Pause if it scrolls out of view to save resources
-            entry.target.pause();
+            videoElement.pause();
           }
         });
       },
