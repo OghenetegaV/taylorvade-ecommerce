@@ -79,7 +79,7 @@ export default function HorizontalLookbook() {
   const Card = ({ product, tall }: { product: Product; tall: boolean }) => (
     <Link
       href={`/products/${product.slug}`}
-      className="group relative flex-shrink-0 overflow-hidden bg-[#eceae5]"
+      className="group relative flex-shrink-0 overflow-hidden bg-[#f5f5f4]"
       style={{
         width:  tall ? "clamp(240px, 24vw, 360px)" : "clamp(200px, 20vw, 300px)",
         height: tall ? "min(72vh, 640px)"          : "min(58vh, 520px)",
@@ -94,18 +94,18 @@ export default function HorizontalLookbook() {
         />
       )}
       {/* Price chip on hover */}
-      <div className="absolute left-3 bottom-3 bg-[#FAF9F7]/95 px-3 py-1.5
+      <div className="absolute left-3 bottom-3 bg-[#fafafa]/95 px-3 py-1.5
         opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0
         transition-all duration-300">
-        <p className="text-[12px] text-[#1a1008] leading-tight"
+        <p className="text-[12px] text-[#111] leading-tight"
           style={{ fontFamily: "var(--font-script), cursive" }}>
           {product.name}
         </p>
-        <p className="text-[10px] text-[#5a4a3a] font-serif">{ngn(product.basePrice)}</p>
+        <p className="text-[10px] text-[#555] font-serif">{ngn(product.basePrice)}</p>
       </div>
       {product.isNew && (
         <span className="absolute top-3 left-3 text-[9px] italic font-serif text-white
-          bg-[#1a1008]/80 px-2 py-0.5">
+          bg-[#111]/80 px-2 py-0.5">
           New In
         </span>
       )}
@@ -115,14 +115,14 @@ export default function HorizontalLookbook() {
   // ── Mobile / reduced-motion: native snap scroll ────────────────────
   if (staticMode) {
     return (
-      <section className="bg-[#FAF9F7] py-12">
+      <section className="bg-[#fafafa] py-12">
         <ScrollReveal>
           <div className="px-5 mb-6 flex items-end justify-between">
-            <h2 className="text-[26px] text-[#1a1008] leading-none"
+            <h2 className="text-[26px] text-[#111] leading-none"
               style={{ fontFamily: "var(--font-script), cursive" }}>
               The Lookbook
             </h2>
-            <span className="text-[10px] tracking-[0.15em] uppercase font-serif text-[#9a8a7a]">
+            <span className="text-[10px] tracking-[0.15em] uppercase font-serif text-[#8f8f8a]">
               Swipe →
             </span>
           </div>
@@ -141,18 +141,18 @@ export default function HorizontalLookbook() {
 
   // ── Desktop: pinned horizontal drive ───────────────────────────────
   return (
-    <div ref={outerRef} className="relative bg-[#FAF9F7]"
+    <div ref={outerRef} className="relative bg-[#fafafa]"
       style={{ height: `${SCROLL_LENGTH_VH}vh` }}>
       <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
 
         {/* Section label */}
         <div className="absolute top-[7vh] left-[4vw] z-10">
           <ScrollReveal variant="fade-up" distance={22}>
-            <h2 className="text-[clamp(28px,3.5vw,44px)] text-[#1a1008] leading-none"
+            <h2 className="text-[clamp(28px,3.5vw,44px)] text-[#111] leading-none"
               style={{ fontFamily: "var(--font-script), cursive" }}>
               The Lookbook
             </h2>
-            <p className="text-[10px] tracking-[0.3em] uppercase font-serif text-[#9a8a7a] mt-2">
+            <p className="text-[10px] tracking-[0.3em] uppercase font-serif text-[#8f8f8a] mt-2">
               Spring Summer &apos;26 — keep scrolling
             </p>
           </ScrollReveal>
@@ -171,14 +171,14 @@ export default function HorizontalLookbook() {
           {/* End card → collection */}
           <Link href="/collections/woman"
             className="flex-shrink-0 flex flex-col items-center justify-center gap-3
-              border border-[#1a1008]/25 hover:border-[#1a1008] transition-colors duration-300
+              border border-[#111]/25 hover:border-[#111] transition-colors duration-300
               text-center px-10"
             style={{ width: "clamp(220px,22vw,320px)", height: "min(58vh,520px)", alignSelf: "center" }}>
-            <span className="text-[24px] text-[#1a1008] leading-tight"
+            <span className="text-[24px] text-[#111] leading-tight"
               style={{ fontFamily: "var(--font-script), cursive" }}>
               View the full collection
             </span>
-            <span className="text-[10px] tracking-[0.25em] uppercase font-serif text-[#5a4a3a]">
+            <span className="text-[10px] tracking-[0.25em] uppercase font-serif text-[#555]">
               Shop now →
             </span>
           </Link>

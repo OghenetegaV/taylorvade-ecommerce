@@ -1,6 +1,3 @@
-// src/components/home/BrandTicker.tsx
-// Infinite marquee strip. Pure CSS animation — pauses for reduced motion.
-
 "use client";
 
 const PHRASES = [
@@ -15,7 +12,7 @@ export default function BrandTicker() {
   const run = [...PHRASES, ...PHRASES, ...PHRASES]; // 3x for seamless loop
 
   return (
-    <div className="bg-[#1a1008] overflow-hidden py-3 select-none" aria-hidden="true">
+    <div className="bg-[#111] overflow-hidden py-3 select-none" aria-hidden="true">
       <style>{`
         @keyframes tvTicker {
           from { transform: translate3d(0,0,0); }
@@ -29,10 +26,16 @@ export default function BrandTicker() {
       <div className="tv-ticker-track flex items-center gap-8 whitespace-nowrap w-max">
         {run.map((phrase, i) => (
           <span key={i} className="flex items-center gap-8">
-            <span className="text-[11px] md:text-[12px] tracking-[0.3em] uppercase font-serif text-[#F1EFE8]/85">
-              {phrase}
+            <span className="text-[11px] md:text-[12px] tracking-[0.3em] uppercase font-serif text-[#f5f5f5]/85">
+              {phrase === "Black is Boring" ? (
+                <>
+                  Black is <span className="line-through decoration-[1.5px] decoration-[#8B5E3C]">Boring</span>
+                </>
+              ) : (
+                phrase
+              )}
             </span>
-            <span className="text-[#c45a2a] text-[10px]">✦</span>
+            <span className="text-[#8B5E3C] text-[10px]">✦</span>
           </span>
         ))}
       </div>

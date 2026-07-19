@@ -214,9 +214,9 @@ export default function Header() {
             </button>
 
             {/* Wishlist — links to account or login */}
-            <Link href={isLoggedIn ? "/account" : "/login"} aria-label="Wishlist">
+            {/* <Link href={isLoggedIn ? "/account" : "/login"} aria-label="Wishlist">
               <StarIcon className={ICON} />
-            </Link>
+            </Link> */}
 
             {/* Account */}
             <Link href={isLoggedIn ? "/account" : "/login"} aria-label="Account">

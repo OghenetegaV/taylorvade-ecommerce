@@ -7,7 +7,7 @@ export default function CollectionLayout({ children }: { children: React.ReactNo
   return (
     <>
       {/* White header for interior pages */}
-      <div className="sticky top-0 z-50 bg-white border-b border-[#e8e2db]"
+      <div className=" bg-white border-b border-[#e8e2db]"
            style={{ marginTop: 0 }}>
         <Header />
       </div>

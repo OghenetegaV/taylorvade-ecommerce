@@ -1,6 +1,3 @@
-// src/components/home/TypeWall.tsx
-// Oversized statement typography with hover / auto-cycle image reveals.
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,7 +12,7 @@ const REVEALS: { image: string }[] = [
 ];
 
 export default function TypeWall() {
-  const [active,  setActive]  = useState<number | null>(null);
+  const [active,   setActive]   = useState<number | null>(null);
   const [isTouch, setIsTouch] = useState(false);
 
   useEffect(() => {
@@ -36,7 +33,7 @@ export default function TypeWall() {
   });
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#111009]"
+    <section className="relative w-full overflow-hidden bg-[#0d0d0d]"
       style={{ minHeight: "min(88vh, 780px)" }}>
 
       {REVEALS.map((r, i) => (
@@ -52,7 +49,7 @@ export default function TypeWall() {
         style={{ minHeight: "min(88vh, 780px)" }}>
 
         <ScrollReveal variant="fade" duration={800}>
-          <p className="text-[10px] tracking-[0.35em] uppercase font-serif text-[#9a8a7a] mb-5">
+          <p className="text-[10px] tracking-[0.35em] uppercase font-serif text-[#8f8f8a] mb-5">
             A word from the cutting table
           </p>
         </ScrollReveal>
@@ -62,7 +59,7 @@ export default function TypeWall() {
           delay={150}
           className="select-none"
           lines={[
-            <h2 key="line1" className="font-serif font-medium leading-[0.95] text-[#F1EFE8]"
+            <h2 key="line1" className="font-serif font-medium leading-[0.95] text-[#f5f5f5]"
               style={{ fontSize: "clamp(48px, 12vw, 168px)", letterSpacing: "-0.02em" }}>
               <span {...wordProps(0)}
                 className={`inline-block cursor-default transition-colors duration-500 ${
@@ -70,23 +67,23 @@ export default function TypeWall() {
                 }`}>
                 BLACK
               </span>{" "}
-              <span className="inline-block text-[#6a5a4a]">IS</span>
+              <span className="inline-block text-[#4a4a4a]">IS</span>
             </h2>,
-            <h2 key="line2" className="font-serif font-medium leading-[0.95] text-[#F1EFE8]"
+            <h2 key="line2" className="font-serif font-medium leading-[0.95] text-[#f5f5f5]"
               style={{ fontSize: "clamp(48px, 12vw, 168px)", letterSpacing: "-0.02em" }}>
               <span {...wordProps(1)}
-                className={`inline-block cursor-default transition-all duration-500 ${
-                  active === 1 ? "text-white line-through decoration-[3px] decoration-[#c45a2a]" : ""
+                className={`inline-block cursor-default transition-all duration-200 ${
+                  active === 1 ? "text-white line-through decoration-[3px] decoration-[#8B5E3C]" : ""
                 }`}>
                 BORING
               </span>
-              <span className="text-[#c45a2a]">..</span>
+              <span className="text-[#8B5E3C]">..</span>
             </h2>,
           ]}
         />
 
         <ScrollReveal variant="fade-up" delay={500} distance={22}>
-          <p className="text-[#c8beb2] text-[12.5px] md:text-[14px] font-serif leading-relaxed
+          <p className="text-[#b5b5b0] text-[12.5px] md:text-[14px] font-serif leading-relaxed
             tracking-[0.03em] mt-7 max-w-[460px]">
             Studded leather. Corduroy in bloodshot red. A suit the colour of
             midday sun. We cut for the ones who don&apos;t dress to disappear.
@@ -97,11 +94,11 @@ export default function TypeWall() {
           <div className="mt-8">
             <Link
               href="/collections/woman"
-              className="inline-block text-[11px] tracking-[0.2em] uppercase font-serif text-[#F1EFE8]
-                border border-[#F1EFE8]/40 px-6 py-3 hover:bg-[#F1EFE8] hover:text-[#111009]
+              className="inline-block text-[11px] tracking-[0.2em] uppercase font-serif text-[#f5f5f5]
+                border border-[#f5f5f5]/40 px-6 py-3 hover:bg-[#f5f5f5] hover:text-[#0d0d0d]
                 transition-colors duration-300"
             >
-              Explore the Colour Edit
+              Explore more
             </Link>
           </div>
         </ScrollReveal>

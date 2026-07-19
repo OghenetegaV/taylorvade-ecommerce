@@ -137,7 +137,7 @@ export default function CollectionPage({ title, gender }: Props) {
       </div>
 
       {/* ── Toolbar — text only ── */}
-      <div className="sticky top-[76px] md:top-[88px] z-20 bg-white/95 backdrop-blur-sm
+      <div className="z-20 bg-white/95 backdrop-blur-sm
         px-5 md:px-12 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <button onClick={() => setDrawerOpen(true)}

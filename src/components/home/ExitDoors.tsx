@@ -19,10 +19,10 @@ export default function ExitDoors() {
   const [hovered, setHovered] = useState<number | null>(null);
 
   return (
-    <section className="bg-[#111009]">
+    <section className="bg-[#0d0d0d]">
       <ScrollReveal>
         <div className="text-center pt-14 pb-8">
-          <p className="text-[10px] tracking-[0.35em] uppercase font-serif text-[#9a8a7a]">
+          <p className="text-[10px] tracking-[0.35em] uppercase font-serif text-[#8f8f8a]">
             Where to next
           </p>
         </div>

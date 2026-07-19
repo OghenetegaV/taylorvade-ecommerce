@@ -15,21 +15,23 @@ import MadeInLagos        from "@/components/home/MadeInLagos";
 import VadersStrip        from "@/components/home/VadersStrip";
 import ExitDoors          from "@/components/home/ExitDoors";
 import NewsletterBand     from "@/components/home/NewsletterBand";
+import FullscreenVideo from "@/components/home/FullscreenVideo";
 
 export default function Home() {
   return (
     <main>
       <Header />
       <HeroSection />
-      <CampaignFilm />
-      <BrandTicker />
-      <NewInRail />
+      <BrandTicker />      
       <TypeWall />
-      <HorizontalLookbook />
+      {/* <HorizontalLookbook /> */}
+      <NewInRail />      
+      <CampaignFilm />
       <MadeInLagos />
       <VadersStrip />
-      <ExitDoors />
       <NewsletterBand />
+      {/* <ExitDoors /> */}
+      <FullscreenVideo />
     </main>
   );
 }
