@@ -6,31 +6,45 @@ export default function FullscreenVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // Attempt to force play on mount
-    const v = videoRef.current;
-    if (v) {
-      v.play().catch((err) => {
-        console.error("Autoplay prevented by browser:", err);
+    const video = videoRef.current;
+    
+    // Attempt autoplay immediately
+    const playVideo = () => {
+      video?.play().catch(() => {
+        // Autoplay failed; we wait for user interaction
       });
-    }
+    };
+
+    playVideo();
+
+    // The iOS "Secret" fix: Add a touch listener to the window
+    const handleInteraction = () => {
+      playVideo();
+      // Remove listener once triggered so it only happens once
+      window.removeEventListener("touchstart", handleInteraction);
+      window.removeEventListener("click", handleInteraction);
+    };
+
+    window.addEventListener("touchstart", handleInteraction);
+    window.addEventListener("click", handleInteraction);
+
+    return () => {
+      window.removeEventListener("touchstart", handleInteraction);
+      window.removeEventListener("click", handleInteraction);
+    };
   }, []);
 
   return (
-    <section className="w-full h-svh bg-black overflow-hidden relative">
-      <video
-        ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover"
-        poster="/videos/campaign-poster.jpg"
-        autoPlay
-        muted
-        playsInline
-        webkit-playsinline="true"
-        preload="auto"
-      >
-        {/* Apple's official H.264 test file - Known to work on all iOS versions */}
-        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-    </section>
+    <video
+      ref={videoRef}
+      className="absolute inset-0 w-full h-full object-cover"
+      poster="/videos/campaign-poster.jpg"
+      autoPlay
+      muted
+      playsInline
+      preload="auto"
+    >
+      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
+    </video>
   );
 }
