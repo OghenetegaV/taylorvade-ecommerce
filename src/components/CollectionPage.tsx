@@ -1,10 +1,9 @@
 // src/components/CollectionPage.tsx
-// Gallery-index redesign — clean monochrome:
-// - Giant typographic header: WOMAN (42), no rules/borders anywhere
-// - Text-only toolbar: Filter + / Sort, view density toggle (2-up / 4-up)
-// - Working filter drawer: sizes, price range, in-stock (client-side over loaded set)
-// - White gutters between cards (no grid lines), staggered reveal
-// - Brown #8B5E3C used only as accent (SS mark, active states)
+// MDV-exact layout:
+// - Centered script page title ("New In" style) + centered "{n} Items" count
+// - Left toolbar row: Sort By ⌄ | All Filters ⌄ (divider between)
+// - Full-bleed 4-up grid, images flush edge-to-edge, starts right after toolbar
+// - Filter drawer + sort logic unchanged underneath
 
 "use client";
 
@@ -23,7 +22,7 @@ type Product = {
 };
 
 const SORT_OPTIONS = [
-  { label: "Newest",             sortBy: "createdAt", order: "desc" as const },
+  { label: "Newest",              sortBy: "createdAt", order: "desc" as const },
   { label: "Price · Low to High", sortBy: "basePrice", order: "asc"  as const },
   { label: "Price · High to Low", sortBy: "basePrice", order: "desc" as const },
   { label: "Name · A–Z",          sortBy: "name",      order: "asc"  as const },
@@ -36,12 +35,10 @@ interface Props { title: string; gender: "WOMEN" | "MEN" | "UNISEX"; }
 
 export default function CollectionPage({ title, gender }: Props) {
   const [products,   setProducts]   = useState<Product[]>([]);
-  const [total,      setTotal]      = useState(0);
   const [loading,    setLoading]    = useState(true);
   const [loaded,     setLoaded]     = useState(false);
   const [sortIdx,    setSortIdx]    = useState(0);
   const [sortOpen,   setSortOpen]   = useState(false);
-  const [dense,      setDense]      = useState(true);   // true = 4-up, false = 2-up
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Filters
@@ -72,7 +69,6 @@ export default function CollectionPage({ title, gender }: Props) {
       const data = await res.json();
       if (data.success) {
         setProducts(data.data.products);
-        setTotal(data.data.pagination.total);
       }
     } catch {}
     setLoading(false);
@@ -111,97 +107,80 @@ export default function CollectionPage({ title, gender }: Props) {
     setFSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
   }
 
-  const gridCols = dense
-    ? "grid-cols-2 md:grid-cols-4"
-    : "grid-cols-1 md:grid-cols-2";
+  // Script-case title: "WOMAN" → "Woman"
+  const displayTitle = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
 
   return (
     <div className="bg-white min-h-screen font-serif">
       <div className="h-[76px] md:h-[88px]" />
 
-      {/* ── Index header — typography only, no rules ── */}
-      <div className="px-5 md:px-12 pt-10 md:pt-16 pb-6 md:pb-10">
-        <div className="flex items-baseline justify-between gap-4">
-          <h1 className="text-[#111] font-medium leading-[0.9] uppercase"
-            style={{ fontSize: "clamp(52px, 10vw, 128px)", letterSpacing: "-0.03em" }}>
-            {title}
-          </h1>
-          <span className="text-[13px] md:text-[16px] text-[#111] flex-shrink-0">
-            ({loading ? "…" : filtered.length})
-          </span>
-        </div>
-        <p className="mt-2 text-[13px] italic text-[#8B5E3C]"
-          style={{ fontFamily: "var(--font-script), cursive" }}>
-          Spring Summer &apos;26
+      {/* ── Centered script title + item count (MDV) ── */}
+      <div className="pt-4 md:pt-6 pb-4 text-center">
+        <h1 className="text-[#111]"
+          style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(30px, 4vw, 40px)" }}>
+          {displayTitle}
+        </h1>
+        <p className="mt-2 text-[12px] tracking-[0.12em] text-[#8f8f8a]">
+          {loading ? "…" : `${filtered.length} Items`}
         </p>
       </div>
 
-      {/* ── Toolbar — text only ── */}
-      <div className="z-20 bg-white/95 backdrop-blur-sm
-        px-5 md:px-12 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <button onClick={() => setDrawerOpen(true)}
-            className="text-[11px] tracking-[0.08em] uppercase text-[#111]
-              underline-offset-4 hover:underline">
-            Filter{activeFilterCount > 0 && (
-              <span className="text-[#8B5E3C]"> ({activeFilterCount})</span>
-            )} +
-          </button>
-
-          {/* Sort */}
-          <div ref={sortRef} className="relative">
-            <button onClick={() => setSortOpen(o => !o)}
-              className="text-[11px] tracking-[0.08em] uppercase text-[#111]
-                underline-offset-4 hover:underline">
-              Sort · {SORT_OPTIONS[sortIdx].label.split(" · ")[0]}
-            </button>
-            {sortOpen && (
-              <div className="absolute top-full left-0 mt-2 bg-white shadow-lg z-30 min-w-[190px] py-1">
-                {SORT_OPTIONS.map((opt, i) => (
-                  <button key={i}
-                    onClick={() => { setSortIdx(i); setSortOpen(false); }}
-                    className={`block w-full text-left px-4 py-2.5 text-[11px] tracking-[0.05em]
-                      hover:bg-[#f7f7f6] transition-colors ${
-                      i === sortIdx ? "text-[#8B5E3C]" : "text-[#111]"
-                    }`}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* View density toggle */}
-        <div className="flex items-center gap-3">
-          <button onClick={() => setDense(false)} aria-label="Large view"
-            className={`transition-opacity ${dense ? "opacity-30 hover:opacity-60" : "opacity-100"}`}>
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <rect x="0.5" y="0.5" width="6" height="14" stroke="#111"/>
-              <rect x="8.5" y="0.5" width="6" height="14" stroke="#111"/>
+      {/* ── Toolbar — Sort By | All Filters, left-aligned (MDV) ── */}
+      <div className="px-5 md:px-10 pb-4 flex items-center gap-5">
+        {/* Sort By */}
+        <div ref={sortRef} className="relative">
+          <button onClick={() => setSortOpen(o => !o)}
+            className="flex items-center gap-1.5 text-[12px] tracking-[0.14em] text-[#111]
+              hover:opacity-60 transition-opacity">
+            Sort By
+            <svg width="9" height="6" viewBox="0 0 10 6" fill="none"
+              className={`transition-transform duration-200 ${sortOpen ? "rotate-180" : ""}`}>
+              <path d="M1 1L5 5L9 1" stroke="#111" strokeWidth="1.1" strokeLinecap="round"/>
             </svg>
           </button>
-          <button onClick={() => setDense(true)} aria-label="Compact view"
-            className={`transition-opacity ${dense ? "opacity-100" : "opacity-30 hover:opacity-60"}`}>
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <rect x="0.5" y="0.5" width="2.6" height="14" stroke="#111"/>
-              <rect x="4.7" y="0.5" width="2.6" height="14" stroke="#111"/>
-              <rect x="8.9" y="0.5" width="2.6" height="14" stroke="#111"/>
-              <rect x="13.1" y="0.5" width="1.4" height="14" stroke="#111"/>
-            </svg>
-          </button>
+          {sortOpen && (
+            <div className="absolute top-full left-0 mt-3 bg-white shadow-lg z-30 min-w-[200px] py-1">
+              {SORT_OPTIONS.map((opt, i) => (
+                <button key={i}
+                  onClick={() => { setSortIdx(i); setSortOpen(false); }}
+                  className={`block w-full text-left px-4 py-2.5 text-[11.5px] tracking-[0.05em]
+                    hover:bg-[#f7f7f6] transition-colors ${
+                    i === sortIdx ? "text-[#8B5E3C]" : "text-[#111]"
+                  }`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Divider */}
+        <span className="w-px h-[16px] bg-[#d4d4d0]" />
+
+        {/* All Filters */}
+        <button onClick={() => setDrawerOpen(true)}
+          className="flex items-center gap-1.5 text-[12px] tracking-[0.14em] text-[#111]
+            hover:opacity-60 transition-opacity">
+          All Filters{activeFilterCount > 0 && (
+            <span className="text-[#8B5E3C]">({activeFilterCount})</span>
+          )}
+          <svg width="9" height="6" viewBox="0 0 10 6" fill="none">
+            <path d="M1 1L5 5L9 1" stroke="#111" strokeWidth="1.1" strokeLinecap="round"/>
+          </svg>
+        </button>
       </div>
 
-      {/* ── Grid — white gutters, no lines ── */}
-      <div className="px-5 md:px-12 pt-4 pb-16">
+      {/* ── Grid — full bleed, images flush (MDV) ── */}
+      <div className="pb-16">
         {loading ? (
-          <div className={`grid ${gridCols} gap-x-4 gap-y-10`}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-0 gap-y-12">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="bg-[#f5f5f4]" style={{ aspectRatio: "2/3" }} />
-                <div className="h-3 bg-[#f5f5f4] rounded w-2/3 mt-3" />
-                <div className="h-2.5 bg-[#f5f5f4] rounded w-1/3 mt-1.5" />
+                <div className="px-3 md:px-4">
+                  <div className="h-3 bg-[#f5f5f4] rounded w-2/3 mt-3" />
+                  <div className="h-2.5 bg-[#f5f5f4] rounded w-1/3 mt-1.5" />
+                </div>
               </div>
             ))}
           </div>
@@ -215,7 +194,7 @@ export default function CollectionPage({ title, gender }: Props) {
             </button>
           </div>
         ) : (
-          <div className={`grid ${gridCols} gap-x-4 gap-y-10`}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-0 gap-y-12">
             {filtered.map((product, i) => (
               <div key={product.id}
                 style={{
@@ -234,13 +213,6 @@ export default function CollectionPage({ title, gender }: Props) {
               </div>
             ))}
           </div>
-        )}
-
-        {/* Count footer */}
-        {!loading && filtered.length > 0 && (
-          <p className="text-center text-[10.5px] tracking-[0.15em] uppercase text-[#999] mt-14">
-            Showing {filtered.length} of {total}
-          </p>
         )}
       </div>
 

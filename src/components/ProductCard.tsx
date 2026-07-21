@@ -1,110 +1,97 @@
 // src/components/ProductCard.tsx
-// Monochrome restyle: black/white dominant, brown (#8B5E3C) only as accent.
-// No borders — whitespace does the separation.
+// Manière-De-Voir-style card, Taylor Vade palette:
+// - Flush image (no radius), hover swaps to 2nd image
+// - Size run fades in over the image bottom on hover (desktop)
+// - Info stack: "New In" script → script name + colour swatches + star →
+//   serif type line → price
+// Brown #8B5E3C only as the New In accent.
 
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-const StarIcon = ({ filled }: { filled: boolean }) => (
-  <svg viewBox="0 0 24 24" fill={filled ? "#111" : "none"} stroke="#111"
-    strokeWidth="0.85" className="w-[15px] h-[15px] flex-shrink-0">
-    <path strokeLinecap="round" strokeLinejoin="round"
-      d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
-  </svg>
-);
+type Variant = {
+  id: string; size: string; colorLabel: string;
+  colorHex?: string | null; stockQuantity: number; priceOverride?: number | null;
+};
 
-export interface ProductVariant {
-  id:            string;
-  size:          string;
-  colorLabel:    string;
-  colorHex?:     string | null;
-  stockQuantity: number;
-  priceOverride?: number | null;
-}
-
-export interface ProductCardProps {
-  id:          string;
-  slug:        string;
-  name:        string;
-  type:        string;
+interface Props {
+  id: string; slug: string; name: string; type: string;
   description?: string;
-  basePrice:   number;
-  currency?:   string;
-  isNew?:      boolean;
-  gender?:     string;
-  images:      { url: string }[];
-  variants:    ProductVariant[];
+  basePrice: number; isNew: boolean; gender: string;
+  images: { url: string }[];
+  variants: Variant[];
 }
 
-const SIZE_ORDER = ["XXS","XS","S","M","L","XL","XXL","XXXL","One Size"];
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
+
+const SIZE_ORDER = ["XXS","XS","S","M","L","XL","XXL","2XL","3XL"];
 
 export default function ProductCard({
-  slug, name, type, description, basePrice, currency = "₦",
-  isNew, gender, images = [], variants = [],
-}: ProductCardProps) {
-  const [wished,   setWished]   = useState(false);
-  const [imgError, setImgError] = useState(false);
+  slug, name, type, basePrice, isNew, images, variants,
+}: Props) {
+  const [hover, setHover]     = useState(false);
+  const [wished, setWished]   = useState(false);
 
-  const primaryImg = images[0]?.url ?? "";
-  const hoverImg   = images[1]?.url ?? "";
+  // Unique colours (keep first occurrence's hex)
+  const swatches = useMemo(() => {
+    const seen = new Map<string, string | null>();
+    for (const v of variants) {
+      if (!seen.has(v.colorLabel)) seen.set(v.colorLabel, v.colorHex ?? null);
+    }
+    return Array.from(seen.entries()).slice(0, 8); // [label, hex]
+  }, [variants]);
 
-  const sizes = [...new Set(variants.map(v => v.size))].sort((a, b) => {
-    const ai = SIZE_ORDER.indexOf(a);
-    const bi = SIZE_ORDER.indexOf(b);
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-  });
+  // Unique sizes in natural order; greyed if fully out of stock
+  const sizes = useMemo(() => {
+    const stock = new Map<string, number>();
+    for (const v of variants) {
+      stock.set(v.size, (stock.get(v.size) ?? 0) + v.stockQuantity);
+    }
+    return Array.from(stock.entries()).sort(
+      (a, b) => SIZE_ORDER.indexOf(a[0]) - SIZE_ORDER.indexOf(b[0]),
+    );
+  }, [variants]);
 
-  const colors = Array.from(
-    new Map(variants.map(v => [v.colorLabel, v.colorHex ?? "#ddd"])).entries()
-  ).slice(0, 5);
-
-  const isOutOfStock = (size: string) =>
-    !variants.some(v => v.size === size && v.stockQuantity > 0);
+  const img1 = images[0]?.url;
+  const img2 = images[1]?.url;
 
   return (
-    <div className="group flex flex-col">
-
-      {/* Image */}
-      <Link href={`/products/${slug}`}
-        className="relative block overflow-hidden bg-[#f5f5f4]"
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="group"
+    >
+      {/* ── Image — flush, no radius ── */}
+      <Link href={`/products/${slug}`} className="block relative overflow-hidden bg-[#f5f5f4]"
         style={{ aspectRatio: "2/3" }}>
-        {primaryImg && !imgError ? (
-          <>
-            <Image src={primaryImg} alt={name} fill
-              className={`object-cover object-top transition-opacity duration-500 ${
-                hoverImg ? "group-hover:opacity-0" : ""
-              }`}
-              sizes="(max-width:768px) 50vw, 25vw"
-              onError={() => setImgError(true)} />
-            {hoverImg && (
-              <Image src={hoverImg} alt={`${name} alternate`} fill
-                className="object-cover object-top opacity-0 transition-opacity duration-500
-                  group-hover:opacity-100"
-                sizes="(max-width:768px) 50vw, 25vw" />
-            )}
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-[9px] tracking-widest uppercase text-[#c4c4c2] font-serif">
-              No image
-            </span>
-          </div>
+        {img1 && (
+          <Image src={img1} alt={name} fill sizes="(max-width: 768px) 50vw, 25vw"
+            className={`object-cover object-top transition-opacity duration-500 ${
+              hover && img2 ? "opacity-0" : "opacity-100"
+            }`} />
+        )}
+        {img2 && (
+          <Image src={img2} alt={`${name} — alternate view`} fill sizes="(max-width: 768px) 50vw, 25vw"
+            className={`object-cover object-top transition-opacity duration-500 ${
+              hover ? "opacity-100" : "opacity-0"
+            }`} />
         )}
 
-        {/* Sizes slide up on hover */}
+        {/* Size run — desktop hover only */}
         {sizes.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 z-10
-            translate-y-full group-hover:translate-y-0
-            transition-transform duration-300 ease-out
-            bg-white/95 flex items-center justify-center
-            flex-wrap gap-x-3 gap-y-0.5 py-2.5 px-3">
-            {sizes.map(size => (
+          <div className={`hidden md:flex absolute bottom-0 left-0 right-0 items-center gap-3
+            px-4 py-3 transition-all duration-300 ${
+            hover ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+          }`}
+            style={{ background: "linear-gradient(to top, rgba(255,255,255,0.92), rgba(255,255,255,0))" }}>
+            {sizes.map(([size, qty]) => (
               <span key={size}
-                className={`text-[10px] tracking-[0.06em] font-serif ${
-                  isOutOfStock(size) ? "text-[#c4c4c2] line-through" : "text-[#111]"
+                className={`text-[11px] tracking-[0.08em] ${
+                  qty > 0 ? "text-[#555]" : "text-[#c8c8c4] line-through"
                 }`}>
                 {size}
               </span>
@@ -113,57 +100,52 @@ export default function ProductCard({
         )}
       </Link>
 
-      {/* Text */}
-      <div className="pt-2.5 pb-1">
-        {/* Tags + wishlist */}
-        <div className="flex items-center justify-between gap-1 min-h-[15px]">
-          <div className="flex items-center gap-2">
-            {gender === "UNISEX" && (
-              <span className="text-[9.5px] italic tracking-[0.04em] text-[#999] font-serif">
-                Unisex
-              </span>
-            )}
-            {isNew && (
-              <span className="text-[9.5px] italic tracking-[0.04em] text-[#8B5E3C] font-serif">
-                New In
+      {/* ── Info stack ── */}
+      <div className="px-3 md:px-4 pt-3">
+        {isNew && (
+          <p className="text-[12px] text-[#8B5E3C] underline underline-offset-[3px] mb-1"
+            style={{ fontFamily: "var(--font-script), cursive" }}>
+            New In
+          </p>
+        )}
+
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+            <Link href={`/products/${slug}`}
+              className="text-[17px] leading-none text-[#111] hover:opacity-60 transition-opacity"
+              style={{ fontFamily: "var(--font-script), cursive" }}>
+              {name}
+            </Link>
+            {swatches.length > 1 && (
+              <span className="flex items-center gap-[5px]">
+                {swatches.map(([label, hex]) => (
+                  <span key={label} title={label}
+                    className="w-[11px] h-[11px] border border-[#d4d4d0] flex-shrink-0"
+                    style={{ background: hex ?? "#e5e5e2" }} />
+                ))}
               </span>
             )}
           </div>
+
+          {/* Wishlist star */}
           <button
-            onClick={e => { e.preventDefault(); setWished(w => !w); }}
-            aria-label="Add to wishlist"
-            className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:opacity-60">
-            <StarIcon filled={wished} />
+            onClick={() => setWished(w => !w)}
+            aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+            className="flex-shrink-0 mt-[1px] hover:opacity-60 transition-opacity"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24"
+              fill={wished ? "#111" : "none"} stroke="#111" strokeWidth="1.3">
+              <path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.2 5.8 20.9l1.6-7L2 9.2l7.1-.6L12 2z"
+                strokeLinejoin="round" />
+            </svg>
           </button>
         </div>
 
-        {/* Name + swatches */}
-        <div className="flex items-center justify-between gap-2 mt-0.5">
-          <Link href={`/products/${slug}`}
-            className="leading-tight truncate hover:opacity-50 transition-opacity"
-            style={{
-              fontFamily: "var(--font-script), cursive",
-              fontSize:   "clamp(13px, 1.8vw, 15px)",
-              color:      "#111",
-            }}>
-            {name}
-          </Link>
-          {colors.length > 1 && (
-            <div className="flex items-center gap-[3px] flex-shrink-0">
-              {colors.map(([label, hex]) => (
-                <span key={label} title={label}
-                  style={{ width: 11, height: 11, backgroundColor: hex, flexShrink: 0 }} />
-              ))}
-            </div>
-          )}
-        </div>
+        <Link href={`/products/${slug}`} className="block mt-1.5">
+          <p className="text-[12.5px] text-[#111] leading-snug">{type}</p>
+        </Link>
 
-        <p className="text-[10.5px] tracking-[0.02em] text-[#999] font-serif leading-snug mt-0.5 line-clamp-1">
-          {description ?? type}
-        </p>
-        <p className="text-[11px] tracking-[0.02em] text-[#111] font-serif mt-1">
-          {currency}{Number(basePrice).toLocaleString()}
-        </p>
+        <p className="text-[12.5px] text-[#111] mt-1.5">{fmt(Number(basePrice))}</p>
       </div>
     </div>
   );
