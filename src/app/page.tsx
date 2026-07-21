@@ -23,15 +23,15 @@ export default function Home() {
       <Header />
       <HeroSection />
       <BrandTicker />      
-      <TypeWall />
+      {/* <TypeWall /> */}
       {/* <HorizontalLookbook /> */}
-      <NewInRail />      
-      <CampaignFilm />
-      <MadeInLagos />
-      <VadersStrip />
-      <NewsletterBand />
+      {/* <NewInRail />       */}
+      {/* <CampaignFilm /> */}
+      {/* <MadeInLagos /> */}
+      {/* <VadersStrip /> */}
+      {/* <NewsletterBand /> */}
       {/* <ExitDoors /> */}
-      <FullscreenVideo />
+      {/* // <FullscreenVideo /> */}
     </main>
   );
 }

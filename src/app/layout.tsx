@@ -1,8 +1,15 @@
+// src/app/layout.tsx
+// CHANGES vs your current file:
+//   1. Header → ConditionalHeader (hidden on /admin, auth pages, /checkout)
+//   2. GoogleAnalytics added here (this is where it belongs, not admin/layout)
+// Your full metadata block is preserved untouched.
+
 import type { Metadata } from "next";
 import "@/app/globals.css";
 import { Cormorant_Garamond, Great_Vibes } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
+import ConditionalHeader from "@/components/layout/ConditionalHeader";
 import ConditionalFooter from "@/components/layout/ConditionalFooter";
-import Header from "@/components/layout/Header"; 
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -17,7 +24,7 @@ const greatVibes = Great_Vibes({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://taylorvade.com"), // Replace with your actual domain
+  metadataBase: new URL("https://taylorvade.com"),
   title: {
     default: "Taylor Vade Lagos | Designed for the Discerning",
     template: "%s | Taylor Vade Lagos",
@@ -25,11 +32,12 @@ export const metadata: Metadata = {
   description: "Luxury fashion brand based in Lagos. Tailored craftsmanship and artisanal quality. Designed for the Discerning.",
   openGraph: {
     title: "Taylor Vade Lagos | Designed for the Discerning",
-    description: "Luxury fashion brand based in Lagos. Tailored craftsmanship and artisanal quality. Designed for the Discerning.",url: "https://taylorvade.com",
+    description: "Luxury fashion brand based in Lagos. Tailored craftsmanship and artisanal quality. Designed for the Discerning.",
+    url: "https://taylorvade.com",
     siteName: "Taylor Vade",
     images: [
       {
-        url: "/og-image.png", // Update this to your new custom image filename
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "Taylor Vade Lagos - Designed for the Discerning",
@@ -46,6 +54,8 @@ export const metadata: Metadata = {
   },
 };
 
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
@@ -53,10 +63,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         suppressHydrationWarning
         className={`${cormorant.variable} ${greatVibes.variable} antialiased`}
       >
-        <Header /> 
+        <ConditionalHeader />
         {children}
         <ConditionalFooter />
       </body>
+      {/* Loads gtag.js after hydration, off the critical path */}
+      {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
     </html>
   );
 }
