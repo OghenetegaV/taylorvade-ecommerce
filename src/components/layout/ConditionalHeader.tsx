@@ -1,5 +1,5 @@
 // src/components/layout/ConditionalHeader.tsx
-// Renders the store Header on store pages only — mirrors ConditionalFooter.
+// UPDATED: /checkout removed — checkout now uses the main site Header.
 
 "use client";
 
@@ -7,13 +7,12 @@ import { usePathname } from "next/navigation";
 import Header from "./Header";
 
 const HIDDEN_ON = [
-  "/admin",        // admin panel has its own chrome (AdminShell)
+  "/admin",
   "/admin-login",
   "/login",
   "/register",
   "/reset-password",
   "/update-password",
-  "/checkout",     // checkout renders its own slim header
 ];
 
 export default function ConditionalHeader() {
