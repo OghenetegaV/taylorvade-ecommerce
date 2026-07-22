@@ -17,7 +17,7 @@ type Variant = {
   colorHex?: string | null; stockQuantity: number; priceOverride?: number | null;
 };
 
-interface Props {
+export interface ProductCardProps {
   id: string; slug: string; name: string; type: string;
   description?: string;
   basePrice: number; isNew: boolean; gender: string;
@@ -32,7 +32,7 @@ const SIZE_ORDER = ["XXS","XS","S","M","L","XL","XXL","2XL","3XL"];
 
 export default function ProductCard({
   slug, name, type, basePrice, isNew, images, variants,
-}: Props) {
+}: ProductCardProps) {
   const [hover, setHover]     = useState(false);
   const [wished, setWished]   = useState(false);
 
