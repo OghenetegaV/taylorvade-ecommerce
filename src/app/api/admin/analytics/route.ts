@@ -64,6 +64,7 @@ export async function GET() {
   const allOrders = await prisma.order.groupBy({
     by: ["status"],
     _count: { id: true },
+    orderBy: { status: "asc" },
   });
 
   // ── Revenue by day (last 30, PAID only) ───────────────────────

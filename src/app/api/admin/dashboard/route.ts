@@ -30,7 +30,7 @@ export async function GET() {
     prisma.order.aggregate({ where: { paymentStatus: "SUCCESS", createdAt: { gte: todayStart } }, _sum: { totalAmount: true } }),
     // Customers = DISTINCT people who have placed an order (any status),
     // not just anyone who registered. groupBy profileId → number of groups.
-    prisma.order.groupBy({ by: ["profileId"], _count: { id: true } }),
+    prisma.order.groupBy({ by: ["profileId"], _count: { id: true }, orderBy: { profileId: "asc" } }),
     prisma.productVariant.count({ where: { stockQuantity: { gt: 0, lte: 5 } } }),
     prisma.productVariant.count({ where: { stockQuantity: 0 } }),
     prisma.order.findMany({
