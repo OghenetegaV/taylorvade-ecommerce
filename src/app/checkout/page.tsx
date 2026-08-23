@@ -32,14 +32,6 @@ type Upsell = {
   images?: { url: string; isPrimary?: boolean }[];
 };
 
-const NIGERIAN_STATES = [
-  "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
-  "Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT - Abuja","Gombe",
-  "Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos",
-  "Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto",
-  "Taraba","Yobe","Zamfara",
-];
-
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
 
@@ -66,9 +58,38 @@ export default function CheckoutPage() {
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [city, setCity]                 = useState("");
-  const [state, setState]               = useState("Lagos");
+  const [state, setState]               = useState("");
+  const [stateCode, setStateCode]       = useState("");
+  const [stateOptions, setStateOptions] = useState<{ name: string; code: string }[]>([]);
+  const [cityOptions, setCityOptions]   = useState<{ name: string; code: string }[]>([]);
+  const [locLoading, setLocLoading]     = useState(false);
   const [postalCode, setPostalCode]     = useState("");
   const [notes, setNotes]               = useState("");
+
+  // Load Terminal states once (Nigeria).
+  useEffect(() => {
+    let cancelled = false;
+    setLocLoading(true);
+    fetch("/api/shipping/locations?type=states&country=NG")
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled && d.success) setStateOptions(d.data); })
+      .finally(() => { if (!cancelled) setLocLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load Terminal cities whenever the chosen state code changes.
+  useEffect(() => {
+    let cancelled = false;
+    setCityOptions([]);
+    setCity("");
+    if (!stateCode) return;
+    setLocLoading(true);
+    fetch(`/api/shipping/locations?type=cities&country=NG&state_code=${encodeURIComponent(stateCode)}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled && d.success) setCityOptions(d.data); })
+      .finally(() => { if (!cancelled) setLocLoading(false); });
+    return () => { cancelled = true; };
+  }, [stateCode]);
 
   // Shipping rates (Terminal Africa)
   const [rates, setRates]             = useState<Rate[]>([]);
@@ -173,7 +194,7 @@ export default function CheckoutPage() {
           address: {
             name: fullName, phone,
             line1: addressLine1, line2: addressLine2,
-            city, state, country: "NG", postalCode,
+            city, state, stateCode, country: "NG", postalCode,
           },
         }),
       });
@@ -342,13 +363,40 @@ export default function CheckoutPage() {
                 </div>
                 <div>
                   <label className={labelCls}>State *</label>
-                  <select value={state} onChange={e => onAddressChange(setState)(e.target.value)} className={inputCls}>
-                    {NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  <select
+                    value={stateCode}
+                    onChange={e => {
+                      const code = e.target.value;
+                      const name = stateOptions.find(s => s.code === code)?.name || "";
+                      setStateCode(code);
+                      setState(name);
+                      setRates([]); setSelectedRate(null);
+                    }}
+                    className={inputCls}
+                  >
+                    <option value="" disabled>{locLoading ? "Loading states..." : "Select State"}</option>
+                    {stateOptions.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className={labelCls}>City *</label>
-                  <input value={city} onChange={e => onAddressChange(setCity)(e.target.value)} className={inputCls} />
+                  {cityOptions.length > 0 ? (
+                    <select
+                      value={city}
+                      onChange={e => { onAddressChange(setCity)(e.target.value); }}
+                      className={inputCls}
+                    >
+                      <option value="" disabled>{locLoading ? "Loading cities..." : "Select City"}</option>
+                      {cityOptions.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      value={city}
+                      onChange={e => onAddressChange(setCity)(e.target.value)}
+                      placeholder={locLoading ? "Loading cities..." : "City"}
+                      className={inputCls}
+                    />
+                  )}
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelCls}>Postal Code (optional)</label>
