@@ -40,7 +40,11 @@ function slugify(s: string) {
 function makeSku(productName: string, colorLabel: string, size: string) {
   const p = productName.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PROD";
   const c = colorLabel.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3)  || "COL";
-  return `TV-${p}-${c}-${size}`;
+  const sz = String(size).trim().toUpperCase().replace(/[^A-Z0-9]/g, "") || "SZ";
+  // Short unique suffix so two products with the same name/colour/size can never
+  // produce the same SKU (which caused "Unique constraint failed on sku").
+  const suffix = uid().toUpperCase().slice(0, 4);
+  return `TV-${p}-${c}-${sz}-${suffix}`;
 }
 
 function emptyColor(): ColorEntry {
