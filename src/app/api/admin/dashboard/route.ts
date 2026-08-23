@@ -16,7 +16,7 @@ export async function GET() {
     totalOrders, ordersToday, ordersWeek, ordersMonth,
     pending, processing, shipped,
     revAll, revMonth, revToday,
-    customers, lowStock, outOfStock, recentOrders,
+    customerGroups, lowStock, outOfStock, recentOrders,
   ] = await prisma.$transaction([
     prisma.order.count({ where: { paymentStatus: "SUCCESS" } }),
     prisma.order.count({ where: { paymentStatus: "SUCCESS", createdAt: { gte: todayStart } } }),
@@ -28,7 +28,9 @@ export async function GET() {
     prisma.order.aggregate({ where: { paymentStatus: "SUCCESS" }, _sum: { totalAmount: true } }),
     prisma.order.aggregate({ where: { paymentStatus: "SUCCESS", createdAt: { gte: monthStart } }, _sum: { totalAmount: true } }),
     prisma.order.aggregate({ where: { paymentStatus: "SUCCESS", createdAt: { gte: todayStart } }, _sum: { totalAmount: true } }),
-    prisma.profile.count({ where: { role: "CUSTOMER" } }),
+    // Customers = DISTINCT people who have placed an order (any status),
+    // not just anyone who registered. groupBy profileId → number of groups.
+    prisma.order.groupBy({ by: ["profileId"], _count: { id: true } }),
     prisma.productVariant.count({ where: { stockQuantity: { gt: 0, lte: 5 } } }),
     prisma.productVariant.count({ where: { stockQuantity: 0 } }),
     prisma.order.findMany({
@@ -50,7 +52,8 @@ export async function GET() {
         thisMonth: Number(revMonth._sum.totalAmount ?? 0),
         today:     Number(revToday._sum.totalAmount ?? 0),
       },
-      customers,
+      // Distinct customers who have ordered.
+      customers: customerGroups.length,
       inventory: { lowStock, outOfStock },
       recentOrders,
     },

@@ -20,24 +20,47 @@ function ConfirmInner() {
     if (ran.current) return;
     ran.current = true;
 
-    // Paystack returns ?reference=, Flutterwave returns ?tx_ref= — we set both to the order id
-    const reference = params.get("reference") ?? params.get("tx_ref");
-    if (!reference) { setStatus("failed"); setMessage("Missing payment reference."); return; }
+    // Paystack returns ?reference= AND ?trxref= (both, usually). Flutterwave uses
+    // ?tx_ref=. Read all three so we never miss it.
+    const reference =
+      params.get("reference") ??
+      params.get("trxref") ??
+      params.get("tx_ref");
+
+    if (!reference) {
+      setStatus("failed");
+      setMessage("Missing payment reference.");
+      return;
+    }
 
     (async () => {
       try {
-        const r = await fetch(`/api/checkout/verify?reference=${encodeURIComponent(reference)}`);
+        const r = await fetch(
+          `/api/checkout/verify?reference=${encodeURIComponent(reference)}`,
+        );
         const d = await r.json();
 
         if (d.success && d.data?.status === "PAID") {
-          sendGAEvent("event", "purchase", {
-            transaction_id: d.data.orderId,
-            currency: d.data.currency,
-            value: d.data.total,
-            items: d.data.items.map((i: { name: string; quantity: number; price: number }) => ({
-              item_name: i.name, quantity: i.quantity, price: i.price,
-            })),
-          });
+          // Fire GA4 purchase — guarded so a bad/missing field can never crash
+          // the page (which caused the blank screen).
+          try {
+            sendGAEvent("event", "purchase", {
+              transaction_id: d.data.orderId,
+              currency: d.data.currency,
+              value: d.data.total,
+              items: Array.isArray(d.data.items)
+                ? d.data.items.map(
+                    (i: { name: string; quantity: number; price: number }) => ({
+                      item_name: i.name,
+                      quantity: i.quantity,
+                      price: i.price,
+                    }),
+                  )
+                : [],
+            });
+          } catch (gaErr) {
+            console.error("GA purchase event failed (non-fatal):", gaErr);
+          }
           router.replace(`/checkout/success?order=${d.data.orderId}`);
         } else {
           setStatus("failed");
@@ -45,7 +68,9 @@ function ConfirmInner() {
         }
       } catch {
         setStatus("failed");
-        setMessage("We couldn't reach the server. If you were charged, your order will still be confirmed — check your email or contact us.");
+        setMessage(
+          "We couldn't reach the server. If you were charged, your order will still be confirmed — check your email or contact us.",
+        );
       }
     })();
   }, [params, router]);
@@ -55,25 +80,39 @@ function ConfirmInner() {
       <div className="text-center max-w-sm">
         {status === "verifying" ? (
           <>
-            <p className="text-[28px] text-[#111] mb-3" style={{ fontFamily: "var(--font-script), cursive" }}>
+            <p
+              className="text-[28px] text-[#111] mb-3"
+              style={{ fontFamily: "var(--font-script), cursive" }}
+            >
               One moment
             </p>
-            <p className="text-[12.5px] text-[#8f8f8a] leading-relaxed">{message}</p>
+            <p className="text-[12.5px] text-[#8f8f8a] leading-relaxed">
+              {message}
+            </p>
             <div className="mt-8 mx-auto w-8 h-[1px] bg-[#111] animate-pulse" />
           </>
         ) : (
           <>
-            <p className="text-[28px] text-[#111] mb-3" style={{ fontFamily: "var(--font-script), cursive" }}>
+            <p
+              className="text-[28px] text-[#111] mb-3"
+              style={{ fontFamily: "var(--font-script), cursive" }}
+            >
               Payment not completed
             </p>
-            <p className="text-[12.5px] text-[#8f8f8a] leading-relaxed mb-7">{message}</p>
+            <p className="text-[12.5px] text-[#8f8f8a] leading-relaxed mb-7">
+              {message}
+            </p>
             <div className="flex items-center justify-center gap-4">
-              <Link href="/checkout"
-                className="bg-[#111] text-white text-[11px] tracking-[0.22em] uppercase px-7 py-3.5 hover:bg-black transition-colors">
+              <Link
+                href="/checkout"
+                className="bg-[#111] text-white text-[11px] tracking-[0.22em] uppercase px-7 py-3.5 hover:bg-black transition-colors"
+              >
                 Try Again
               </Link>
-              <Link href="/"
-                className="text-[11px] tracking-[0.15em] uppercase text-[#8f8f8a] underline underline-offset-4 hover:text-[#111]">
+              <Link
+                href="/"
+                className="text-[11px] tracking-[0.15em] uppercase text-[#8f8f8a] underline underline-offset-4 hover:text-[#111]"
+              >
                 Home
               </Link>
             </div>
