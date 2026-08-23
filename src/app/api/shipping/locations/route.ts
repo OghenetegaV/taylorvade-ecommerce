@@ -31,6 +31,32 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: [] });
     }
 
+    if (type === "countries") {
+      const res = await fetch(`${TERMINAL_BASE}/countries`, {
+        headers: headers(),
+        cache: "no-store",
+      });
+      const data = await res.json();
+      const raw = Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.data?.countries)
+        ? data.data.countries
+        : [];
+      const countries = raw
+        .map((c: any) => ({
+          name: c?.name || c?.country || "",
+          code: c?.isoCode || c?.country_code || c?.code || "",
+        }))
+        .filter((c: any) => c.name && c.code);
+
+      // Nigeria pinned first, then alphabetical.
+      const ng = countries.find((c: any) => c.code === "NG");
+      const rest = countries
+        .filter((c: any) => c.code !== "NG")
+        .sort((a: any, b: any) => a.name.localeCompare(b.name));
+      return NextResponse.json({ success: true, data: ng ? [ng, ...rest] : rest });
+    }
+
     if (type === "states") {
       const res = await fetch(
         `${TERMINAL_BASE}/states?country_code=${encodeURIComponent(country)}`,

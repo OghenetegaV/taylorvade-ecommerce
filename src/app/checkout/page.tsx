@@ -57,6 +57,8 @@ export default function CheckoutPage() {
   const [phone, setPhone]               = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
+  const [countryCode, setCountryCode]   = useState("NG");
+  const [countryOptions, setCountryOptions] = useState<{ name: string; code: string }[]>([]);
   const [city, setCity]                 = useState("");
   const [state, setState]               = useState("");
   const [stateCode, setStateCode]       = useState("");
@@ -66,30 +68,43 @@ export default function CheckoutPage() {
   const [postalCode, setPostalCode]     = useState("");
   const [notes, setNotes]               = useState("");
 
-  // Load Terminal states once (Nigeria).
+  // Load Terminal countries once.
   useEffect(() => {
     let cancelled = false;
+    fetch("/api/shipping/locations?type=countries")
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled && d.success) setCountryOptions(d.data); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load Terminal states whenever the chosen country changes.
+  useEffect(() => {
+    let cancelled = false;
+    setStateOptions([]);
+    setStateCode(""); setState("");
+    setCityOptions([]); setCity("");
+    if (!countryCode) return;
     setLocLoading(true);
-    fetch("/api/shipping/locations?type=states&country=NG")
+    fetch(`/api/shipping/locations?type=states&country=${encodeURIComponent(countryCode)}`)
       .then((r) => r.json())
       .then((d) => { if (!cancelled && d.success) setStateOptions(d.data); })
       .finally(() => { if (!cancelled) setLocLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [countryCode]);
 
   // Load Terminal cities whenever the chosen state code changes.
   useEffect(() => {
     let cancelled = false;
     setCityOptions([]);
     setCity("");
-    if (!stateCode) return;
+    if (!stateCode || !countryCode) return;
     setLocLoading(true);
-    fetch(`/api/shipping/locations?type=cities&country=NG&state_code=${encodeURIComponent(stateCode)}`)
+    fetch(`/api/shipping/locations?type=cities&country=${encodeURIComponent(countryCode)}&state_code=${encodeURIComponent(stateCode)}`)
       .then((r) => r.json())
       .then((d) => { if (!cancelled && d.success) setCityOptions(d.data); })
       .finally(() => { if (!cancelled) setLocLoading(false); });
     return () => { cancelled = true; };
-  }, [stateCode]);
+  }, [stateCode, countryCode]);
 
   // Shipping rates (Terminal Africa)
   const [rates, setRates]             = useState<Rate[]>([]);
@@ -194,7 +209,7 @@ export default function CheckoutPage() {
           address: {
             name: fullName, phone,
             line1: addressLine1, line2: addressLine2,
-            city, state, stateCode, country: "NG", postalCode,
+            city, state, stateCode, country: countryCode, postalCode,
           },
         }),
       });
@@ -360,6 +375,20 @@ export default function CheckoutPage() {
                 <div className="md:col-span-2">
                   <label className={labelCls}>Apartment, Suite, etc. (optional)</label>
                   <input value={addressLine2} onChange={e => onAddressChange(setAddressLine2)(e.target.value)} className={inputCls} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelCls}>Country *</label>
+                  <select
+                    value={countryCode}
+                    onChange={e => {
+                      setCountryCode(e.target.value);
+                      setRates([]); setSelectedRate(null);
+                    }}
+                    className={inputCls}
+                  >
+                    <option value="" disabled>Select Country</option>
+                    {countryOptions.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className={labelCls}>State *</label>
