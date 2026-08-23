@@ -274,7 +274,10 @@ export default function CheckoutPage() {
           notes,
           address: {
             fullName, phone, addressLine1, addressLine2,
-            city, state, country: "Nigeria", postalCode,
+            city, state, stateCode,
+            country: countryOptions.find(c => c.code === countryCode)?.name ?? countryCode,
+            countryCode,
+            postalCode,
           },
         }),
       });
