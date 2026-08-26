@@ -77,9 +77,9 @@ const primaryLinks = [
 ];
 const secondaryLinks = [
   { label: "Our Story",  href: "/stores" },
+  { label: "About Us",   href: "/about" },
   { label: "Collection",  href: "/gift-cards" },
   // { label: "",  href: "/rewards" },
-  // { label: "About Us",    href: "/about" },
 ];
 
 // Added Socials
