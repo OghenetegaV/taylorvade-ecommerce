@@ -12,17 +12,17 @@ import { sendOrderConfirmationEmail } from "@/lib/email";
 export async function GET(req: NextRequest) {
   try {
     const user = await getServerUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
-    }
 
     const reference = req.nextUrl.searchParams.get("reference");
     if (!reference) {
       return NextResponse.json({ success: false, error: "Missing reference" }, { status: 400 });
     }
 
+    // Logged-in shoppers can only verify their own orders. Guest orders have no
+    // account to check against — the unguessable order id (delivered only via the
+    // Paystack redirect back to this browser) is the capability that proves access.
     const order = await prisma.order.findFirst({
-      where: { id: reference, profileId: user.id },
+      where: user ? { id: reference, profileId: user.id } : { id: reference },
       include: {
         items: { include: { product: { select: { name: true } }, variant: true } },
       },

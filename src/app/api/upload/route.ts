@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { getServerUser } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/admin";
 import type { ApiResponse } from "@/types";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
@@ -11,14 +11,8 @@ const MAX_SIZE_MB   = 5;
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getServerUser();
-
-    if (!user) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const adminCheck = await requireAdmin();
+    if (adminCheck instanceof NextResponse) return adminCheck;
 
     const formData = await request.formData();
     const file     = formData.get("file") as File | null;

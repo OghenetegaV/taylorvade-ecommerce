@@ -162,8 +162,9 @@ export default function CheckoutPage() {
   const shippingFee = selectedRate?.amount ?? 0;
   const total = subtotal + shippingFee;
 
+  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const addressComplete =
-    fullName.trim() && phone.trim() && addressLine1.trim() && city.trim() && state.trim();
+    emailValid && fullName.trim() && phone.trim() && addressLine1.trim() && city.trim() && state.trim();
 
   /* ── GA4 ─────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -272,6 +273,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           rateId: selectedRate.id,
           notes,
+          email,
           address: {
             fullName, phone, addressLine1, addressLine2,
             city, state, stateCode,
@@ -299,15 +301,8 @@ export default function CheckoutPage() {
     );
   }
 
-  if (authState === "guest") {
-    return (
-      <Gate
-        title="Sign in to check out"
-        body="You need an account so we can attach your order, delivery details, and receipts to you."
-        cta={{ label: "Sign In / Create Account", onClick: () => router.push("/login?next=/checkout") }}
-      />
-    );
-  }
+  // Guest checkout is allowed — no sign-in gate. Logged-in users still get their
+  // email prefilled; guests simply type theirs in the Contact section.
 
   if (items.length === 0) {
     return (
@@ -352,8 +347,14 @@ export default function CheckoutPage() {
             <Card n="1" title="Contact">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Email</label>
-                  <input value={email} readOnly className={`${inputCls} bg-[#f5f5f4] cursor-not-allowed`} />
+                  <label className={labelCls}>Email *</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                    className={inputCls}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Phone *</label>

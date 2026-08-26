@@ -46,7 +46,11 @@ enum PaymentProvider {
 
 model Profile {
   id        String   @id
-  email     String   @unique
+  // Not @unique: guest checkout creates a lightweight Profile per guest order
+  // and may reuse one for a repeat guest with the same email, so multiple
+  // Profile rows can legitimately share an email (real accounts are still
+  // deduplicated at the Supabase Auth layer on signup).
+  email     String
   fullName  String?  @map("full_name")
   phone     String?
   avatarUrl String?  @map("avatar_url")
@@ -59,6 +63,7 @@ model Profile {
   cartItems CartItem[]
   wishlists Wishlist[]
 
+  @@index([email])
   @@map("profiles")
 }
 

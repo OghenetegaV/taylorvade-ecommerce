@@ -16,6 +16,10 @@ import { getShippingMethods } from "@/lib/shipping";
 const TERMINAL_BASE = "https://api.terminal.africa/v1";
 const DEFAULT_ITEM_WEIGHT_KG = 0.5;
 
+function getSessionId(req: NextRequest) {
+  return req.cookies.get("tv_session")?.value ?? null;
+}
+
 function terminalHeaders() {
   return {
     Authorization: `Bearer ${process.env.TERMINAL_SECRET_KEY}`,
@@ -57,18 +61,20 @@ function flatFallback(country: string, state: string) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getServerUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
-    }
+    const sessionId = getSessionId(req);
+    const cartWhere = user ? { profileId: user.id } : sessionId ? { sessionId } : null;
 
     const { address } = await req.json();
     if (!address?.line1 || !address?.city || !address?.state || !address?.country) {
       return NextResponse.json({ success: false, error: "Incomplete address" }, { status: 400 });
     }
+    if (!cartWhere) {
+      return NextResponse.json({ success: false, error: "Your bag is empty" }, { status: 400 });
+    }
 
     // ── Cart → parcel contents ───────────────────────────────────
     const cartItems = await prisma.cartItem.findMany({
-      where: { profileId: user.id },
+      where: cartWhere,
       include: {
         product: { select: { name: true, basePrice: true } },
         variant: { select: { priceOverride: true } },
@@ -78,7 +84,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your bag is empty" }, { status: 400 });
     }
 
-    const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+    const profile = user ? await prisma.profile.findUnique({ where: { id: user.id } }) : null;
     const countryCode = address.country || "NG";
 
     // Helper: return flat fallback as a successful response.
@@ -110,7 +116,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           first_name: firstName,
           last_name: restName.join(" ") || firstName,
-          email: profile?.email ?? user.email,
+          email: profile?.email ?? address.email ?? user?.email ?? "",
           phone: toInternationalPhone(address.phone ?? profile?.phone ?? "", countryCode),
           line1,
           line2: address.line2 || line2Overflow || undefined,
@@ -179,7 +185,13 @@ export async function POST(req: NextRequest) {
           deliveryTime: r.delivery_time ?? r.delivery_eta ?? "",
           pickupTime: r.pickup_time ?? "",
         }))
-        .filter((r: { id?: string; amount: number }) => r.id && Number.isFinite(r.amount))
+        .filter((r: { id?: string; amount: number; carrier?: string }) => {
+          if (!r.id || !Number.isFinite(r.amount)) return false;
+          // Hide the "Ship to Naija" courier from the options.
+          const name = (r.carrier ?? "").toLowerCase();
+          if (name.includes("ship to naija") || name.includes("naija")) return false;
+          return true;
+        })
         .sort((a: { amount: number }, b: { amount: number }) => a.amount - b.amount);
 
       if (rates.length === 0) return respondFallback();

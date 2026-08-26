@@ -21,7 +21,10 @@ function verifyPaystackSignature(
     .update(rawBody)
     .digest("hex");
 
-  return hash === signatureHeader;
+  const hashBuf = Buffer.from(hash, "hex");
+  const sigBuf = Buffer.from(signatureHeader, "hex");
+  if (hashBuf.length !== sigBuf.length) return false;
+  return crypto.timingSafeEqual(hashBuf, sigBuf);
 }
 
 export async function POST(request: NextRequest) {
@@ -46,9 +49,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      // Find the order by payment reference
+      // checkout/initialize uses order.id as the Paystack `reference`, so that's
+      // the key to look up by (paymentReference is only set by the old, unused
+      // payments/paystack/initialize flow).
       const order = await prisma.order.findUnique({
-        where: { paymentReference: reference },
+        where: { id: reference },
         include: {
           items: {
             include: {
@@ -84,6 +89,11 @@ export async function POST(request: NextRequest) {
 
       // ── Atomic update: mark order paid + decrement stock ─────────────
       await prisma.$transaction(async (tx) => {
+        // Re-check inside the transaction — checkout/verify may have already
+        // settled this order in a race with this webhook delivery.
+        const fresh = await tx.order.findUnique({ where: { id: order.id } });
+        if (fresh?.paymentStatus === "SUCCESS") return;
+
         // Mark order as paid
         await tx.order.update({
           where: { id: order.id },
@@ -122,7 +132,7 @@ export async function POST(request: NextRequest) {
       const { reference } = event.data;
 
       await prisma.order.updateMany({
-        where: { paymentReference: reference, paymentStatus: "PENDING" },
+        where: { id: reference, paymentStatus: "PENDING" },
         data: { paymentStatus: "FAILED", status: "CANCELLED" },
       });
 

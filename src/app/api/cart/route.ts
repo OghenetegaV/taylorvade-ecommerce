@@ -189,23 +189,36 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const where = await getCartWhere(request);
+
     if (quantity <= 0) {
       // Treat as remove
-      await prisma.cartItem.delete({ where: { id: cartItemId } });
+      const { count } = await prisma.cartItem.deleteMany({ where: { id: cartItemId, ...where } });
+      if (count === 0) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Cart item not found" },
+          { status: 404 }
+        );
+      }
       return NextResponse.json<ApiResponse>({
         success: true,
         message: "Item removed",
       });
     }
 
-    const cartItem = await prisma.cartItem.update({
-      where: { id: cartItemId },
+    const { count } = await prisma.cartItem.updateMany({
+      where: { id: cartItemId, ...where },
       data: { quantity },
     });
+    if (count === 0) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Cart item not found" },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json<ApiResponse>({
       success: true,
-      data: cartItem,
     });
   } catch (error) {
     console.error("[PUT /api/cart]", error);
@@ -230,7 +243,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.cartItem.delete({ where: { id: cartItemId } });
+    const where = await getCartWhere(request);
+    const { count } = await prisma.cartItem.deleteMany({ where: { id: cartItemId, ...where } });
+    if (count === 0) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Cart item not found" },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json<ApiResponse>({
       success: true,

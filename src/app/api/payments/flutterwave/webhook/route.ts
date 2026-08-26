@@ -2,18 +2,27 @@
 // POST /api/payments/flutterwave/webhook
 
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import prisma from "@/lib/prisma";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 
 const FLW_WEBHOOK_HASH = process.env.FLUTTERWAVE_WEBHOOK_HASH!;
 const FLW_SECRET       = process.env.FLUTTERWAVE_SECRET_KEY!;
 
+function verifyFlutterwaveHash(verifHash: string | null): boolean {
+  if (!verifHash) return false;
+  const a = Buffer.from(verifHash);
+  const b = Buffer.from(FLW_WEBHOOK_HASH);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 export async function POST(request: NextRequest) {
   try {
     // ── Verify signature ─────────────────────────────────────────────
     const verifHash = request.headers.get("verif-hash");
 
-    if (!verifHash || verifHash !== FLW_WEBHOOK_HASH) {
+    if (!verifyFlutterwaveHash(verifHash)) {
       console.warn("[Flutterwave Webhook] Invalid hash — request rejected");
       return NextResponse.json({ message: "Invalid signature" }, { status: 401 });
     }

@@ -1,123 +1,171 @@
 // src/app/api/checkout/initialize/route.ts
-// v2 — Paystack only. POST { rateId, notes, address:{...} }
-// Re-validates the Terminal Africa rate server-side (GET /rates/:id) so the
-// delivery fee can't be tampered with, creates the Address + PENDING Order,
-// then returns the Paystack hosted-payment URL.
+// v3 — Guest checkout. Paystack only.
+// POST { rateId, notes, email, address:{ fullName, phone, addressLine1, addressLine2,
+//        city, state, stateCode?, country, countryCode?, postalCode? } }
+//
+// No sign-in required. If the shopper is logged in we use their profile; if not,
+// we upsert a lightweight guest Profile keyed to their email (industry-standard
+// guest checkout) — so orders always attach to a profile with NO schema change.
+// The cart is read by profileId (logged in) or the tv_session cookie (guest).
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
+import { resolveShipping } from "@/lib/shipping";
+import crypto from "crypto";
 
 const TERMINAL_BASE = "https://api.terminal.africa/v1";
 
-type Body = {
-  rateId: string;
-  notes?: string;
-  address: {
-    fullName: string;
-    phone: string;
-    addressLine1: string;
-    addressLine2?: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode?: string;
-  };
-};
+function getSessionId(req: NextRequest) {
+  return req.cookies.get("tv_session")?.value ?? null;
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const body = await req.json();
+    const { rateId, notes, address } = body;
+    const email: string | undefined = (body.email ?? address?.email)?.trim()?.toLowerCase();
+
+    // ── Validate ──
+    if (!address?.fullName || !address?.phone || !address?.addressLine1 ||
+        !address?.city || !address?.state || !address?.country) {
+      return NextResponse.json({ success: false, error: "Incomplete delivery details" }, { status: 400 });
+    }
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return NextResponse.json({ success: false, error: "A valid email is required" }, { status: 400 });
+    }
+
+    // ── Identify the shopper: logged in, or guest (by email) ──
     const user = await getServerUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Please sign in to check out" }, { status: 401 });
-    }
+    const sessionId = getSessionId(req);
 
-    const { rateId, notes, address } = (await req.json()) as Body;
-
-    if (!rateId) {
-      return NextResponse.json({ success: false, error: "Please select a shipping option" }, { status: 400 });
-    }
-    const required: (keyof Body["address"])[] = ["fullName", "phone", "addressLine1", "city", "state", "country"];
-    for (const f of required) {
-      if (!address?.[f]?.trim()) {
-        return NextResponse.json({ success: false, error: `Missing address field: ${f}` }, { status: 400 });
+    let profileId: string;
+    if (user) {
+      profileId = user.id;
+      // keep guest email in sync isn't needed; logged-in profile already exists
+    } else {
+      // Guest checkout — never blocks on sign-in. Reuse an existing GUEST
+      // profile with this email if one exists (so a repeat guest shopper's
+      // orders land on one profile), but never touch a real registered
+      // account: that would let anyone attach orders/addresses to a
+      // stranger's account just by typing their email, with no proof of
+      // ownership.
+      const existingGuest = await prisma.profile.findFirst({
+        where: { email, id: { startsWith: "guest_" } },
+      });
+      if (existingGuest) {
+        profileId = existingGuest.id;
+      } else {
+        const guest = await prisma.profile.create({
+          data: {
+            id: `guest_${crypto.randomUUID()}`,
+            email,
+            fullName: address.fullName,
+            phone: address.phone,
+            role: "CUSTOMER",
+          },
+        });
+        profileId = guest.id;
       }
     }
 
-    // ── Cart from DB (source of truth) ───────────────────────────
+    // ── Read the cart (logged in → profileId, guest → sessionId) ──
+    const cartWhere = user
+      ? { profileId: user.id }
+      : sessionId
+      ? { sessionId }
+      : null;
+    if (!cartWhere) {
+      return NextResponse.json({ success: false, error: "Your bag is empty" }, { status: 400 });
+    }
+
     const cartItems = await prisma.cartItem.findMany({
-      where: { profileId: user.id },
+      where: cartWhere,
       include: {
-        product: { select: { id: true, name: true, basePrice: true, isPublished: true } },
-        variant: true,
+        product: { select: { name: true, basePrice: true } },
+        variant: { select: { priceOverride: true } },
       },
     });
     if (!cartItems.length) {
       return NextResponse.json({ success: false, error: "Your bag is empty" }, { status: 400 });
     }
 
-    let subtotal = 0;
-    for (const item of cartItems) {
-      if (!item.product.isPublished) {
+    // ── Totals ──
+    const subtotal = cartItems.reduce(
+      (sum, i) => sum + Number(i.variant.priceOverride ?? i.product.basePrice) * i.quantity, 0,
+    );
+
+    // ── Re-validate the shipping rate server-side. Fails closed: an invalid,
+    // expired, or unverifiable rate blocks checkout rather than silently
+    // charging ₦0 shipping. ──
+    if (!rateId) {
+      return NextResponse.json({ success: false, error: "Please select a shipping option" }, { status: 400 });
+    }
+    let shippingFee: number;
+    let shippingCarrier = "";
+
+    const flatMatch = resolveShipping(rateId, address.country.trim(), address.state, subtotal);
+    if (flatMatch) {
+      // Flat-zone fallback rate — the fee is recomputed locally, not from Terminal.
+      shippingFee = flatMatch.feeNGN;
+      shippingCarrier = flatMatch.label;
+    } else {
+      try {
+        const rateRes = await fetch(`${TERMINAL_BASE}/rates/${encodeURIComponent(rateId)}`, {
+          headers: { Authorization: `Bearer ${process.env.TERMINAL_SECRET_KEY}` },
+          cache: "no-store",
+        });
+        const rateData = await rateRes.json();
+        if (!rateRes.ok || !rateData?.data || !Number.isFinite(Number(rateData.data.amount))) {
+          return NextResponse.json(
+            { success: false, error: "Shipping rate expired — please fetch rates again" },
+            { status: 422 },
+          );
+        }
+        shippingFee = Number(rateData.data.amount);
+        shippingCarrier = rateData.data.carrier_name ?? "";
+      } catch {
         return NextResponse.json(
-          { success: false, error: `${item.product.name} is no longer available` }, { status: 409 });
+          { success: false, error: "Could not verify shipping rate — please try again" },
+          { status: 502 },
+        );
       }
-      if (item.variant.stockQuantity < item.quantity) {
-        return NextResponse.json(
-          { success: false, error: `Only ${item.variant.stockQuantity} left of ${item.product.name} (${item.variant.size})` },
-          { status: 409 });
-      }
-      subtotal += Number(item.variant.priceOverride ?? item.product.basePrice) * item.quantity;
     }
 
-    // ── Re-validate the Terminal rate server-side ────────────────
-    const rateRes = await fetch(`${TERMINAL_BASE}/rates/${encodeURIComponent(rateId)}`, {
-      headers: { Authorization: `Bearer ${process.env.TERMINAL_SECRET_KEY}` },
-    });
-    const rateData = await rateRes.json();
-    const rate = rateData?.data;
-    if (!rateRes.ok || !rate || !Number.isFinite(Number(rate.amount))) {
-      return NextResponse.json(
-        { success: false, error: "Shipping rate expired — please fetch rates again" },
-        { status: 422 },
-      );
-    }
-    const shippingFee = Number(rate.amount);
-    const carrier     = rate.carrier_name ?? "Courier";
-    const eta         = rate.delivery_time ?? "";
-    const total       = subtotal + shippingFee;
+    const totalAmount = subtotal + shippingFee;
 
-    // ── Persist address + order ──────────────────────────────────
-    const profile = await prisma.profile.findUnique({ where: { id: user.id } });
-
-    const savedAddress = await prisma.address.create({
+    // ── Create the delivery address (attached to the profile) ──
+    const createdAddress = await prisma.address.create({
       data: {
-        profileId: user.id,
-        fullName: address.fullName.trim(),
-        phone: address.phone.trim(),
-        addressLine1: address.addressLine1.trim(),
-        addressLine2: address.addressLine2?.trim() || null,
-        city: address.city.trim(),
-        state: address.state.trim(),
-        country: address.country.trim(),
-        postalCode: address.postalCode?.trim() || null,
+        profileId,
+        fullName: address.fullName,
+        phone: address.phone,
+        addressLine1: address.addressLine1,
+        addressLine2: address.addressLine2 || null,
+        city: address.city,
+        state: address.state,
+        country: address.country.trim(),  // saves the SELECTED country (no hardcode)
+        postalCode: address.postalCode || null,
       },
     });
 
+    // ── Create the order ──
     const order = await prisma.order.create({
       data: {
-        profileId: user.id,
-        addressId: savedAddress.id,
-        totalAmount: total,
+        profileId,
+        addressId: createdAddress.id,
+        status: "PENDING",
+        totalAmount,
         currency: "NGN",
         paymentProvider: "PAYSTACK",
         paymentStatus: "PENDING",
         notes: [
-          `Shipping: ${carrier}${eta ? ` (${eta})` : ""} — ₦${shippingFee.toLocaleString()} [rate:${rateId}]`,
-          notes?.trim(),
-        ].filter(Boolean).join(" | "),
+          notes,
+          shippingCarrier && `Shipping: ${shippingCarrier} (${shippingFee})`,
+          rateId && `[rate:${rateId}]`,
+        ].filter(Boolean).join(" "),
         items: {
-          create: cartItems.map(i => {
+          create: cartItems.map((i) => {
             const unit = Number(i.variant.priceOverride ?? i.product.basePrice);
             return {
               productId: i.productId,
@@ -131,47 +179,45 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // ── Paystack ─────────────────────────────────────────────────
-    const res = await fetch("https://api.paystack.co/transaction/initialize", {
+    // ── Initialize Paystack (reference = order.id, so verify can find it) ──
+    const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
+    const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: profile?.email ?? user.email,
-        amount: Math.round(total * 100),  // kobo
+        email,
+        amount: Math.round(totalAmount * 100), // kobo
         reference: order.id,
-        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/confirm?reference=${order.id}`,
-        channels: ["card", "bank", "ussd", "bank_transfer"],
-        metadata: {
-          order_id: order.id,
-          user_id: user.id,
-          customer_name: address.fullName,
-          shipping_carrier: carrier,
-        },
+        callback_url: `${origin}/checkout/confirm?reference=${order.id}`,
+        metadata: { orderId: order.id },
       }),
     });
-    const data = await res.json();
-    if (!data.status) {
-      await prisma.order.delete({ where: { id: order.id } });
-      return NextResponse.json({ success: false, error: data.message ?? "Paystack initialization failed" }, { status: 502 });
+    const paystackData = await paystackRes.json();
+
+    if (!paystackData?.status || !paystackData?.data?.authorization_url) {
+      // Roll back the pending order if Paystack init failed.
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: "FAILED", status: "CANCELLED" },
+      }).catch(() => {});
+      return NextResponse.json(
+        { success: false, error: paystackData?.message ?? "Could not start payment" },
+        { status: 502 },
+      );
     }
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { paymentReference: order.id },
-    });
+    // Clear the cart now that the order exists.
+    await prisma.cartItem.deleteMany({ where: cartWhere }).catch(() => {});
 
     return NextResponse.json({
       success: true,
-      data: { paymentUrl: data.data.authorization_url, orderId: order.id, total },
+      data: { paymentUrl: paystackData.data.authorization_url, orderId: order.id },
     });
   } catch (e) {
     console.error("checkout/initialize:", e);
-    return NextResponse.json(
-      { success: false, error: e instanceof Error ? e.message : "Checkout initialization failed" },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: "Could not start checkout" }, { status: 500 });
   }
 }
