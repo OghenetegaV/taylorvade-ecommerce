@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import prisma from "@/lib/prisma";
-import { sendOrderConfirmationEmail } from "@/lib/email";
+import { sendOrderConfirmationEmail, sendOrderNotificationEmail } from "@/lib/email";
 
 const FLW_WEBHOOK_HASH = process.env.FLUTTERWAVE_WEBHOOK_HASH!;
 const FLW_SECRET       = process.env.FLUTTERWAVE_SECRET_KEY!;
@@ -102,6 +102,9 @@ export async function POST(request: NextRequest) {
 
       sendOrderConfirmationEmail(order.id).catch((e) =>
         console.error("[Email] Order confirmation failed:", e)
+      );
+      sendOrderNotificationEmail(order.id).catch((e) =>
+        console.error("[Email] Order notification failed:", e)
       );
 
       console.log("[Flutterwave Webhook] Order", order.id, "marked as PAID");

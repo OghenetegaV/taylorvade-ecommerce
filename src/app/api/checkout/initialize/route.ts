@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { resolveShipping } from "@/lib/shipping";
+import { resolveDiscount } from "@/lib/discount";
 import crypto from "crypto";
 
 const TERMINAL_BASE = "https://api.terminal.africa/v1";
@@ -23,7 +24,7 @@ function getSessionId(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { rateId, notes, address } = body;
+    const { rateId, notes, address, discountCode } = body;
     const email: string | undefined = (body.email ?? address?.email)?.trim()?.toLowerCase();
 
     // ── Validate ──
@@ -132,7 +133,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const totalAmount = subtotal + shippingFee;
+    // ── Re-validate the discount code server-side, same fail-closed pattern
+    // as shipping: never trust a client-supplied discount amount. ──
+    let discountAmount = 0;
+    let appliedCode: string | null = null;
+    if (discountCode && String(discountCode).trim()) {
+      const result = await resolveDiscount(String(discountCode), subtotal);
+      if ("error" in result) {
+        return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+      }
+      discountAmount = result.amount;
+      appliedCode = result.discount.code;
+    }
+
+    const totalAmount = Math.max(0, subtotal - discountAmount) + shippingFee;
 
     // ── Create the delivery address (attached to the profile) ──
     const createdAddress = await prisma.address.create({
@@ -159,6 +173,8 @@ export async function POST(req: NextRequest) {
         currency: "NGN",
         paymentProvider: "PAYSTACK",
         paymentStatus: "PENDING",
+        discountCode: appliedCode,
+        discountAmount,
         notes: [
           notes,
           shippingCarrier && `Shipping: ${shippingCarrier} (${shippingFee})`,

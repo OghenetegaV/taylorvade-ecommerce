@@ -9,16 +9,16 @@ const BRAND_LINKS = [
 ];
 
 const CUSTOMER_LINKS = [
-  { text: "Size Guide", href: "#" },
-  { text: "Shipping & Deliveries", href: "#" },
-  { text: "Returns & Exchanges", href: "#" },
+  { text: "Size Guide", href: "/size-guide" },
+  { text: "Shipping & Deliveries", href: "/shipping-policy" },
+  { text: "Returns & Exchanges", href: "/returns" },
   { text: "Secure Payments", href: "#" },
 ];
 
 const LEGAL_LINKS = [
-  { text: "Privacy Policy", href: "#" },
-  { text: "Terms & Conditions", href: "#" },
-  { text: "Cookie Settings", href: "#" },
+  { text: "Privacy Policy", href: "/privacy" },
+  { text: "Terms & Conditions", href: "/terms" },
+  { text: "Cookie Settings", href: "/cookies" },
 ];
 
 export default function Footer() {

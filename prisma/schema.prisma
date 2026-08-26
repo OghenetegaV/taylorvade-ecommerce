@@ -42,6 +42,11 @@ enum PaymentProvider {
   FLUTTERWAVE
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
 // ─── MODELS ──────────────────────────────────────────────────────────────────
 
 model Profile {
@@ -74,30 +79,45 @@ model Category {
   gender   Gender  @default(UNISEX)
   parentId String? @map("parent_id")
 
-  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryTree")
-  products Product[]
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
+  products  Product[]
+  sizeChart SizeChart?
 
   @@map("categories")
 }
 
+model SizeChart {
+  id         String   @id @default(cuid())
+  categoryId String   @unique @map("category_id")
+  // [{ label: "Chest", values: { XS: "34", S: "36", ... } }, ...] — columns are
+  // whatever sizes the admin enters, rows are whatever measurements apply to
+  // that category, so one shape covers tops/bottoms/outerwear/etc.
+  sizes      Json
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("size_charts")
+}
+
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  editorNotes     String? @map("editor_notes")      
-  sizeFit         String? @map("size_fit")           
-  deliveryReturns String? @map("delivery_returns")
-  type        String
-  basePrice   Decimal  @map("base_price") @db.Decimal(10, 2)
-  isNew       Boolean  @default(false) @map("is_new")
-  isFeatured  Boolean  @default(false) @map("is_featured")
-  isPublished Boolean  @default(false) @map("is_published")
-  gender      Gender   @default(UNISEX)
-  categoryId  String   @map("category_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String?
+  editorNotes     String?  @map("editor_notes")
+  sizeFit         String?  @map("size_fit")
+  deliveryReturns String?  @map("delivery_returns")
+  type            String
+  basePrice       Decimal  @map("base_price") @db.Decimal(10, 2)
+  isNew           Boolean  @default(false) @map("is_new")
+  isFeatured      Boolean  @default(false) @map("is_featured")
+  isPublished     Boolean  @default(false) @map("is_published")
+  gender          Gender   @default(UNISEX)
+  categoryId      String   @map("category_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   category   Category         @relation(fields: [categoryId], references: [id])
   variants   ProductVariant[]
@@ -171,12 +191,14 @@ model Order {
   paymentProvider  PaymentProvider? @map("payment_provider")
   paymentReference String?          @unique @map("payment_reference")
   paymentStatus    PaymentStatus    @default(PENDING) @map("payment_status")
+  discountCode     String?          @map("discount_code")
+  discountAmount   Decimal          @default(0) @map("discount_amount") @db.Decimal(10, 2)
   notes            String?
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
-  profile Profile    @relation(fields: [profileId], references: [id])
-  address Address    @relation(fields: [addressId], references: [id])
+  profile Profile     @relation(fields: [profileId], references: [id])
+  address Address     @relation(fields: [addressId], references: [id])
   items   OrderItem[]
 
   @@map("orders")
@@ -196,6 +218,19 @@ model OrderItem {
   variant ProductVariant @relation(fields: [variantId], references: [id])
 
   @@map("order_items")
+}
+
+model Discount {
+  id        String       @id @default(cuid())
+  code      String       @unique
+  type      DiscountType
+  value     Decimal      @db.Decimal(10, 2)
+  isActive  Boolean      @default(true) @map("is_active")
+  expiresAt DateTime?    @map("expires_at")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  @@map("discounts")
 }
 
 model CartItem {

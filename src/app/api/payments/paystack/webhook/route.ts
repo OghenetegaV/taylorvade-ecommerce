@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import prisma from "@/lib/prisma";
-import { sendOrderConfirmationEmail } from "@/lib/email";
+import { sendOrderConfirmationEmail, sendOrderNotificationEmail } from "@/lib/email";
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
 
@@ -119,9 +119,12 @@ export async function POST(request: NextRequest) {
         });
       });
 
-      // Send confirmation email (non-blocking)
+      // Send confirmation + store notification emails (non-blocking)
       sendOrderConfirmationEmail(order.id).catch((e) =>
         console.error("[Email] Failed to send order confirmation:", e)
+      );
+      sendOrderNotificationEmail(order.id).catch((e) =>
+        console.error("[Email] Failed to send order notification:", e)
       );
 
       console.log("[Paystack Webhook] Order", order.id, "marked as PAID");

@@ -11,6 +11,8 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCurrency } from "@/lib/currency";
 
 type Variant = {
   id: string; size: string; colorLabel: string;
@@ -25,9 +27,6 @@ export interface ProductCardProps {
   variants: Variant[];
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
-
 const SIZE_ORDER = ["XXS","XS","S","M","L","XL","XXL","2XL","3XL"];
 
 export default function ProductCard({
@@ -35,6 +34,15 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [hover, setHover]     = useState(false);
   const [wished, setWished]   = useState(false);
+  const router = useRouter();
+  const { format } = useCurrency();
+  const href = `/products/${slug}`;
+
+  function goToProduct(e: React.MouseEvent) {
+    // Let clicks on interactive children (the wishlist star) behave normally.
+    if ((e.target as HTMLElement).closest("button")) return;
+    router.push(href);
+  }
 
   // Unique colours (keep first occurrence's hex)
   const swatches = useMemo(() => {
@@ -63,10 +71,11 @@ export default function ProductCard({
     <div
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className="group"
+      onClick={goToProduct}
+      className="group cursor-pointer"
     >
       {/* ── Image — flush, no radius ── */}
-      <Link href={`/products/${slug}`} className="block relative overflow-hidden bg-[#f5f5f4]"
+      <Link href={href} className="block relative overflow-hidden bg-[#f5f5f4]"
         style={{ aspectRatio: "2/3" }}>
         {img1 && (
           <Image src={img1} alt={name} fill sizes="(max-width: 768px) 50vw, 25vw"
@@ -101,7 +110,7 @@ export default function ProductCard({
       </Link>
 
       {/* ── Info stack ── */}
-      <div className="px-3 md:px-4 pt-3">
+      <div className="px-3 md:px-4 pt-4 md:pt-5">
         {isNew && (
           <p className="text-[12px] text-[#8B5E3C] underline underline-offset-[3px] mb-1"
             style={{ fontFamily: "var(--font-script), cursive" }}>
@@ -145,7 +154,7 @@ export default function ProductCard({
           <p className="text-[12.5px] text-[#111] leading-snug">{type}</p>
         </Link>
 
-        <p className="text-[12.5px] text-[#111] mt-1.5">{fmt(Number(basePrice))}</p>
+        <p className="text-[12.5px] text-[#111] mt-1.5">{format(Number(basePrice))}</p>
       </div>
     </div>
   );

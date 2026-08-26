@@ -8,12 +8,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import ProductCard from "./ProductCard";
 
 type Product = {
   id: string; name: string; slug: string; type: string;
   description?: string;
   basePrice: number; gender: string; isNew: boolean;
+  category?: { id: string; name: string; slug: string } | null;
   images: { url: string }[];
   variants: {
     id: string; size: string; colorLabel: string;
@@ -34,6 +36,7 @@ const FETCH_LIMIT = 60; // fetch generously; filters run client-side
 interface Props { title: string; gender: "WOMEN" | "MEN" | "UNISEX"; }
 
 export default function CollectionPage({ title, gender }: Props) {
+  const searchParams = useSearchParams();
   const [products,   setProducts]   = useState<Product[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [loaded,     setLoaded]     = useState(false);
@@ -42,7 +45,12 @@ export default function CollectionPage({ title, gender }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Filters
-  const [fSizes,   setFSizes]   = useState<string[]>([]);
+  const [fSizes,      setFSizes]      = useState<string[]>([]);
+  const [fCategories, setFCategories] = useState<string[]>(() => {
+    const c = searchParams.get("category");
+    return c ? [c] : [];
+  });
+  const [fColors,  setFColors]  = useState<string[]>([]);
   const [fMin,     setFMin]     = useState("");
   const [fMax,     setFMax]     = useState("");
   const [fInStock, setFInStock] = useState(false);
@@ -77,6 +85,21 @@ export default function CollectionPage({ title, gender }: Props) {
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
+  // Available category/colour options, derived from the fetched product set.
+  const categoryOptions = useMemo(() => {
+    const seen = new Map<string, string>(); // slug -> name
+    for (const p of products) if (p.category) seen.set(p.category.slug, p.category.name);
+    return Array.from(seen.entries());
+  }, [products]);
+
+  const colorOptions = useMemo(() => {
+    const seen = new Map<string, string | null>(); // label -> hex
+    for (const p of products) for (const v of p.variants) {
+      if (!seen.has(v.colorLabel)) seen.set(v.colorLabel, v.colorHex ?? null);
+    }
+    return Array.from(seen.entries());
+  }, [products]);
+
   // ── Client-side filtering ──────────────────────────────────────────
   const filtered = useMemo(() => {
     return products.filter(product => {
@@ -89,22 +112,35 @@ export default function CollectionPage({ title, gender }: Props) {
       if (fInStock && fSizes.length === 0) {
         if (!product.variants.some(v => v.stockQuantity > 0)) return false;
       }
+      if (fCategories.length > 0) {
+        if (!product.category || !fCategories.includes(product.category.slug)) return false;
+      }
+      if (fColors.length > 0) {
+        if (!product.variants.some(v => fColors.includes(v.colorLabel))) return false;
+      }
       const price = Number(product.basePrice);
       if (fMin && price < parseFloat(fMin)) return false;
       if (fMax && price > parseFloat(fMax)) return false;
       return true;
     });
-  }, [products, fSizes, fMin, fMax, fInStock]);
+  }, [products, fSizes, fCategories, fColors, fMin, fMax, fInStock]);
 
   const activeFilterCount =
-    (fSizes.length > 0 ? 1 : 0) + (fMin || fMax ? 1 : 0) + (fInStock ? 1 : 0);
+    (fSizes.length > 0 ? 1 : 0) + (fCategories.length > 0 ? 1 : 0) + (fColors.length > 0 ? 1 : 0) +
+    (fMin || fMax ? 1 : 0) + (fInStock ? 1 : 0);
 
   function clearFilters() {
-    setFSizes([]); setFMin(""); setFMax(""); setFInStock(false);
+    setFSizes([]); setFCategories([]); setFColors([]); setFMin(""); setFMax(""); setFInStock(false);
   }
 
   function toggleSize(size: string) {
     setFSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
+  }
+  function toggleCategory(slug: string) {
+    setFCategories(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]);
+  }
+  function toggleColor(label: string) {
+    setFColors(prev => prev.includes(label) ? prev.filter(c => c !== label) : [...prev, label]);
   }
 
   // Script-case title: "WOMAN" → "Woman"
@@ -126,7 +162,7 @@ export default function CollectionPage({ title, gender }: Props) {
       </div>
 
       {/* ── Toolbar — Sort By | All Filters, left-aligned (MDV) ── */}
-      <div className="px-5 md:px-10 pb-4 flex items-center gap-5">
+      <div className="px-3 md:px-6 pb-4 flex items-center gap-5">
         {/* Sort By */}
         <div ref={sortRef} className="relative">
           <button onClick={() => setSortOpen(o => !o)}
@@ -138,8 +174,16 @@ export default function CollectionPage({ title, gender }: Props) {
               <path d="M1 1L5 5L9 1" stroke="#111" strokeWidth="1.1" strokeLinecap="round"/>
             </svg>
           </button>
-          {sortOpen && (
-            <div className="absolute top-full left-0 mt-3 bg-white shadow-lg z-30 min-w-[200px] py-1">
+          <div
+            className="absolute top-full left-0 mt-3 bg-white shadow-lg z-30 min-w-[200px]
+              overflow-hidden origin-top transition-all duration-350 ease-in-out"
+            style={{
+              maxHeight: sortOpen ? SORT_OPTIONS.length * 40 + 8 : 0,
+              opacity: sortOpen ? 1 : 0,
+              transform: sortOpen ? "scaleY(1)" : "scaleY(0.85)",
+            }}
+          >
+            <div className="py-1">
               {SORT_OPTIONS.map((opt, i) => (
                 <button key={i}
                   onClick={() => { setSortIdx(i); setSortOpen(false); }}
@@ -151,7 +195,7 @@ export default function CollectionPage({ title, gender }: Props) {
                 </button>
               ))}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Divider */}
@@ -173,7 +217,7 @@ export default function CollectionPage({ title, gender }: Props) {
       {/* ── Grid — full bleed, images flush (MDV) ── */}
       <div className="pb-16">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-0 gap-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-1.5 md:gap-x-2 gap-y-12">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="bg-[#f5f5f4]" style={{ aspectRatio: "2/3" }} />
@@ -194,7 +238,7 @@ export default function CollectionPage({ title, gender }: Props) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-0 gap-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-1.5 md:gap-x-2 gap-y-12">
             {filtered.map((product, i) => (
               <div key={product.id}
                 style={{
@@ -236,6 +280,45 @@ export default function CollectionPage({ title, gender }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 space-y-8 py-2">
+          {/* Category */}
+          {categoryOptions.length > 0 && (
+            <div>
+              <p className="text-[10px] tracking-[0.2em] uppercase text-[#999] mb-3">Category</p>
+              <div className="flex flex-wrap gap-2">
+                {categoryOptions.map(([slug, name]) => {
+                  const on = fCategories.includes(slug);
+                  return (
+                    <button key={slug} onClick={() => toggleCategory(slug)}
+                      className={`px-3 py-2 text-[11px] tracking-[0.05em] transition-colors ${
+                        on ? "bg-[#111] text-white" : "bg-[#f5f5f4] text-[#111] hover:bg-[#ececea]"
+                      }`}>
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Colour */}
+          {colorOptions.length > 0 && (
+            <div>
+              <p className="text-[10px] tracking-[0.2em] uppercase text-[#999] mb-3">Colour</p>
+              <div className="flex flex-wrap gap-3">
+                {colorOptions.map(([label, hex]) => {
+                  const on = fColors.includes(label);
+                  return (
+                    <button key={label} onClick={() => toggleColor(label)} title={label}
+                      className={`w-7 h-7 rounded-full border transition-all ${
+                        on ? "border-[#111] ring-1 ring-offset-2 ring-[#111]" : "border-[#d4d4d0]"
+                      }`}
+                      style={{ background: hex ?? "#e5e5e2" }} />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Sizes */}
           <div>
             <p className="text-[10px] tracking-[0.2em] uppercase text-[#999] mb-3">Size</p>

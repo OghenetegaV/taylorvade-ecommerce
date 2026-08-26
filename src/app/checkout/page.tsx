@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { sendGAEvent } from "@next/third-parties/google";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { COUNTRY_CODE_NAMES } from "@/lib/shipping";
 
 /* ── Types ─────────────────────────────────────────────────────── */
 type CartItem = {
@@ -112,6 +113,14 @@ export default function CheckoutPage() {
   const [ratesLoading, setRatesLoading] = useState(false);
   const [ratesError, setRatesError]     = useState<string | null>(null);
 
+  // Discount code
+  const [discountInput, setDiscountInput]     = useState("");
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+  const [discountError, setDiscountError]     = useState<string | null>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<
+    { code: string; amount: number } | null
+  >(null);
+
   // Submit
   const [paying, setPaying] = useState(false);
   const [error, setError]   = useState<string | null>(null);
@@ -160,7 +169,8 @@ export default function CheckoutPage() {
     [items],
   );
   const shippingFee = selectedRate?.amount ?? 0;
-  const total = subtotal + shippingFee;
+  const discountAmount = appliedDiscount?.amount ?? 0;
+  const total = Math.max(0, subtotal - discountAmount) + shippingFee;
 
   const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const addressComplete =
@@ -232,6 +242,33 @@ export default function CheckoutPage() {
     });
   }
 
+  /* ── Discount code ───────────────────────────────────────────── */
+  async function applyDiscount() {
+    if (!discountInput.trim()) return;
+    setApplyingDiscount(true);
+    setDiscountError(null);
+    try {
+      const res = await fetch("/api/discounts/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: discountInput.trim(), subtotal }),
+      });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.error ?? "Invalid code");
+      setAppliedDiscount({ code: d.data.code, amount: d.data.amount });
+    } catch (e) {
+      setAppliedDiscount(null);
+      setDiscountError(e instanceof Error ? e.message : "Could not apply code");
+    } finally {
+      setApplyingDiscount(false);
+    }
+  }
+  function removeDiscount() {
+    setAppliedDiscount(null);
+    setDiscountInput("");
+    setDiscountError(null);
+  }
+
   /* ── Cart editing (same endpoints as CartSidebar) ────────────── */
   async function updateQty(cartItemId: string, quantity: number) {
     setCartBusy(cartItemId);
@@ -274,10 +311,13 @@ export default function CheckoutPage() {
           rateId: selectedRate.id,
           notes,
           email,
+          discountCode: appliedDiscount?.code,
           address: {
             fullName, phone, addressLine1, addressLine2,
             city, state, stateCode,
-            country: countryOptions.find(c => c.code === countryCode)?.name ?? countryCode,
+            country: countryOptions.find(c => c.code === countryCode)?.name
+              ?? COUNTRY_CODE_NAMES[countryCode]
+              ?? countryCode,
             countryCode,
             postalCode,
           },
@@ -579,8 +619,38 @@ export default function CheckoutPage() {
                 })}
               </div>
 
-              <div className="border-t border-[#e5e5e2] mt-6 pt-5 space-y-2.5">
+              {/* Discount code */}
+              <div className="border-t border-[#e5e5e2] mt-6 pt-5">
+                {appliedDiscount ? (
+                  <div className="flex items-center justify-between px-3 py-2.5 border border-[#111] bg-[#fbfbfa] text-[12.5px]">
+                    <span className="text-[#111]">Code <b>{appliedDiscount.code}</b> applied</span>
+                    <button type="button" onClick={removeDiscount}
+                      className="text-[11px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input value={discountInput} onChange={e => setDiscountInput(e.target.value)}
+                      placeholder="Discount code"
+                      className="flex-1 border border-[#d4d4d0] bg-white px-3.5 py-2.5 text-[12.5px] text-[#111]
+                        outline-none focus:border-[#111] transition-colors placeholder:text-[#b5b5b0]" />
+                    <button type="button" onClick={applyDiscount}
+                      disabled={applyingDiscount || !discountInput.trim()}
+                      className="px-4 border border-[#111] text-[11px] tracking-[0.14em] uppercase
+                        text-[#111] hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40">
+                      {applyingDiscount ? "…" : "Apply"}
+                    </button>
+                  </div>
+                )}
+                {discountError && <p className="text-[11.5px] text-red-700 mt-2">{discountError}</p>}
+              </div>
+
+              <div className="mt-5 pt-5 space-y-2.5">
                 <Row label="Subtotal" value={fmt(subtotal)} />
+                {appliedDiscount && (
+                  <Row label="Discount" value={`− ${fmt(discountAmount)}`} />
+                )}
                 <Row label="Delivery"
                   value={selectedRate ? fmt(shippingFee) : "—"}
                   hint={!selectedRate ? "Select a courier" : undefined} />

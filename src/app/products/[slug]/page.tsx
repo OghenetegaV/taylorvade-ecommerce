@@ -16,7 +16,12 @@ async function loadProduct(slug: string) {
   const product = await prisma.product.findUnique({
     where: { slug, isPublished: true },
     include: {
-      category: { select: { id: true, name: true, slug: true } },
+      category: {
+        select: {
+          id: true, name: true, slug: true,
+          sizeChart: { select: { sizes: true } },
+        },
+      },
       images: { orderBy: { position: "asc" } },
       variants: {
         orderBy: [{ colorLabel: "asc" }, { size: "asc" }],
@@ -136,6 +141,7 @@ export default async function ProductRoute({
       shopTheLook={[]}
       selectedForYou={relatedItems}
       productId={product.id}
+      sizeChart={(product.category.sizeChart?.sizes as { label: string; values: Record<string, string> }[]) ?? null}
       variants={product.variants.map((v: any) => ({
         id: v.id,
         size: v.size,

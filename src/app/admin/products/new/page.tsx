@@ -424,7 +424,8 @@ export default function NewProductPage() {
               <label className={labelClass}>Gender</label>
               <div className="grid grid-cols-3 gap-2">
                 {GENDERS.map(g => (
-                  <button key={g.value} type="button" onClick={() => setGender(g.value)}
+                  <button key={g.value} type="button"
+                    onClick={() => { setGender(g.value); setCategoryId(""); }}
                     className={`py-2.5 rounded-xl text-sm font-semibold border transition-all ${
                       gender === g.value
                         ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/25"
@@ -438,11 +439,11 @@ export default function NewProductPage() {
 
             <div>
               <label className={labelClass}>Category <span className="text-red-500">*</span></label>
-              {categories.length === 0 ? (
-                <p className="text-xs text-slate-400 py-1.5">No categories yet — create one below.</p>
+              {categories.filter(c => c.gender === gender).length === 0 ? (
+                <p className="text-xs text-slate-400 py-1.5">No {gender.toLowerCase()} categories yet — create one below.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {categories.map(c => {
+                  {categories.filter(c => c.gender === gender).map(c => {
                     const selected = categoryId === c.id;
                     return (
                       <div key={c.id}

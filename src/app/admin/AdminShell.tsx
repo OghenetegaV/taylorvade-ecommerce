@@ -8,7 +8,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Package, ShoppingCart, Boxes,
   Store, Menu, X, ChevronRight, Sparkles,
-  BarChart3, ExternalLink, LogOut, Loader2,
+  BarChart3, ExternalLink, LogOut, Loader2, Percent, Ruler,
 } from "lucide-react";
 
 type Profile = { fullName: string | null; email: string; role: string };
@@ -18,6 +18,8 @@ const NAV = [
   { href: "/admin/products",  label: "Products",  icon: Package         },
   { href: "/admin/orders",    label: "Orders",    icon: ShoppingCart    },
   { href: "/admin/inventory", label: "Inventory", icon: Boxes           },
+  { href: "/admin/discounts", label: "Discounts", icon: Percent         },
+  { href: "/admin/size-charts", label: "Size Charts", icon: Ruler       },
 ];
 
 // Point this at the GA property once it's created:

@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
-import { sendOrderConfirmationEmail } from "@/lib/email";
+import { sendOrderConfirmationEmail, sendOrderNotificationEmail } from "@/lib/email";
 
 export async function GET(req: NextRequest) {
   try {
@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
     });
 
     sendOrderConfirmationEmail(order.id).catch(console.error);
+    sendOrderNotificationEmail(order.id).catch(console.error);
 
     return NextResponse.json({ success: true, data: shape(order) });
   } catch (e) {

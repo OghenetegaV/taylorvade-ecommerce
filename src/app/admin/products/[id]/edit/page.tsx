@@ -43,6 +43,8 @@ export default function EditProductPage({ params }: Props) {
   const [deliveryReturns, setDeliveryReturns] = useState("");
   const [basePrice,       setBasePrice]       = useState("");
   const [gender,          setGender]          = useState("UNISEX");
+  const [categoryId,      setCategoryId]      = useState("");
+  const [categories,      setCategories]      = useState<{ id: string; name: string; gender: string }[]>([]);
   const [isNew,           setIsNew]           = useState(false);
   const [isFeatured,      setIsFeatured]      = useState(false);
   const [isPublished,     setIsPublished]     = useState(false);
@@ -62,6 +64,7 @@ export default function EditProductPage({ params }: Props) {
         setDeliveryReturns(p.deliveryReturns ?? "");
         setBasePrice(String(p.basePrice ?? ""));
         setGender(p.gender ?? "UNISEX");
+        setCategoryId(p.categoryId ?? "");
         setIsNew(p.isNew ?? false);
         setIsFeatured(p.isFeatured ?? false);
         setIsPublished(p.isPublished ?? false);
@@ -69,6 +72,12 @@ export default function EditProductPage({ params }: Props) {
       .catch(() => setErrMsg("Failed to load product"))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    fetch("/api/admin/categories").then(r => r.json()).then(d => {
+      if (d.success) setCategories(d.data);
+    });
+  }, []);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -85,7 +94,7 @@ export default function EditProductPage({ params }: Props) {
       body: JSON.stringify({
         name, type, description, editorNotes, sizeFit, deliveryReturns,
         basePrice: parseFloat(basePrice),
-        gender, isNew, isFeatured, isPublished,
+        gender, categoryId, isNew, isFeatured, isPublished,
       }),
     });
     const data = await res.json();
@@ -158,12 +167,30 @@ export default function EditProductPage({ params }: Props) {
             </div>
             <div>
               <label className={labelClass}>Gender</label>
-              <select value={gender} onChange={e => setGender(e.target.value)} className={inputClass}>
+              <select value={gender}
+                onChange={e => { setGender(e.target.value); setCategoryId(""); }}
+                className={inputClass}>
                 <option value="MEN">Men</option>
                 <option value="WOMEN">Women</option>
                 <option value="UNISEX">Unisex</option>
               </select>
             </div>
+          </div>
+          <div className="mt-4">
+            <label className={labelClass}>Category</label>
+            {categories.filter(c => c.gender === gender).length === 0 ? (
+              <p className="text-xs text-slate-400 py-1.5">
+                No {gender.toLowerCase()} categories yet — add one from{" "}
+                <Link href="/admin/products/new" className="underline">New Product</Link>.
+              </p>
+            ) : (
+              <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputClass}>
+                <option value="">Select a category…</option>
+                {categories.filter(c => c.gender === gender).map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="mt-4">
             <label className={labelClass}>Short Description</label>

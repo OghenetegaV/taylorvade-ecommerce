@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { CURRENCY_CHANGE_EVENT } from "@/lib/currency";
 import CartSidebar from "./CartSidebar";
 import SearchOverlay from "./SearchOverlay";
 
@@ -70,9 +71,9 @@ const NigeriaFlag = () => (
 );
 
 const primaryLinks = [
-  { label: "Taylor Vade Woman",  href: "/collections/woman" },
-  { label: "Taylor Vade Man",    href: "/collections/man" },
-  { label: "Taylor Vade Unisex", href: "/collections/unisex" },
+  { label: "Taylor Vade Woman",  href: "/collections/woman",  gender: "WOMEN" },
+  { label: "Taylor Vade Man",    href: "/collections/man",    gender: "MEN" },
+  { label: "Taylor Vade Unisex", href: "/collections/unisex", gender: null },
 ];
 const secondaryLinks = [
   { label: "Our Story",  href: "/stores" },
@@ -106,6 +107,8 @@ export default function Header() {
   const [cartCount,  setCartCount]  = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [navCategories, setNavCategories] = useState<{ id: string; name: string; slug: string; gender: string }[]>([]);
+  const [expandedGender, setExpandedGender] = useState<string | null>(null);
 
   useEffect(() => {
     const savedCountry  = localStorage.getItem("tv_country");
@@ -132,6 +135,12 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
+    fetch("/api/categories").then(r => r.json()).then(d => {
+      if (d.success) setNavCategories(d.data);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
@@ -141,6 +150,7 @@ export default function Header() {
   function handleUpdatePreferences() {
     localStorage.setItem("tv_country",  country);
     localStorage.setItem("tv_currency", currency);
+    window.dispatchEvent(new CustomEvent(CURRENCY_CHANGE_EVENT, { detail: currency }));
     setRegionOpen(false);
   }
 
@@ -226,12 +236,40 @@ export default function Header() {
         </form>
 
         <nav className="flex flex-col px-5 pt-4">
-          {primaryLinks.map(l => (
-            <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)}
-              className="py-3 text-[11.5px] tracking-[0.1em] text-[#3a2e22] hover:opacity-50 transition-opacity font-serif">
-              {l.label}
-            </Link>
-          ))}
+          {primaryLinks.map(l => {
+            const subcats = l.gender ? navCategories.filter(c => c.gender === l.gender) : [];
+            const expanded = expandedGender === l.gender;
+            return (
+              <div key={l.href}>
+                <div className="flex items-center justify-between">
+                  <Link href={l.href} onClick={() => setMenuOpen(false)}
+                    className="py-3 text-[11.5px] tracking-[0.1em] text-[#3a2e22] hover:opacity-50 transition-opacity font-serif">
+                    {l.label}
+                  </Link>
+                  {subcats.length > 0 && (
+                    <button type="button" aria-label={`${expanded ? "Collapse" : "Expand"} ${l.label} categories`}
+                      onClick={() => setExpandedGender(expanded ? null : l.gender)}
+                      className={`p-2 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}>
+                      <ChevronDown />
+                    </button>
+                  )}
+                </div>
+                {subcats.length > 0 && (
+                  <div className="overflow-hidden transition-all duration-300 ease-in-out"
+                    style={{ maxHeight: expanded ? subcats.length * 40 + 8 : 0, opacity: expanded ? 1 : 0 }}>
+                    <div className="flex flex-col pl-3 pb-2">
+                      {subcats.map(c => (
+                        <Link key={c.id} href={`${l.href}?category=${c.slug}`} onClick={() => setMenuOpen(false)}
+                          className="py-1.5 text-[10.5px] tracking-[0.08em] text-[#5a4a3a] hover:opacity-50 transition-opacity font-serif">
+                          {c.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <nav className="flex flex-col px-5 pt-4">

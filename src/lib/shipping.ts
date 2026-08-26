@@ -52,3 +52,12 @@ export const SHIPPING_COUNTRIES = [
   "Nigeria","Ghana","Kenya","South Africa","United Kingdom","United States",
   "Canada","France","Germany","Netherlands","United Arab Emirates",
 ];
+
+/** Fallback code→name map, used when the Terminal Africa countries list is
+ * unavailable so checkout never stores a raw ISO code ("NG") instead of a
+ * full name ("Nigeria") as the order's address country. */
+export const COUNTRY_CODE_NAMES: Record<string, string> = {
+  NG: "Nigeria", GH: "Ghana", KE: "Kenya", ZA: "South Africa",
+  GB: "United Kingdom", US: "United States", CA: "Canada",
+  FR: "France", DE: "Germany", NL: "Netherlands", AE: "United Arab Emirates",
+};

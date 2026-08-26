@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useCurrency } from "@/lib/currency";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SwatchImage  { src: string; colorLabel: string; }
@@ -15,7 +16,6 @@ export interface ProductPageProps {
   colorLabel:     string;
   type:           string;
   price:          number;
-  currency?:      string;
   isNew?:         boolean;
   images:         string[];
   swatchImages?:  SwatchImage[];
@@ -28,6 +28,7 @@ export interface ProductPageProps {
   selectedForYou?: RelatedItem[];
   productId?:     string;
   variants?:      Variant[];
+  sizeChart?:     { label: string; values: Record<string, string> }[] | null;
 }
 
 // ── Small icon components ─────────────────────────────────────────────────────
@@ -95,18 +96,20 @@ function Accordion({ label, content, isOpen, onToggle }: {
 }
 
 export default function ProductPage({
-  name, colorLabel, type, price, currency = "£",
+  name, colorLabel, type, price,
   isNew, images = [], swatchImages = [], sizes = [],
   orderDeadline, editorNotes, sizeFit, deliveryReturns,
   shopTheLook = [], selectedForYou = [],
-  productId, variants = [],
+  productId, variants = [], sizeChart,
 }: ProductPageProps) {
 
+  const { format } = useCurrency();
   const [imgIdx,       setImgIdx]       = useState(0);
   const [swatchIdx,    setSwatchIdx]    = useState(0);
   const [selSize,      setSelSize]      = useState<string | null>(null);
   const [accordion,    setAccordion]    = useState<string | null>(null);
   const [wished,       setWished]       = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [cartMsg,      setCartMsg]      = useState<"idle"|"adding"|"added"|"error">("idle");
   const [countdown,    setCountdown]    = useState(orderDeadline ?? null);
   const [imgFade,      setImgFade]      = useState(true);
@@ -257,7 +260,7 @@ export default function ProductPage({
             <h1 className="leading-[1.0] text-[#1a1008] pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(36px, 5vw, 52px)" }}>{name}</h1>
             <p className="italic text-[#5a4a3a] leading-tight mt-0.5 pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(16px, 2.5vw, 22px)" }}>in {swatchImages[swatchIdx]?.colorLabel ?? colorLabel}</p>
             <p className="text-[10.5px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-2 pp-anim-2">{type}</p>
-            <p className="text-[14px] tracking-[0.06em] text-[#1a1008] font-serif mt-3 pp-anim-2">{currency}{Number(price).toLocaleString()}</p>
+            <p className="text-[14px] tracking-[0.06em] text-[#1a1008] font-serif mt-3 pp-anim-2">{format(Number(price))}</p>
             
             {swatchImages.length > 1 && (
               <div className="flex gap-2 mt-4 pp-anim-3">
@@ -273,6 +276,13 @@ export default function ProductPage({
 
             {sizes.length > 0 && (
               <div className="mt-5 pp-anim-3">
+                {sizeChart && sizeChart.length > 0 && (
+                  <button type="button" onClick={() => setSizeGuideOpen(true)}
+                    className="text-[10.5px] tracking-[0.1em] uppercase text-[#8a7a6a] underline
+                      underline-offset-2 hover:text-[#3a2e22] transition-colors mb-2 block">
+                    Size Guide
+                  </button>
+                )}
                 <div className="flex flex-wrap gap-x-5 gap-y-2">
                   {sizes.map(size => {
                     const unavailable = isSizeUnavailable(size);
@@ -326,6 +336,47 @@ export default function ProductPage({
           </div>
         </div>
       </div>
+
+      {sizeGuideOpen && sizeChart && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setSizeGuideOpen(false)} />
+          <div className="relative bg-[#faf9f7] max-w-lg w-full max-h-[80vh] overflow-y-auto p-6 md:p-8">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-[15px] tracking-[0.14em] uppercase text-[#1a1008] font-serif">Size Guide</h2>
+              <button onClick={() => setSizeGuideOpen(false)}
+                className="text-[#8a7a6a] hover:text-[#1a1008] transition-colors text-[13px]">
+                Close
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px] font-serif border-collapse">
+                <thead>
+                  <tr className="border-b border-[#e8e2db]">
+                    <th className="text-left py-2 pr-3 text-[#8a7a6a] uppercase tracking-[0.06em] text-[10.5px]">Measurement</th>
+                    {Object.keys(sizeChart[0]?.values ?? {}).map(size => (
+                      <th key={size} className="text-center py-2 px-2 text-[#8a7a6a] uppercase tracking-[0.06em] text-[10.5px]">
+                        {size}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sizeChart.map(row => (
+                    <tr key={row.label} className="border-b border-[#e8e2db]">
+                      <td className="py-2 pr-3 text-[#3a2e22]">{row.label}</td>
+                      {Object.keys(sizeChart[0]?.values ?? {}).map(size => (
+                        <td key={size} className="text-center py-2 px-2 text-[#5a4a3a]">
+                          {row.values[size] || "—"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
