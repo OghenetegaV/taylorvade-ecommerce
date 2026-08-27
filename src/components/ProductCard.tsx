@@ -30,10 +30,11 @@ export interface ProductCardProps {
 const SIZE_ORDER = ["XXS","XS","S","M","L","XL","XXL","2XL","3XL"];
 
 export default function ProductCard({
-  slug, name, type, basePrice, isNew, images, variants,
+  id, slug, name, type, basePrice, isNew, images, variants,
 }: ProductCardProps) {
   const [hover, setHover]     = useState(false);
   const [wished, setWished]   = useState(false);
+  const [wishBusy, setWishBusy] = useState(false);
   const router = useRouter();
   const { format } = useCurrency();
   const href = `/products/${slug}`;
@@ -42,6 +43,29 @@ export default function ProductCard({
     // Let clicks on interactive children (the wishlist star) behave normally.
     if ((e.target as HTMLElement).closest("button")) return;
     router.push(href);
+  }
+
+  async function toggleWishlist() {
+    if (wishBusy) return;
+    const next = !wished;
+    setWished(next);
+    setWishBusy(true);
+    try {
+      const res = next
+        ? await fetch("/api/wishlist", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productId: id }),
+          })
+        : await fetch(`/api/wishlist?productId=${id}`, { method: "DELETE" });
+      if (res.status === 401) {
+        setWished(!next);
+        router.push(`/login?next=${encodeURIComponent(href)}`);
+      }
+    } catch {
+      setWished(!next);
+    } finally {
+      setWishBusy(false);
+    }
   }
 
   // Unique colours (keep first occurrence's hex)
@@ -138,7 +162,7 @@ export default function ProductCard({
 
           {/* Wishlist star */}
           <button
-            onClick={() => setWished(w => !w)}
+            onClick={toggleWishlist}
             aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
             className="flex-shrink-0 mt-[1px] hover:opacity-60 transition-opacity"
           >

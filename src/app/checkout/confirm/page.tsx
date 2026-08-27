@@ -20,12 +20,10 @@ function ConfirmInner() {
     if (ran.current) return;
     ran.current = true;
 
-    // Paystack returns ?reference= AND ?trxref= (both, usually). Flutterwave uses
-    // ?tx_ref=. Read all three so we never miss it.
+    // Paystack returns ?reference= AND ?trxref= (both, usually).
     const reference =
       params.get("reference") ??
-      params.get("trxref") ??
-      params.get("tx_ref");
+      params.get("trxref");
 
     if (!reference) {
       setStatus("failed");

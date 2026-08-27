@@ -157,7 +157,7 @@ export default function PrivacyPolicyPage() {
                   <Ul items={[
                     "Delivery address (street, city, state, country, postal code)",
                     "Order history: items purchased, quantities, prices, and order status",
-                    "Payment reference numbers (we do not store card details — these are handled by Paystack and Flutterwave)",
+                    "Payment reference numbers (we do not store card details — these are handled by Paystack)",
                     "Currency and region preference",
                   ]} />
                 </div>
@@ -193,7 +193,7 @@ export default function PrivacyPolicyPage() {
               <Ul items={[
                 "To process and fulfil your orders, including sending order confirmations and shipping updates",
                 "To create and manage your account on our platform",
-                "To process payments securely through Paystack (for NGN) and Flutterwave (for international currencies)",
+                "To process payments securely through Paystack",
                 "To send you order status updates and transactional emails",
                 "To send our newsletter if you have subscribed (you can unsubscribe at any time)",
                 "To personalise your shopping experience based on your browsing and purchase history",
@@ -219,8 +219,7 @@ export default function PrivacyPolicyPage() {
                   <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Service Providers</p>
                   <Ul items={[
                     "Supabase (database and authentication infrastructure) — data hosted on servers in the EU",
-                    "Paystack — payment processing for Nigerian Naira transactions",
-                    "Flutterwave — payment processing for international currency transactions",
+                    "Paystack — payment processing",
                     "Resend — transactional email delivery (order confirmations, shipping updates)",
                     "Vercel — website hosting and deployment",
                   ]} />
@@ -327,7 +326,7 @@ export default function PrivacyPolicyPage() {
               <Ul items={[
                 "All data transmitted between your browser and our servers is encrypted via TLS (HTTPS)",
                 "Passwords are hashed using industry-standard algorithms — they are never stored in plain text",
-                "Payment data is processed exclusively by PCI-DSS compliant payment providers (Paystack, Flutterwave) — we never store card details",
+                "Payment data is processed exclusively by our PCI-DSS compliant payment provider, Paystack — we never store card details",
                 "Access to production databases is restricted to authorised personnel only",
                 "Row-level security is enforced on our database, ensuring users can only access their own data",
               ]} />
@@ -349,7 +348,7 @@ export default function PrivacyPolicyPage() {
                 providing any personal information.
               </P>
               <P>
-                Third-party services we use include Paystack, Flutterwave, Supabase, Resend, and Vercel.
+                Third-party services we use include Paystack, Supabase, Resend, and Vercel.
                 Each operates under its own privacy policy and data processing agreements.
               </P>
             </Section>

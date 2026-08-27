@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useCurrency } from "@/lib/currency";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -104,11 +105,14 @@ export default function ProductPage({
 }: ProductPageProps) {
 
   const { format } = useCurrency();
+  const router = useRouter();
+  const pathname = usePathname();
   const [imgIdx,       setImgIdx]       = useState(0);
   const [swatchIdx,    setSwatchIdx]    = useState(0);
   const [selSize,      setSelSize]      = useState<string | null>(null);
   const [accordion,    setAccordion]    = useState<string | null>(null);
   const [wished,       setWished]       = useState(false);
+  const [wishBusy,     setWishBusy]     = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [cartMsg,      setCartMsg]      = useState<"idle"|"adding"|"added"|"error">("idle");
   const [countdown,    setCountdown]    = useState(orderDeadline ?? null);
@@ -117,6 +121,37 @@ export default function ProductPage({
   const touchStartX = useRef<number | null>(null);
 
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
+
+  useEffect(() => {
+    if (!productId) return;
+    fetch(`/api/wishlist?productId=${productId}`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setWished(d.data.inWishlist); })
+      .catch(() => {});
+  }, [productId]);
+
+  async function toggleWishlist() {
+    if (!productId || wishBusy) return;
+    const next = !wished;
+    setWished(next);
+    setWishBusy(true);
+    try {
+      const res = next
+        ? await fetch("/api/wishlist", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productId }),
+          })
+        : await fetch(`/api/wishlist?productId=${productId}`, { method: "DELETE" });
+      if (res.status === 401) {
+        setWished(!next);
+        router.push(`/login?next=${encodeURIComponent(pathname)}`);
+      }
+    } catch {
+      setWished(!next);
+    } finally {
+      setWishBusy(false);
+    }
+  }
 
   // Helper function defined INSIDE component scope
   const isSizeUnavailable = (size: string) => {
@@ -314,7 +349,7 @@ export default function ProductPage({
                 {ctaLabel}
               </button>
               <button
-                onClick={() => setWished(w => !w)}
+                onClick={toggleWishlist}
                 className={`w-[46px] border flex items-center justify-center transition-colors duration-200 ${
                   wished ? "border-[#3a2e22] bg-[#3a2e22] text-white" : "border-[#3a2e22] text-[#3a2e22] hover:bg-[#3a2e22] hover:text-white"
                 }`}>
