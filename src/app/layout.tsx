@@ -6,7 +6,7 @@
 
 import type { Metadata } from "next";
 import "@/app/globals.css";
-import { Cormorant_Garamond, Great_Vibes } from "next/font/google";
+import { Cormorant_Garamond, Pinyon_Script, Fraunces } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import ConditionalHeader from "@/components/layout/ConditionalHeader";
 import ConditionalFooter from "@/components/layout/ConditionalFooter";
@@ -17,10 +17,22 @@ const cormorant = Cormorant_Garamond({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-const greatVibes = Great_Vibes({
+// Snell Roundhand (used by the reference brand for script headings) is a
+// paid, self-hosted commercial font — Pinyon Script is the closest free
+// equivalent: a restrained, formal script rather than an ornate flourish.
+const pinyonScript = Pinyon_Script({
   subsets: ["latin"],
   variable: "--font-script",
   weight: "400",
+});
+
+// MADE Mirage (the reference brand's body font) is also a paid, self-hosted
+// commercial font. Fraunces is a free equivalent with a matching wide weight
+// range (100–900) and the same fashion-editorial serif character.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-made-mirage",
+  weight: ["300", "400", "500", "600", "700", "900"],
 });
 
 export const metadata: Metadata = {
@@ -61,7 +73,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${cormorant.variable} ${greatVibes.variable} antialiased`}
+        className={`${cormorant.variable} ${pinyonScript.variable} ${fraunces.variable} antialiased`}
       >
         <ConditionalHeader />
         {children}

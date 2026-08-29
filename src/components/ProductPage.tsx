@@ -255,7 +255,7 @@ export default function ProductPage({
 
       <div className="min-h-screen bg-[#faf9f7] font-serif">
         <div className="flex flex-col md:flex-row px-5 md:px-16 md:gap-10">
-          <div className="md:w-[58%] md:sticky md:top-0 md:self-start">
+          <div className="md:w-1/2 md:sticky md:top-0 md:self-start">
             <div className="hidden md:flex md:items-center">
               <div className="w-[82px] flex-shrink-0 flex flex-col gap-[3px] p-[3px]">
                 {activeImages.map((src, i) => (
@@ -292,9 +292,20 @@ export default function ProductPage({
                 </div>
               ))}
             </div>
+
+            {activeImages.length > 1 && (
+              <div className="md:hidden flex items-center justify-center gap-2 py-4">
+                {activeImages.map((_, i) => (
+                  <button key={i} onClick={() => changeImg(i)} aria-label={`View image ${i + 1}`}
+                    className={`w-[7px] h-[7px] rounded-full transition-colors duration-200 ${
+                      i === imgIdx ? "bg-[#3a2e22]" : "bg-[#d8d2c8]"
+                    }`} />
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className={`md:w-[42%] pt-[92px] md:pt-[104px] pb-6 md:pb-8 ${loaded ? "" : "opacity-0"}`}
+          <div className={`md:w-1/2 pt-[92px] md:pt-[104px] pb-6 md:pb-8 ${loaded ? "" : "opacity-0"}`}
             style={loaded ? { animation: "ppFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both" } : {}}>
             <div className="text-center">
               {(outOfStock || gender || isNew) && (
@@ -319,7 +330,7 @@ export default function ProductPage({
               <h1 className="leading-[1.0] text-[#1a1008] pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(36px, 5vw, 52px)" }}>{name}</h1>
               <p className="italic text-[#5a4a3a] leading-tight mt-0.5 pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(16px, 2.5vw, 22px)" }}>in {swatchImages[swatchIdx]?.colorLabel ?? colorLabel}</p>
               <p className="text-[12px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-2 pp-anim-2">{type}</p>
-              <p className="text-[12px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-1 pp-anim-2">{format(Number(price))}</p>
+              <p className="text-[17px] tracking-[0.06em] text-[#1a1008] font-serif font-medium mt-1.5 pp-anim-2">{format(Number(price))}</p>
 
               {swatchImages.length > 1 && (
                 <div className="flex justify-center gap-2 mt-4 pp-anim-3">
@@ -393,35 +404,35 @@ export default function ProductPage({
                   onToggle={() => setAccordion(accordion === a.key ? null : a.key)} />
               ))}
             </div>
+
+            {shopTheLook.length > 0 && (
+              <div className="mt-8 pp-anim-4">
+                <h2 className="text-center text-[#1a1008] mb-2"
+                  style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(22px, 2.5vw, 28px)" }}>
+                  Shop the Look
+                </h2>
+                <div className="w-full max-w-[180px] mx-auto border-b border-[#e8e2db] mb-6" />
+                <div className="grid grid-cols-2 gap-4">
+                  {shopTheLook.map(item => (
+                    <Link key={item.slug} href={`/products/${item.slug}`} className="group block">
+                      <div className="relative overflow-hidden bg-[#f0eeeb]" style={{ aspectRatio: "2/3" }}>
+                        {item.image && (
+                          <Image src={item.image} alt={item.name} fill
+                            className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
+                            sizes="(max-width:768px) 50vw, 25vw" />
+                        )}
+                      </div>
+                      <p className="text-[15.5px] text-center text-[#111] leading-tight truncate mt-2.5"
+                        style={{ fontFamily: "var(--font-script), cursive" }}>
+                        {item.name}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-
-        {shopTheLook.length > 0 && (
-          <section className="px-5 md:px-12 py-12 md:py-16 border-t border-[#e8e2db]">
-            <h2 className="text-center text-[#1a1008] mb-2"
-              style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(24px, 3vw, 32px)" }}>
-              Shop the Look
-            </h2>
-            <div className="w-full max-w-[220px] mx-auto border-b border-[#e8e2db] mb-8" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6 max-w-4xl mx-auto">
-              {shopTheLook.map(item => (
-                <Link key={item.slug} href={`/products/${item.slug}`} className="group block">
-                  <div className="relative overflow-hidden bg-[#f0eeeb]" style={{ aspectRatio: "2/3" }}>
-                    {item.image && (
-                      <Image src={item.image} alt={item.name} fill
-                        className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
-                        sizes="(max-width:768px) 33vw, 220px" />
-                    )}
-                  </div>
-                  <p className="text-[15.5px] text-center text-[#111] leading-tight truncate mt-2.5"
-                    style={{ fontFamily: "var(--font-script), cursive" }}>
-                    {item.name}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
 
         {selectedForYou.length > 0 && (
           <section className="px-5 md:px-12 py-12 md:py-16 border-t border-[#e8e2db]">

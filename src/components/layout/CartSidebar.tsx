@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { X } from "lucide-react";
+import { useCurrency } from "@/lib/currency";
 
 type CartItem = {
   id: string;
   quantity: number;
   product: {
-    id: string; name: string; slug: string; basePrice: number;
+    id: string; name: string; slug: string; type: string; basePrice: number;
     images: { url: string }[];
   };
   variant: {
@@ -23,7 +24,15 @@ type WishlistItem = {
   product: { id: string; name: string; slug: string; basePrice: number; images: { url: string }[] };
 };
 
+type Upsell = {
+  id: string; name: string; slug: string; basePrice: number;
+  images?: { url: string; isPrimary?: boolean }[];
+};
+
 type Tab = "basket" | "wishlist";
+
+const FREE_DELIVERY_THRESHOLD = 250000; // matches the Shipping Policy's free-delivery threshold
+const ACCENT = "#641310"; // matches the reference site's --sale-red / free_shipping_false color exactly
 
 type Props = {
   open: boolean;
@@ -32,13 +41,8 @@ type Props = {
   initialTab?: Tab;
 };
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency", currency: "NGN", minimumFractionDigits: 0,
-  }).format(n);
-}
-
 export default function CartSidebar({ open, onClose, onCountChange, initialTab = "basket" }: Props) {
+  const { format: fmt } = useCurrency();
   const [tab,     setTab]     = useState<Tab>(initialTab);
   const [items,   setItems]   = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,6 +52,8 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
   const [wishLoading,   setWishLoading]   = useState(false);
   const [wishSignedOut, setWishSignedOut] = useState(false);
   const [wishBusy,      setWishBusy]      = useState<string | null>(null);
+
+  const [upsells, setUpsells] = useState<Upsell[]>([]);
 
   const fetchCart = useCallback(async () => {
     setLoading(true);
@@ -106,6 +112,20 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
     return () => window.removeEventListener("cartUpdated", fetchCart);
   }, [fetchCart]);
 
+  // "Selected for You" — fetched once per drawer open, excluding items already in the bag.
+  useEffect(() => {
+    if (!open || tab !== "basket") return;
+    const inCart = new Set(items.map(i => i.product.id));
+    fetch("/api/products?limit=8&sortBy=createdAt&order=desc")
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) return;
+        setUpsells((d.data.products ?? d.data ?? []).filter((p: Upsell) => !inCart.has(p.id)).slice(0, 6));
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, tab, items.length]);
+
   // Close on Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -149,30 +169,36 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
       />
 
       {/* Drawer */}
-      <div className={`fixed top-0 right-0 h-full w-[320px] max-w-[90vw] z-[100] flex flex-col
+      <div className={`fixed top-0 right-0 h-full w-full md:w-[calc(30vw+50px)] z-[100] flex flex-col
         bg-[#FAF9F7] transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}>
 
+        {/* Close button — its own row, top right */}
+        <div className="flex justify-end px-6 pt-5">
+          <button onClick={onClose} aria-label="Close">
+            <X size={22} strokeWidth={1.3} className="text-[#3a2e22]" />
+          </button>
+        </div>
+
         {/* Header — Basket / Wishlist tabs */}
-        <div className="flex items-center justify-between px-6 pt-6 border-b border-[#d5cec4]">
-          <div className="flex items-center gap-6">
+        <div className="flex items-center px-6 border-b border-[#d5cec4]">
+          <div className="flex flex-1 items-center">
             <button onClick={() => setTab("basket")}
-              className={`pb-4 text-[12.5px] tracking-[0.2em] uppercase font-serif border-b-2 -mb-px transition-colors ${
-                tab === "basket" ? "text-[#3a2e22] border-[#3a2e22]" : "text-[#9a8a7a] border-transparent"
-              }`}>
-              Bag {items.length > 0 && `(${items.length})`}
+              className={`flex-1 text-center pb-4 text-[16px] tracking-[0.06em] font-serif border-b-2 -mb-px transition-colors ${
+                tab === "basket" ? "text-[#3a2e22]" : "text-[#9a8a7a] border-transparent"
+              }`}
+              style={tab === "basket" ? { borderColor: ACCENT } : undefined}>
+              Basket {items.length > 0 && `(${items.length})`}
             </button>
             <button onClick={() => setTab("wishlist")}
-              className={`pb-4 text-[12.5px] tracking-[0.2em] uppercase font-serif border-b-2 -mb-px transition-colors ${
-                tab === "wishlist" ? "text-[#3a2e22] border-[#3a2e22]" : "text-[#9a8a7a] border-transparent"
-              }`}>
+              className={`flex-1 text-center pb-4 text-[13px] tracking-[0.06em] font-serif border-b-2 -mb-px transition-colors ${
+                tab === "wishlist" ? "text-[#3a2e22]" : "text-[#9a8a7a] border-transparent"
+              }`}
+              style={tab === "wishlist" ? { borderColor: ACCENT } : undefined}>
               Wishlist
             </button>
           </div>
-          <button onClick={onClose} aria-label="Close" className="mb-4">
-            <X size={15} strokeWidth={1.3} className="text-[#3a2e22]" />
-          </button>
         </div>
 
         {tab === "wishlist" ? (
@@ -288,49 +314,51 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
 
                     <div className="flex-1 min-w-0 flex flex-col justify-between">
                       <div>
-                        <Link href={`/products/${item.product.slug}`} onClick={onClose}>
-                          <p className="text-[13px] tracking-[0.06em] text-[#3a2e22] font-serif
-                            hover:opacity-60 transition-opacity truncate"
-                            style={{ fontFamily: "var(--font-script), cursive" }}>
-                            {item.product.name}
-                          </p>
-                        </Link>
-                        <p className="text-[11.5px] tracking-[0.08em] text-[#9a8a7a] font-serif mt-0.5">
-                          {item.variant.colorLabel} · {item.variant.size}
-                        </p>
-                        <p className="text-[12px] tracking-[0.06em] text-[#3a2e22] font-serif mt-1">
-                          {fmt(price)}
+                        <div className="flex items-start justify-between gap-2">
+                          <Link href={`/products/${item.product.slug}`} onClick={onClose} className="min-w-0">
+                            <p className="text-[13px] leading-snug tracking-[0.02em] text-[#3a2e22] font-serif
+                              hover:opacity-60 transition-opacity">
+                              <span className="font-semibold">{item.product.name}</span>
+                              {item.product.type && <> — {item.product.type}</>} — {item.variant.colorLabel}
+                            </p>
+                          </Link>
+                          <button
+                            disabled={isBusy}
+                            onClick={() => removeItem(item.id)}
+                            className="flex-shrink-0 text-[11px] tracking-wide text-[#9a8a7a] font-serif
+                              underline underline-offset-2 hover:text-[#3a2e22] transition-colors
+                              disabled:opacity-30">
+                            Remove
+                          </button>
+                        </div>
+                        <p className="text-[11.5px] tracking-[0.08em] text-[#9a8a7a] font-serif mt-1">
+                          {item.variant.size}
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center border border-[#d5cec4]">
+                      <div className="mt-2.5">
+                        <div className="flex items-center gap-1.5">
                           <button
                             disabled={isBusy || item.quantity <= 1}
                             onClick={() => updateQty(item.id, item.quantity - 1)}
-                            className="w-7 h-7 flex items-center justify-center text-[#3a2e22]
+                            className="w-7 h-7 flex items-center justify-center text-[#3a2e22] border border-[#3a2e22]
                               text-[14.5px] hover:bg-[#f0eeeb] transition-colors disabled:opacity-30">
                             −
                           </button>
-                          <span className="w-7 text-center text-[12px] font-serif text-[#3a2e22]">
+                          <span className="w-6 text-center text-[12px] font-serif text-[#3a2e22]">
                             {isBusy ? "…" : item.quantity}
                           </span>
                           <button
                             disabled={isBusy || item.quantity >= item.variant.stockQuantity}
                             onClick={() => updateQty(item.id, item.quantity + 1)}
-                            className="w-7 h-7 flex items-center justify-center text-[#3a2e22]
+                            className="w-7 h-7 flex items-center justify-center text-[#3a2e22] border border-[#3a2e22]
                               text-[14.5px] hover:bg-[#f0eeeb] transition-colors disabled:opacity-30">
                             +
                           </button>
                         </div>
-                        <button
-                          disabled={isBusy}
-                          onClick={() => removeItem(item.id)}
-                          className="text-[11.5px] tracking-wide text-[#9a8a7a] font-serif
-                            underline underline-offset-2 hover:text-[#3a2e22] transition-colors
-                            disabled:opacity-30">
-                          Remove
-                        </button>
+                        <p className="text-[12.5px] tracking-[0.06em] text-[#3a2e22] font-serif mt-2">
+                          {fmt(price)}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -338,33 +366,65 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
               })}
             </div>
           )}
-        </div>
 
-        {items.length > 0 && (
-          <div className="px-6 py-5 border-t border-[#d5cec4]">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-[11.5px] tracking-[0.12em] text-[#9a8a7a] font-serif uppercase">Subtotal</p>
-              <p className="text-[13.5px] tracking-[0.06em] text-[#3a2e22] font-serif">{fmt(subtotal)}</p>
+          {items.length > 0 && (
+            <div className="mt-6">
+              <div className="h-[3px] bg-[#e8e2db] overflow-hidden">
+                <div className="h-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100)}%`,
+                    background: ACCENT,
+                  }} />
+              </div>
+              <p className="text-center text-[11.5px] tracking-[0.06em] font-serif mt-2.5" style={{ color: ACCENT }}>
+                {subtotal >= FREE_DELIVERY_THRESHOLD
+                  ? "You've unlocked free delivery!"
+                  : `Add ${fmt(FREE_DELIVERY_THRESHOLD - subtotal)} for Free Delivery`}
+              </p>
             </div>
-            <p className="text-[11px] tracking-[0.08em] text-[#9a8a7a] font-serif mb-4">
-              Shipping calculated at checkout
-            </p>
-            <Link
-              href="/checkout"
-              onClick={onClose}
-              className="block w-full bg-[#4B3E3C] text-[#FAF9F7] text-center
-                text-[12px] tracking-[0.2em] uppercase font-serif py-3.5
-                hover:bg-[#1a1008] transition-colors">
-              Checkout
-            </Link>
-            <button
-              onClick={onClose}
-              className="mt-3 w-full text-[11.5px] tracking-[0.12em] text-[#3a2e22] font-serif
-                underline underline-offset-4 hover:opacity-50 transition-opacity">
-              Continue Shopping
-            </button>
-          </div>
-        )}
+          )}
+
+          {items.length > 0 && (
+            <div className="mt-6 py-5 border-t border-[#d5cec4]">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[11.5px] tracking-[0.12em] text-[#9a8a7a] font-serif uppercase">Subtotal</p>
+                <p className="text-[14.5px] tracking-[0.06em] text-[#3a2e22] font-serif font-semibold">{fmt(subtotal)}</p>
+              </div>
+              <Link
+                href="/checkout"
+                onClick={onClose}
+                className="block w-full bg-[#4B3E3C] text-white text-center
+                  text-[13px] tracking-[0.06em] font-serif py-2.5
+                  hover:bg-[#1a1008] transition-colors">
+                Checkout securely
+              </Link>
+            </div>
+          )}
+
+          {items.length > 0 && upsells.length > 0 && (
+            <div className="pt-2 pb-2">
+              <p className="text-center text-[18px] md:text-[24px] leading-none tracking-[1.47px] font-medium text-[#3a2e22] mt-2 mb-4"
+                style={{ fontFamily: "var(--font-script), cursive" }}>
+                Selected for You
+              </p>
+              <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                {upsells.map(p => {
+                  const img = p.images?.find(i => i.isPrimary)?.url ?? p.images?.[0]?.url;
+                  return (
+                    <Link key={p.id} href={`/products/${p.slug}`} onClick={onClose}
+                      className="group block flex-shrink-0 w-[110px]">
+                      <div className="relative overflow-hidden bg-[#f0eeeb]" style={{ aspectRatio: "2/3" }}>
+                        {img && <Image src={img} alt={p.name} fill
+                          className="object-cover object-top group-hover:scale-[1.03] transition-transform duration-500"
+                          sizes="110px" />}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
         </>
         )}
       </div>

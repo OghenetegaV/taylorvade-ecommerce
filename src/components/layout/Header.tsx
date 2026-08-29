@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { X, ShoppingBag } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CURRENCY_CHANGE_EVENT } from "@/lib/currency";
 import { InstagramIcon, XIcon as XSocialIcon, WhatsAppIcon } from "@/components/icons/SocialIcons";
@@ -45,12 +45,7 @@ const UserIcon = ({ className }: { className?: string }) => (
 );
 
 const BagIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-    <line x1="3" y1="6" x2="21" y2="6"/>
-    <path d="M16 10a4 4 0 0 1-8 0"/>
-  </svg>
+  <ShoppingBag className={className} strokeWidth={1.3} />
 );
 
 const ChevronDown = () => (
@@ -105,7 +100,7 @@ const SUGGESTED_CURRENCIES = ["NGN", "USD", "GBP", "CAD"];
 const ALL_COUNTRIES: string[] = ["Afghanistan","Aland","Albania","Algeria","American Samoa","Andorra","Angola","Anguilla","Antarctica","Antigua and Barbuda","Argentina","Armenia","Aruba","Ascension Island","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bonaire","Bosnia and Herzegovina","Botswana","Bouvet Island","Brazil","British Indian Ocean Territory","British Virgin Islands","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Cayman Islands","Central African Republic","Chad","Chile","China","Christmas Island","Cocos (Keeling) Islands","Colombia","Comoros","Cook Islands","Costa Rica","Croatia","Cuba","Curacao","Cyprus","Czech Republic","Democratic Republic of the Congo","Denmark","Djibouti","Dominica","Dominican Republic","East Timor","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Falkland Islands","Faroe Islands","Fiji","Finland","France","French Guiana","French Polynesia","French Southern Territories","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar","Greece","Greenland","Grenada","Guadeloupe","Guam","Guatemala","Guernsey","Guinea","Guinea-Bissau","Guyana","Haiti","Heard Island and McDonald Islands","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Isle of Man","Israel","Italy","Ivory Coast","Jamaica","Japan","Jersey","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macao","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Martinique","Mauritania","Mauritius","Mayotte","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar (Burma)","Namibia","Nauru","Nepal","Netherlands","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria","Niue","Norfolk Island","North Korea","North Macedonia","Northern Mariana Islands","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Pitcairn Islands","Poland","Portugal","Puerto Rico","Qatar","Republic of the Congo","Reunion","Romania","Russia","Rwanda","Saint Barthelemy","Saint Helena","Saint Kitts and Nevis","Saint Lucia","Saint Martin","Saint Pierre and Miquelon","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Sint Maarten","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Georgia and the South Sandwich Islands","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Svalbard and Jan Mayen","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Togo","Tokelau","Tonga","Trinidad and Tobago","Tristan da Cunha","Tunisia","Turkmenistan","Turks and Caicos Islands","Tuvalu","Türkiye","U.S. Minor Outlying Islands","U.S. Virgin Islands","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Wallis and Futuna","Western Sahara","Yemen","Zambia","Zimbabwe"];
 const ALL_CURRENCIES: string[] = ["AED","AFN","ALL","AMD","ANG","AOA","ARS","AUD","AWG","AZN","BAM","BBD","BDT","BHD","BIF","BMD","BND","BOB","BOV","BRL","BSD","BTN","BWP","BYN","BZD","CAD","CDF","CHE","CHF","CHW","CLF","CLP","CNY","COP","CRC","CUP","CVE","CZK","DJF","DKK","DOP","DZD","EGP","ERN","ETB","EUR","FJD","FKP","GBP","GEL","GHS","GIP","GMD","GNF","GTQ","GYD","HKD","HNL","HTG","HUF","IDR","ILS","INR","IQD","IRR","ISK","JMD","JOD","JPY","KES","KGS","KHR","KMF","KPW","KRW","KWD","KYD","KZT","LAK","LBP","LKR","LRD","LSL","LYD","MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRU","MUR","MVR","MWK","MXN","MYR","MZN","NAD","NGN","NIO","NOK","NPR","NZD","OMR","PAB","PEN","PGK","PHP","PKR","PLN","PYG","QAR","RON","RSD","RUB","RWF","SAR","SBD","SCR","SDG","SEK","SGD","SHP","SLL","SOS","SRD","SSP","STN","SVC","SYP","SZL","THB","TJS","TMT","TND","TOP","TRY","TTD","TWD","TZS","UAH","UGX","USD","USN","USS","UYI","UYU","UZS","VES","VND","VUV","WST","XAF","XCD","XOF","XPF","YER","ZAR","ZMW"];
 
-const ICON = "w-[19px] h-[19px] md:w-[22px] md:h-[22px]";
+const ICON = "w-[17px] h-[17px] md:w-[22px] md:h-[22px]";
 
 export default function Header() {
   const router = useRouter();
@@ -202,20 +197,20 @@ export default function Header() {
   return (
     <>
       <header className={`fixed top-0 left-0 w-full z-50 transition-colors duration-300 md:bg-transparent ${mobileBgClass}`}>
-        <div className="relative flex items-center justify-between px-5 md:px-9 py-5"
+        <div className="relative flex items-center justify-between px-4 md:px-9 py-5"
           style={{ color: iconColor, transition: "color 300ms ease" }}>
           <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="flex items-center">
             <HamburgerIcon />
           </button>
 
           <Link href="/" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="relative w-[110px] md:w-[190px] h-[32px] md:h-[46px]"
+            <div className="relative w-[88px] md:w-[190px] h-[26px] md:h-[46px]"
               style={{ filter: overHero ? "invert(1) brightness(2)" : "none", transition: "filter 300ms ease" }}>
               <Image src="/logo.png" alt="Taylor Vade" fill priority className="object-contain"/>
             </div>
           </Link>
 
-          <div className="flex items-center gap-[11px] md:gap-[15px]">
+          <div className="flex items-center gap-[7px] md:gap-[15px]">
             <button aria-label="Search" onClick={() => setSearchOpen(true)} className="hidden md:flex">
               <SearchIcon className={ICON} />
             </button>
@@ -239,9 +234,8 @@ export default function Header() {
             <button
               aria-label="Region"
               onClick={() => setRegionOpen(true)}
-              className="w-[23px] h-[23px] rounded-full overflow-hidden flex-shrink-0 border"
-              style={{ padding: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                borderColor: overHero ? "#FAF9F780" : "#3a2e2240" }}
+              className="w-[19px] h-[19px] md:w-[23px] md:h-[23px] rounded-full overflow-hidden flex-shrink-0"
+              style={{ padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
             >
               <NigeriaFlag />
             </button>

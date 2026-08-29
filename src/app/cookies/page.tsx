@@ -12,11 +12,11 @@ const LAST_UPDATED = "9 June 2026";
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id} className="mb-12 scroll-mt-20">
-      <h2 className="text-[12.5px] tracking-[0.25em] text-[#3a2e22] uppercase font-serif mb-5 pb-3
+      <h2 className="text-[13px] tracking-[0.2em] text-[#3a2e22] uppercase font-serif font-semibold mb-5 pb-3
         border-b border-[#e8e2db]">
         {title}
       </h2>
-      <div className="space-y-4 text-[14px] leading-[1.9] tracking-[0.03em] text-[#5a4a3a] font-serif">
+      <div className="space-y-4 text-[14px] leading-[1.9] tracking-[0.03em] text-[#3a2e22] font-serif">
         {children}
       </div>
     </section>
@@ -46,38 +46,26 @@ export default function CookiePolicyPage() {
 
   return (
     <div className="min-h-screen bg-[#f7f5f2] font-serif">
-      <div className="border-b border-[#e8e2db] bg-[#f7f5f2] sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-5 md:px-10 py-4 flex items-center justify-between">
-          <Link href="/" className="text-[11.5px] tracking-[0.2em] text-[#9a8a7a] uppercase hover:text-[#3a2e22] transition-colors">
-            ← Taylor Vade
-          </Link>
-          <span className="text-[21px] text-[#3a2e22]" style={{ fontFamily: "var(--font-script), cursive" }}>
-            Taylor Vade
-          </span>
-          <span className="text-[11.5px] tracking-[0.15em] text-[#9a8a7a] uppercase hidden md:block">
-            Cookie Policy
-          </span>
-        </div>
-      </div>
+      <div className="h-[76px] md:h-[88px]" />
 
       <div className="max-w-5xl mx-auto px-5 md:px-10 py-12 md:py-16">
         <div className="mb-14">
-          <p className="text-[11.5px] tracking-[0.3em] text-[#9a8a7a] uppercase mb-3">Legal</p>
+          <p className="text-[11.5px] tracking-[0.3em] text-[#6b5c4a] uppercase mb-3">Legal</p>
           <h1 className="text-[32px] md:text-[42px] text-[#3a2e22] leading-tight mb-4"
             style={{ fontFamily: "var(--font-script), cursive" }}>
             Cookie Policy
           </h1>
-          <p className="text-[12.5px] tracking-[0.1em] text-[#9a8a7a] font-serif">Last updated: {LAST_UPDATED}</p>
+          <p className="text-[12.5px] tracking-[0.1em] text-[#6b5c4a] font-serif">Last updated: {LAST_UPDATED}</p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-12">
           <aside className="hidden md:block w-52 flex-shrink-0">
             <div className="sticky top-24">
-              <p className="text-[10.5px] tracking-[0.25em] text-[#9a8a7a] uppercase mb-4">Contents</p>
+              <p className="text-[10.5px] tracking-[0.25em] text-[#6b5c4a] uppercase mb-4">Contents</p>
               <nav className="space-y-1">
                 {sections.map(s => (
                   <a key={s.id} href={`#${s.id}`}
-                    className="block text-[12px] tracking-[0.06em] text-[#9a8a7a] hover:text-[#3a2e22] transition-colors py-0.5">
+                    className="block text-[12px] tracking-[0.06em] text-[#6b5c4a] hover:text-[#3a2e22] transition-colors py-0.5">
                     {s.label}
                   </a>
                 ))}
@@ -108,9 +96,9 @@ export default function CookiePolicyPage() {
                 <table className="w-full text-[13.5px] border-collapse mt-2">
                   <thead>
                     <tr className="border-b border-[#e8e2db]">
-                      <th className="text-left py-2 pr-3 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">Name</th>
-                      <th className="text-left py-2 pr-3 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">Purpose</th>
-                      <th className="text-left py-2 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">Duration</th>
+                      <th className="text-left py-2 pr-3 text-[#6b5c4a] uppercase tracking-[0.06em] text-[12px]">Name</th>
+                      <th className="text-left py-2 pr-3 text-[#6b5c4a] uppercase tracking-[0.06em] text-[12px]">Purpose</th>
+                      <th className="text-left py-2 text-[#6b5c4a] uppercase tracking-[0.06em] text-[12px]">Duration</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -135,8 +123,8 @@ export default function CookiePolicyPage() {
                 <table className="w-full text-[13.5px] border-collapse mt-2">
                   <thead>
                     <tr className="border-b border-[#e8e2db]">
-                      <th className="text-left py-2 pr-3 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">Key</th>
-                      <th className="text-left py-2 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">Purpose</th>
+                      <th className="text-left py-2 pr-3 text-[#6b5c4a] uppercase tracking-[0.06em] text-[12px]">Key</th>
+                      <th className="text-left py-2 text-[#6b5c4a] uppercase tracking-[0.06em] text-[12px]">Purpose</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -178,7 +166,7 @@ export default function CookiePolicyPage() {
                   Taylor Vade
                 </p>
                 <p>
-                  <span className="text-[#9a8a7a]">Email: </span>
+                  <span className="text-[#6b5c4a]">Email: </span>
                   <a href="mailto:privacy@taylorvade.com" className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
                     privacy@taylorvade.com
                   </a>
@@ -188,14 +176,14 @@ export default function CookiePolicyPage() {
 
             <div className="mt-16 pt-8 border-t border-[#e8e2db]">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <p className="text-[11.5px] tracking-[0.1em] text-[#9a8a7a]">
+                <p className="text-[11.5px] tracking-[0.1em] text-[#6b5c4a]">
                   © {new Date().getFullYear()} Taylor Vade. All rights reserved.
                 </p>
                 <div className="flex items-center gap-6">
-                  <Link href="/privacy" className="text-[11.5px] tracking-[0.1em] text-[#9a8a7a] hover:text-[#3a2e22] transition-colors">
+                  <Link href="/privacy" className="text-[11.5px] tracking-[0.1em] text-[#6b5c4a] hover:text-[#3a2e22] transition-colors">
                     Privacy Policy
                   </Link>
-                  <Link href="/terms" className="text-[11.5px] tracking-[0.1em] text-[#9a8a7a] hover:text-[#3a2e22] transition-colors">
+                  <Link href="/terms" className="text-[11.5px] tracking-[0.1em] text-[#6b5c4a] hover:text-[#3a2e22] transition-colors">
                     Terms of Service
                   </Link>
                 </div>

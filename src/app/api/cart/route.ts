@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             slug: true,
+            type: true,
             basePrice: true,
             images: {
               where: { isPrimary: true },

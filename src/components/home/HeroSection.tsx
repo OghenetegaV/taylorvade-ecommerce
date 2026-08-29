@@ -30,17 +30,6 @@ export default function HeroSection() {
   return (
     <section className="relative w-full overflow-hidden" style={{ height: "100svh" }}>
 
-      {/* ── Top white gradient overlay for logo visibility ── */}
-      <div
-        className="absolute left-0 top-0 w-full pointer-events-none z-10"
-        style={{
-          height: "10%",
-          background: "linear-gradient(to bottom, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.1) 45%, rgba(255,255,255,0) 100%)",
-          opacity: mounted ? 1 : 0,
-          transition: "opacity 1s ease",
-        }}
-      />
-
       {/* ── Mobile: sliding single image ── */}
       <div className="absolute inset-0 md:hidden overflow-hidden">
         <div
@@ -75,7 +64,7 @@ export default function HeroSection() {
       </div>
 
       {/* ── Desktop: split panels with clip reveals ── */}
-      <div className="absolute top-0 left-0 w-1/2 h-full overflow-hidden hidden md:block">
+      <div className="absolute top-0 left-0 w-[calc(50%+2px)] h-full overflow-hidden hidden md:block">
         <Link 
           href="/collections/woman"
           className="relative block w-full h-full cursor-pointer"
@@ -90,7 +79,7 @@ export default function HeroSection() {
         </Link>
       </div>
 
-      <div className="absolute top-0 right-0 w-1/2 h-full overflow-hidden hidden md:block">
+      <div className="absolute top-0 right-0 w-[calc(50%+2px)] h-full overflow-hidden hidden md:block">
         <Link 
           href="/collections/man"
           className="relative block w-full h-full cursor-pointer"
