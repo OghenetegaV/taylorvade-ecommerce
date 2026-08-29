@@ -66,6 +66,7 @@ model Profile {
   orders    Order[]
   cartItems CartItem[]
   wishlists Wishlist[]
+  reviews   Review[]
 
   @@index([email])
   @@map("profiles")
@@ -124,6 +125,7 @@ model Product {
   orderItems OrderItem[]
   cartItems  CartItem[]
   wishlists  Wishlist[]
+  reviews    Review[]
 
   @@map("products")
 }
@@ -259,4 +261,23 @@ model Wishlist {
 
   @@unique([profileId, productId])
   @@map("wishlists")
+}
+
+model Review {
+  id             String   @id @default(cuid())
+  productId      String   @map("product_id")
+  profileId      String?  @map("profile_id")
+  authorName     String   @map("author_name")
+  authorLocation String?  @map("author_location")
+  rating         Int
+  title          String?
+  body           String
+  verifiedBuyer  Boolean  @default(false) @map("verified_buyer")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  product Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  profile Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@map("reviews")
 }

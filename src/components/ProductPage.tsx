@@ -11,6 +11,11 @@ interface SwatchImage  { src: string; colorLabel: string; }
 interface ShopItem     { slug: string; image: string; name: string; }
 interface RelatedItem  { slug: string; image: string; name: string; description: string; price?: number; }
 interface Variant      { id: string; size: string; colorLabel: string; stockQuantity: number; priceOverride?: number | null; }
+interface ReviewItem   {
+  id: string; authorName: string; authorLocation: string | null;
+  rating: number; title: string | null; body: string;
+  verifiedBuyer: boolean; createdAt: string;
+}
 
 export interface ProductPageProps {
   name:           string;
@@ -46,6 +51,21 @@ const StarIcon = ({ filled }: { filled: boolean }) => (
     <path strokeLinecap="round" strokeLinejoin="round"
       d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
   </svg>
+);
+
+const RatingStars = ({ rating, size = 13, onRate }: { rating: number; size?: number; onRate?: (n: number) => void }) => (
+  <span className="inline-flex items-center gap-[2px]">
+    {[1, 2, 3, 4, 5].map(n => (
+      <span key={n} onClick={onRate ? () => onRate(n) : undefined}
+        className={onRate ? "cursor-pointer" : undefined}>
+        <svg viewBox="0 0 24 24" fill={n <= Math.round(rating) ? "#3a2e22" : "none"}
+          stroke="#3a2e22" strokeWidth="1" style={{ width: size, height: size }}>
+          <path strokeLinecap="round" strokeLinejoin="round"
+            d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+        </svg>
+      </span>
+    ))}
+  </span>
 );
 
 const ClockIcon = () => (
@@ -122,6 +142,61 @@ export default function ProductPage({
   const [imgFade,      setImgFade]      = useState(true);
   const [loaded,       setLoaded]       = useState(false);
   const touchStartX = useRef<number | null>(null);
+
+  // Reviews
+  const [reviews,       setReviews]       = useState<ReviewItem[]>([]);
+  const [reviewAvg,     setReviewAvg]     = useState(0);
+  const [reviewCount,   setReviewCount]   = useState(0);
+  const [reviewSort,    setReviewSort]    = useState<"recent" | "highest" | "lowest">("recent");
+  const [reviewQuery,   setReviewQuery]   = useState("");
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ authorName: "", authorLocation: "", rating: 5, title: "", body: "" });
+  const [reviewSubmitError, setReviewSubmitError] = useState<string | null>(null);
+
+  const fetchReviews = () => {
+    if (!productId) return;
+    const params = new URLSearchParams({ productId, sort: reviewSort });
+    if (reviewQuery.trim()) params.set("query", reviewQuery.trim());
+    fetch(`/api/reviews?${params}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) return;
+        setReviews(d.data.reviews);
+        setReviewAvg(d.data.average);
+        setReviewCount(d.data.count);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(fetchReviews, [productId, reviewSort, reviewQuery]);
+
+  async function submitReview() {
+    if (!productId) return;
+    setReviewSubmitError(null);
+    if (!reviewForm.authorName.trim() || !reviewForm.body.trim()) {
+      setReviewSubmitError("Please add your name and a review.");
+      return;
+    }
+    setReviewSubmitting(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, ...reviewForm }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error ?? "Could not submit review");
+      setReviewModalOpen(false);
+      setReviewForm({ authorName: "", authorLocation: "", rating: 5, title: "", body: "" });
+      setReviewSort("recent");
+      fetchReviews();
+    } catch (e) {
+      setReviewSubmitError(e instanceof Error ? e.message : "Could not submit review");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }
 
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
 
@@ -254,7 +329,7 @@ export default function ProductPage({
       `}</style>
 
       <div className="min-h-screen bg-[#faf9f7] font-serif">
-        <div className="flex flex-col md:flex-row px-5 md:px-16 md:gap-10">
+        <div className="flex flex-col md:flex-row md:px-16 md:gap-10">
           <div className="md:w-1/2 md:sticky md:top-0 md:self-start">
             <div className="hidden md:flex md:items-center">
               <div className="w-[82px] flex-shrink-0 flex flex-col gap-[3px] p-[3px]">
@@ -305,7 +380,7 @@ export default function ProductPage({
             )}
           </div>
 
-          <div className={`md:w-1/2 pt-[92px] md:pt-[104px] pb-6 md:pb-8 ${loaded ? "" : "opacity-0"}`}
+          <div className={`md:w-1/2 px-5 md:px-0 pt-6 md:pt-[104px] pb-6 md:pb-8 ${loaded ? "" : "opacity-0"}`}
             style={loaded ? { animation: "ppFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both" } : {}}>
             <div className="text-center">
               {(outOfStock || gender || isNew) && (
@@ -331,6 +406,15 @@ export default function ProductPage({
               <p className="italic text-[#5a4a3a] leading-tight mt-0.5 pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(16px, 2.5vw, 22px)" }}>in {swatchImages[swatchIdx]?.colorLabel ?? colorLabel}</p>
               <p className="text-[12px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-2 pp-anim-2">{type}</p>
               <p className="text-[17px] tracking-[0.06em] text-[#1a1008] font-serif font-medium mt-1.5 pp-anim-2">{format(Number(price))}</p>
+
+              {reviewCount > 0 && (
+                <a href="#reviews" className="flex items-center justify-center gap-2 mt-2.5 pp-anim-2 hover:opacity-70 transition-opacity">
+                  <RatingStars rating={reviewAvg} size={13} />
+                  <span className="text-[12px] text-[#5a4a3a] font-serif underline underline-offset-2">
+                    {reviewCount} {reviewCount === 1 ? "Review" : "Reviews"}
+                  </span>
+                </a>
+              )}
 
               {swatchImages.length > 1 && (
                 <div className="flex justify-center gap-2 mt-4 pp-anim-3">
@@ -411,7 +495,7 @@ export default function ProductPage({
                   style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(22px, 2.5vw, 28px)" }}>
                   Shop the Look
                 </h2>
-                <div className="w-full max-w-[180px] mx-auto border-b border-[#e8e2db] mb-6" />
+                <div className="w-full max-w-[180px] mx-auto border-b border-[#4B3E3C] mb-6" />
                 <div className="grid grid-cols-2 gap-4">
                   {shopTheLook.map(item => (
                     <Link key={item.slug} href={`/products/${item.slug}`} className="group block">
@@ -435,17 +519,17 @@ export default function ProductPage({
         </div>
 
         {selectedForYou.length > 0 && (
-          <section className="px-5 md:px-12 py-12 md:py-16 border-t border-[#e8e2db]">
+          <section className="px-5 md:px-12 py-12 md:py-16">
             <h2 className="text-center text-[#1a1008] mb-2"
               style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(24px, 3vw, 32px)" }}>
               Selected for You
             </h2>
-            <div className="w-full max-w-[220px] mx-auto border-b border-[#e8e2db] mb-8" />
+            <div className="w-full border-b border-[#4B3E3C] mb-8" />
             <div className="flex gap-4 md:gap-6 overflow-x-auto pb-2 snap-x snap-mandatory md:grid md:grid-cols-6"
               style={{ scrollbarWidth: "none" }}>
               {selectedForYou.map(item => (
                 <Link key={item.slug} href={`/products/${item.slug}`}
-                  className="group block snap-start flex-shrink-0 w-[42vw] sm:w-[28vw] md:w-auto">
+                  className="group block text-center snap-start flex-shrink-0 w-[42vw] sm:w-[28vw] md:w-auto">
                   <div className="relative overflow-hidden bg-[#f0eeeb]" style={{ aspectRatio: "2/3" }}>
                     {item.image && (
                       <Image src={item.image} alt={item.name} fill
@@ -459,14 +543,141 @@ export default function ProductPage({
                   </p>
                   <p className="text-[12px] text-[#999] font-serif truncate">{item.description}</p>
                   {item.price != null && (
-                    <p className="text-[12.5px] text-[#222] font-serif mt-0.5">{format(item.price)}</p>
+                    <p className="text-[12px] text-[#999] font-serif mt-0.5">{format(item.price)}</p>
                   )}
                 </Link>
               ))}
             </div>
           </section>
         )}
+
+        {productId && (
+          <section id="reviews" className="px-5 md:px-12 py-12 md:py-16 scroll-mt-20">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-[20px] text-[#1a1008] font-serif font-medium">{reviewAvg.toFixed(1)}</span>
+                <RatingStars rating={reviewAvg} size={17} />
+              </div>
+              <button onClick={() => setReviewModalOpen(true)}
+                className="border border-[#3a2e22] text-[#3a2e22] text-[11.5px] tracking-[0.1em] uppercase
+                  font-serif px-5 py-2.5 hover:bg-[#3a2e22] hover:text-white transition-colors">
+                Write a Review
+              </button>
+            </div>
+            <p className="text-[12.5px] text-[#8a7a6a] font-serif mb-8">Based on {reviewCount} {reviewCount === 1 ? "Review" : "Reviews"}</p>
+
+            <div className="flex items-center justify-between border-b border-[#e8e2db] pb-3 mb-6">
+              <span className="text-[12.5px] tracking-[0.14em] uppercase text-[#1a1008] font-serif border-b-2 border-[#3a2e22] pb-3 -mb-3">
+                Reviews {reviewCount}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+              <div className="flex items-center gap-3">
+                <span className="text-[11.5px] tracking-[0.1em] uppercase text-[#5a4a3a] font-serif">Filter Reviews:</span>
+                <select value={reviewSort} onChange={e => setReviewSort(e.target.value as typeof reviewSort)}
+                  className="text-[12.5px] font-serif text-[#3a2e22] border border-[#d5cec4] px-3 py-1.5 outline-none">
+                  <option value="recent">Most Recent</option>
+                  <option value="highest">Highest Rated</option>
+                  <option value="lowest">Lowest Rated</option>
+                </select>
+              </div>
+              <input value={reviewQuery} onChange={e => setReviewQuery(e.target.value)}
+                placeholder="Search Reviews"
+                className="flex-1 min-w-[200px] max-w-sm border border-[#d5cec4] px-3.5 py-2
+                  text-[12.5px] font-serif text-[#3a2e22] outline-none focus:border-[#3a2e22] transition-colors" />
+            </div>
+
+            {reviews.length === 0 ? (
+              <p className="text-[13px] text-[#8a7a6a] font-serif italic">
+                {reviewCount === 0 ? "Be the first to review this piece." : "No reviews match your search."}
+              </p>
+            ) : (
+              <div className="space-y-8">
+                {reviews.map(r => (
+                  <div key={r.id} className="border-b border-[#e8e2db] pb-8">
+                    <div className="flex items-start justify-between gap-4 mb-1.5">
+                      <div>
+                        <span className="text-[13px] text-[#1a1008] font-serif font-medium">{r.authorName}</span>
+                        {r.verifiedBuyer && (
+                          <span className="text-[11px] text-[#8a7a6a] font-serif"> · Verified Buyer</span>
+                        )}
+                        {r.authorLocation && (
+                          <p className="text-[11.5px] text-[#9a8a7a] font-serif">{r.authorLocation}</p>
+                        )}
+                      </div>
+                      <span className="text-[11.5px] text-[#9a8a7a] font-serif flex-shrink-0">
+                        {new Date(r.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit" })}
+                      </span>
+                    </div>
+                    <RatingStars rating={r.rating} size={13} />
+                    {r.title && <p className="text-[13.5px] text-[#1a1008] font-serif font-medium mt-2">{r.title}</p>}
+                    <p className="text-[13px] leading-relaxed text-[#5a4a3a] font-serif mt-1.5">{r.body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </div>
+
+      {reviewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setReviewModalOpen(false)} />
+          <div className="relative bg-[#faf9f7] max-w-md w-full max-h-[85vh] overflow-y-auto p-6 md:p-8">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-[16px] tracking-[0.14em] uppercase text-[#1a1008] font-serif">Write a Review</h2>
+              <button onClick={() => setReviewModalOpen(false)}
+                className="text-[#8a7a6a] hover:text-[#1a1008] transition-colors text-[14.5px]">
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[11px] tracking-[0.1em] uppercase text-[#8a7a6a] font-serif mb-1.5">Rating</label>
+                <RatingStars rating={reviewForm.rating} size={22}
+                  onRate={n => setReviewForm(f => ({ ...f, rating: n }))} />
+              </div>
+              <div>
+                <label className="block text-[11px] tracking-[0.1em] uppercase text-[#8a7a6a] font-serif mb-1.5">Name *</label>
+                <input value={reviewForm.authorName} onChange={e => setReviewForm(f => ({ ...f, authorName: e.target.value }))}
+                  className="w-full border border-[#d5cec4] px-3.5 py-2.5 text-[13px] font-serif text-[#3a2e22]
+                    outline-none focus:border-[#3a2e22] transition-colors" />
+              </div>
+              <div>
+                <label className="block text-[11px] tracking-[0.1em] uppercase text-[#8a7a6a] font-serif mb-1.5">Location (optional)</label>
+                <input value={reviewForm.authorLocation} onChange={e => setReviewForm(f => ({ ...f, authorLocation: e.target.value }))}
+                  placeholder="e.g. Lagos, Nigeria"
+                  className="w-full border border-[#d5cec4] px-3.5 py-2.5 text-[13px] font-serif text-[#3a2e22]
+                    outline-none focus:border-[#3a2e22] transition-colors" />
+              </div>
+              <div>
+                <label className="block text-[11px] tracking-[0.1em] uppercase text-[#8a7a6a] font-serif mb-1.5">Title (optional)</label>
+                <input value={reviewForm.title} onChange={e => setReviewForm(f => ({ ...f, title: e.target.value }))}
+                  className="w-full border border-[#d5cec4] px-3.5 py-2.5 text-[13px] font-serif text-[#3a2e22]
+                    outline-none focus:border-[#3a2e22] transition-colors" />
+              </div>
+              <div>
+                <label className="block text-[11px] tracking-[0.1em] uppercase text-[#8a7a6a] font-serif mb-1.5">Review *</label>
+                <textarea rows={4} value={reviewForm.body} onChange={e => setReviewForm(f => ({ ...f, body: e.target.value }))}
+                  className="w-full border border-[#d5cec4] px-3.5 py-2.5 text-[13px] font-serif text-[#3a2e22]
+                    outline-none focus:border-[#3a2e22] transition-colors resize-none" />
+              </div>
+
+              {reviewSubmitError && (
+                <p className="text-[12px] text-red-700 font-serif">{reviewSubmitError}</p>
+              )}
+
+              <button onClick={submitReview} disabled={reviewSubmitting}
+                className="w-full bg-[#4B3E3C] text-white text-[12px] tracking-[0.2em] uppercase font-serif
+                  py-3.5 hover:bg-[#1a1008] transition-colors disabled:opacity-60">
+                {reviewSubmitting ? "Submitting…" : "Submit Review"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {sizeGuideOpen && sizeChart && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
