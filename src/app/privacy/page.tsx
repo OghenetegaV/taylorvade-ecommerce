@@ -57,10 +57,10 @@ export default function PrivacyPolicyPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f7f5f2] font-serif">
+    <div className="min-h-screen bg-[#ece2d0] font-serif">
       <div className="h-[76px] md:h-[88px]" />
 
-      <div className="max-w-5xl mx-auto px-5 md:px-10 py-12 md:py-16">
+      <div className="max-w-5xl mx-auto px-5 md:px-14 py-12 md:py-16 md:bg-[#f7f5f2] md:shadow-[0_0_50px_rgba(58,46,34,0.06)]">
 
         {/* ── Header ── */}
         <div className="mb-14">
@@ -289,9 +289,9 @@ export default function PrivacyPolicyPage() {
               ]} />
               <P>
                 To exercise any of these rights, contact us at{" "}
-                <a href="mailto:privacy@taylorvade.com"
+                <a href="mailto:contact@taylorvade.com"
                   className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
-                  privacy@taylorvade.com
+                  contact@taylorvade.com
                 </a>
                 . We will respond within 30 days. If you are in the EU or UK and believe your rights
                 have been violated, you have the right to lodge a complaint with your local data protection authority.
@@ -313,9 +313,9 @@ export default function PrivacyPolicyPage() {
               <P>
                 Despite these measures, no method of transmission over the internet is 100% secure. If you believe
                 your account has been compromised, contact us immediately at{" "}
-                <a href="mailto:security@taylorvade.com"
+                <a href="mailto:contact@taylorvade.com"
                   className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
-                  security@taylorvade.com
+                  contact@taylorvade.com
                 </a>.
               </P>
             </Section>
@@ -338,9 +338,9 @@ export default function PrivacyPolicyPage() {
                 Our services are not directed to individuals under the age of 16. We do not knowingly collect
                 personal data from children. If you believe we have inadvertently collected data from a minor,
                 please contact us at{" "}
-                <a href="mailto:privacy@taylorvade.com"
+                <a href="mailto:contact@taylorvade.com"
                   className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
-                  privacy@taylorvade.com
+                  contact@taylorvade.com
                 </a>{" "}
                 and we will promptly delete it.
               </P>
@@ -374,9 +374,9 @@ export default function PrivacyPolicyPage() {
                 </p>
                 <p>
                   <span className="text-[#6b5c4a]">Email: </span>
-                  <a href="mailto:privacy@taylorvade.com"
+                  <a href="mailto:contact@taylorvade.com"
                     className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
-                    privacy@taylorvade.com
+                    contact@taylorvade.com
                   </a>
                 </p>
                 <p>

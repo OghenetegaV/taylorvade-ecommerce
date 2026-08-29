@@ -52,10 +52,10 @@ export default function ReturnsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f7f5f2] font-serif">
+    <div className="min-h-screen bg-[#ece2d0] font-serif">
       <div className="h-[76px] md:h-[88px]" />
 
-      <div className="max-w-5xl mx-auto px-5 md:px-10 py-12 md:py-16">
+      <div className="max-w-5xl mx-auto px-5 md:px-14 py-12 md:py-16 md:bg-[#f7f5f2] md:shadow-[0_0_50px_rgba(58,46,34,0.06)]">
         <div className="mb-14">
           <p className="text-[11.5px] tracking-[0.3em] text-[#6b5c4a] uppercase mb-3">Legal</p>
           <h1 className="text-[32px] md:text-[42px] text-[#3a2e22] leading-tight mb-4"
@@ -113,8 +113,8 @@ export default function ReturnsPage() {
             <Section id="how" title="How to Start a Return">
               <P>
                 Email{" "}
-                <a href="mailto:orders@taylorvade.com" className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
-                  orders@taylorvade.com
+                <a href="mailto:contact@taylorvade.com" className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
+                  contact@taylorvade.com
                 </a>{" "}
                 with your order number and the item(s) you&apos;d like to return. We&apos;ll confirm eligibility
                 and send you return instructions, including the address to send the item back to.
@@ -157,8 +157,8 @@ export default function ReturnsPage() {
                 </p>
                 <p>
                   <span className="text-[#6b5c4a]">Email: </span>
-                  <a href="mailto:orders@taylorvade.com" className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
-                    orders@taylorvade.com
+                  <a href="mailto:contact@taylorvade.com" className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
+                    contact@taylorvade.com
                   </a>
                 </p>
               </div>

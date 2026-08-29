@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Shipping Policy — Taylor Vade",
-  description: "Delivery zones, timelines, and fees for Taylor Vade orders.",
+  description: "Delivery timelines and policies for Taylor Vade orders.",
 };
 
 const LAST_UPDATED = "9 June 2026";
@@ -24,16 +24,8 @@ function Section({ id, title, children }: { id: string; title: string; children:
 }
 function P({ children }: { children: React.ReactNode }) { return <p>{children}</p>; }
 
-const ZONES = [
-  { zone: "Lagos — Standard",       eta: "2–4 business days",  fee: "₦2,500" },
-  { zone: "Lagos — Express",        eta: "24–48 hours",        fee: "₦4,500" },
-  { zone: "Nationwide (Nigeria)",   eta: "3–7 business days",  fee: "₦4,000" },
-  { zone: "International",         eta: "5–10 business days", fee: "₦45,000" },
-];
-
 export default function ShippingPolicyPage() {
   const sections = [
-    { id: "zones",     label: "Delivery Zones & Fees" },
     { id: "processing", label: "Order Processing" },
     { id: "tracking",  label: "Tracking" },
     { id: "customs",   label: "International Duties" },
@@ -42,10 +34,10 @@ export default function ShippingPolicyPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f7f5f2] font-serif">
+    <div className="min-h-screen bg-[#ece2d0] font-serif">
       <div className="h-[76px] md:h-[88px]" />
 
-      <div className="max-w-5xl mx-auto px-5 md:px-10 py-12 md:py-16">
+      <div className="max-w-5xl mx-auto px-5 md:px-14 py-12 md:py-16 md:bg-[#f7f5f2] md:shadow-[0_0_50px_rgba(58,46,34,0.06)]">
         <div className="mb-14">
           <p className="text-[11.5px] tracking-[0.3em] text-[#6b5c4a] uppercase mb-3">Legal</p>
           <h1 className="text-[32px] md:text-[42px] text-[#3a2e22] leading-tight mb-4"
@@ -71,43 +63,17 @@ export default function ShippingPolicyPage() {
           </aside>
 
           <main className="flex-1 min-w-0">
-            <Section id="zones" title="Delivery Zones & Fees">
-              <P>
-                Exact delivery options and fees for your address are calculated live at checkout via our courier
-                partner, Terminal Africa. If a live rate can&apos;t be reached, we fall back to the flat rates
-                below:
-              </P>
-              <div className="overflow-x-auto">
-                <table className="w-full text-[13.5px] border-collapse mt-2">
-                  <thead>
-                    <tr className="border-b border-[#e8e2db]">
-                      <th className="text-left py-2 pr-3 text-[#6b5c4a] uppercase tracking-[0.06em] text-[12px]">Zone</th>
-                      <th className="text-left py-2 pr-3 text-[#6b5c4a] uppercase tracking-[0.06em] text-[12px]">Estimated Delivery</th>
-                      <th className="text-left py-2 text-[#6b5c4a] uppercase tracking-[0.06em] text-[12px]">Fee</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ZONES.map(z => (
-                      <tr key={z.zone} className="border-b border-[#e8e2db]">
-                        <td className="py-2.5 pr-3 text-[#3a2e22]">{z.zone}</td>
-                        <td className="py-2.5 pr-3">{z.eta}</td>
-                        <td className="py-2.5">{z.fee}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <P>
-                Orders over ₦250,000 qualify for free standard shipping within Nigeria. Delivery estimates begin
-                from the date of dispatch, not the order date, and exclude weekends and public holidays.
-              </P>
-            </Section>
-
             <Section id="processing" title="Order Processing">
               <P>
-                Orders are processed and dispatched within 1–2 business days of payment confirmation. During
-                high-demand periods (sales, holidays), processing may take slightly longer — we&apos;ll notify you
-                by email if there&apos;s a significant delay.
+                Exact delivery options and fees for your address are calculated live at checkout via our courier
+                partner, Terminal Africa, based on your delivery address and the size of your order. Orders over
+                ₦250,000 qualify for free standard shipping within Nigeria.
+              </P>
+              <P>
+                Orders are processed and dispatched within 1–2 business days of payment confirmation. Delivery
+                estimates begin from the date of dispatch, not the order date, and exclude weekends and public
+                holidays. During high-demand periods (sales, holidays), processing may take slightly longer —
+                we&apos;ll notify you by email if there&apos;s a significant delay.
               </P>
             </Section>
 
@@ -143,8 +109,8 @@ export default function ShippingPolicyPage() {
                 </p>
                 <p>
                   <span className="text-[#6b5c4a]">Email: </span>
-                  <a href="mailto:orders@taylorvade.com" className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
-                    orders@taylorvade.com
+                  <a href="mailto:contact@taylorvade.com" className="text-[#3a2e22] underline underline-offset-2 hover:opacity-60 transition-opacity">
+                    contact@taylorvade.com
                   </a>
                 </p>
               </div>
