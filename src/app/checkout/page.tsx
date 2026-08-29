@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,8 +21,8 @@ import { COUNTRY_CODE_NAMES } from "@/lib/shipping";
 type CartItem = {
   id: string;
   quantity: number;
-  product: { id: string; name: string; slug: string; basePrice: number; images: { url: string }[] };
-  variant: { id: string; colorLabel: string; size: string; stockQuantity: number; priceOverride: number | null };
+  product: { id: string; name: string; slug: string; type: string; basePrice: number; images: { url: string }[] };
+  variant: { id: string; colorLabel: string; size: string; sku: string; stockQuantity: number; priceOverride: number | null };
 };
 type Rate = {
   id: string; carrier: string; logo: string | null;
@@ -31,7 +31,10 @@ type Rate = {
 type Upsell = {
   id: string; name: string; slug: string; basePrice: number;
   images?: { url: string; isPrimary?: boolean }[];
+  variants?: { id: string; size: string; colorLabel: string; stockQuantity: number }[];
 };
+
+const FREE_DELIVERY_THRESHOLD = 250000; // matches the Shipping Policy's free-delivery threshold
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
@@ -50,7 +53,8 @@ export default function CheckoutPage() {
   const [authState, setAuthState] = useState<"loading" | "guest" | "authed">("loading");
   const [email, setEmail]         = useState("");
   const [items, setItems]         = useState<CartItem[]>([]);
-  const [cartBusy, setCartBusy]   = useState<string | null>(null);
+  const [upsellBusy, setUpsellBusy] = useState<string | null>(null);
+  const upsellScrollRef = useRef<HTMLDivElement>(null);
   const [cartLoaded, setCartLoaded] = useState(false);
 
   // Address form
@@ -68,6 +72,23 @@ export default function CheckoutPage() {
   const [locLoading, setLocLoading]     = useState(false);
   const [postalCode, setPostalCode]     = useState("");
   const [notes, setNotes]               = useState("");
+
+  // Billing address (mirrors MDV's "Same as shipping" / "Use a different billing address")
+  const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
+  const [billingFullName, setBillingFullName]         = useState("");
+  const [billingAddressLine1, setBillingAddressLine1] = useState("");
+  const [billingAddressLine2, setBillingAddressLine2] = useState("");
+  const [billingCountryCode, setBillingCountryCode]   = useState("NG");
+  const [billingCity, setBillingCity]                 = useState("");
+  const [billingState, setBillingState]               = useState("");
+  const [billingStateCode, setBillingStateCode]       = useState("");
+  const [billingStateOptions, setBillingStateOptions] = useState<{ name: string; code: string }[]>([]);
+  const [billingPostalCode, setBillingPostalCode]     = useState("");
+  const [billingLocLoading, setBillingLocLoading]     = useState(false);
+
+  const billingComplete =
+    billingSameAsShipping ||
+    (billingFullName.trim() && billingAddressLine1.trim() && billingCity.trim() && billingState.trim());
 
   // Load Terminal countries once.
   useEffect(() => {
@@ -106,6 +127,18 @@ export default function CheckoutPage() {
       .finally(() => { if (!cancelled) setLocLoading(false); });
     return () => { cancelled = true; };
   }, [stateCode, countryCode]);
+
+  // Billing states load only once the shopper opts into a different billing address.
+  useEffect(() => {
+    let cancelled = false;
+    if (billingSameAsShipping || !billingCountryCode) { setBillingStateOptions([]); return; }
+    setBillingLocLoading(true);
+    fetch(`/api/shipping/locations?type=states&country=${encodeURIComponent(billingCountryCode)}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled && d.success) setBillingStateOptions(d.data); })
+      .finally(() => { if (!cancelled) setBillingLocLoading(false); });
+    return () => { cancelled = true; };
+  }, [billingCountryCode, billingSameAsShipping]);
 
   // Shipping rates (Terminal Africa)
   const [rates, setRates]             = useState<Rate[]>([]);
@@ -157,11 +190,11 @@ export default function CheckoutPage() {
       .then(r => r.json())
       .then(d => {
         if (!d.success) return;
-        setUpsells((d.data.products ?? d.data ?? []).filter((p: Upsell) => !inCart.has(p.id)).slice(0, 2));
+        setUpsells((d.data.products ?? d.data ?? []).filter((p: Upsell) => !inCart.has(p.id)).slice(0, 6));
       })
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartLoaded]);
+  }, [cartLoaded, items.length]);
 
   /* ── Money ───────────────────────────────────────────────────── */
   const subtotal = useMemo(
@@ -269,24 +302,29 @@ export default function CheckoutPage() {
     setDiscountError(null);
   }
 
-  /* ── Cart editing (same endpoints as CartSidebar) ────────────── */
-  async function updateQty(cartItemId: string, quantity: number) {
-    setCartBusy(cartItemId);
-    await fetch("/api/cart", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cartItemId, quantity }),
-    });
-    await fetchCart();
-    setRates([]); setSelectedRate(null); // parcel changed → rates stale
-    setCartBusy(null);
+  // A single-variant upsell can be added in one tap; anything with a real
+  // size/colour choice sends the shopper to the product page instead.
+  function singleVariant(p: Upsell) {
+    const inStock = (p.variants ?? []).filter(v => v.stockQuantity > 0);
+    return inStock.length === 1 ? inStock[0] : null;
   }
-  async function removeItem(cartItemId: string) {
-    setCartBusy(cartItemId);
-    await fetch(`/api/cart?id=${cartItemId}`, { method: "DELETE" });
-    await fetchCart();
-    setRates([]); setSelectedRate(null);
-    setCartBusy(null);
+
+  async function addUpsell(p: Upsell) {
+    const variant = singleVariant(p);
+    if (!variant) return;
+    setUpsellBusy(p.id);
+    try {
+      await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: p.id, variantId: variant.id, quantity: 1 }),
+      });
+      await fetchCart();
+      setRates([]); setSelectedRate(null);
+      window.dispatchEvent(new Event("cartUpdated"));
+    } finally {
+      setUpsellBusy(null);
+    }
   }
 
   /* ── Pay ─────────────────────────────────────────────────────── */
@@ -301,9 +339,36 @@ export default function CheckoutPage() {
       setError("Please fetch shipping rates and choose a courier.");
       return;
     }
+    if (!billingComplete) {
+      setError("Please complete the billing address, or switch it back to match shipping.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
 
     setPaying(true);
     try {
+      const shippingAddress = {
+        fullName, phone, addressLine1, addressLine2,
+        city, state, stateCode,
+        country: countryOptions.find(c => c.code === countryCode)?.name
+          ?? COUNTRY_CODE_NAMES[countryCode]
+          ?? countryCode,
+        countryCode,
+        postalCode,
+      };
+      const billingAddress = billingSameAsShipping
+        ? shippingAddress
+        : {
+            fullName: billingFullName, phone,
+            addressLine1: billingAddressLine1, addressLine2: billingAddressLine2,
+            city: billingCity, state: billingState, stateCode: billingStateCode,
+            country: countryOptions.find(c => c.code === billingCountryCode)?.name
+              ?? COUNTRY_CODE_NAMES[billingCountryCode]
+              ?? billingCountryCode,
+            countryCode: billingCountryCode,
+            postalCode: billingPostalCode,
+          };
+
       const res = await fetch("/api/checkout/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -312,15 +377,9 @@ export default function CheckoutPage() {
           notes,
           email,
           discountCode: appliedDiscount?.code,
-          address: {
-            fullName, phone, addressLine1, addressLine2,
-            city, state, stateCode,
-            country: countryOptions.find(c => c.code === countryCode)?.name
-              ?? COUNTRY_CODE_NAMES[countryCode]
-              ?? countryCode,
-            countryCode,
-            postalCode,
-          },
+          address: shippingAddress,
+          billingAddress,
+          billingSameAsShipping,
         }),
       });
       const data = await res.json();
@@ -372,7 +431,7 @@ export default function CheckoutPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-12">
 
           {/* ══ LEFT — form ══════════════════════════════════════ */}
           <div className="space-y-6 min-w-0">
@@ -543,6 +602,71 @@ export default function CheckoutPage() {
               )}
             </Card>
 
+            {/* Selected for You — free-delivery progress + quick-add upsells */}
+            {upsells.length > 0 && (
+              <Card title="Selected for You">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="flex-1">
+                    <div className="h-[3px] bg-[#e5e5e2] overflow-hidden rounded-full">
+                      <div className="h-full bg-[#111] transition-all duration-500"
+                        style={{ width: `${Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100)}%` }} />
+                    </div>
+                    <p className="text-[13px] text-[#111] font-serif mt-2.5">
+                      {subtotal >= FREE_DELIVERY_THRESHOLD
+                        ? "You've unlocked free delivery!"
+                        : `Free delivery is ${fmt(FREE_DELIVERY_THRESHOLD - subtotal)} away!`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button type="button" aria-label="Scroll left"
+                      onClick={() => upsellScrollRef.current?.scrollBy({ left: -160, behavior: "smooth" })}
+                      className="w-8 h-8 flex items-center justify-center border border-[#d4d4d0] rounded-[3px] hover:border-[#111] transition-colors">
+                      ←
+                    </button>
+                    <button type="button" aria-label="Scroll right"
+                      onClick={() => upsellScrollRef.current?.scrollBy({ left: 160, behavior: "smooth" })}
+                      className="w-8 h-8 flex items-center justify-center border border-[#d4d4d0] rounded-[3px] hover:border-[#111] transition-colors">
+                      →
+                    </button>
+                  </div>
+                </div>
+
+                <div ref={upsellScrollRef} className="flex gap-4 overflow-x-auto pb-1 -mx-1 px-1"
+                  style={{ scrollbarWidth: "none" }}>
+                  {upsells.map(p => {
+                    const img = p.images?.find(i => i.isPrimary)?.url ?? p.images?.[0]?.url;
+                    const variant = singleVariant(p);
+                    const busy = upsellBusy === p.id;
+                    return (
+                      <div key={p.id} className="flex-shrink-0 w-[150px]">
+                        <Link href={`/products/${p.slug}`} className="group block">
+                          <div className="relative aspect-[3/4] rounded-[3px] bg-[#f5f5f4] overflow-hidden">
+                            {img && <Image src={img} alt={p.name} fill
+                              className="object-cover object-top group-hover:scale-[1.03] transition-transform duration-500" sizes="150px" />}
+                          </div>
+                          <p className="text-[13.5px] text-[#111] mt-2 truncate">{p.name}</p>
+                          <p className="text-[13px] text-[#767672]">{fmt(Number(p.basePrice))}</p>
+                        </Link>
+                        {variant ? (
+                          <button type="button" onClick={() => addUpsell(p)} disabled={busy}
+                            className="mt-2 w-full bg-[#111] text-white text-[11px] tracking-[0.14em] uppercase
+                              font-serif py-2.5 hover:bg-black transition-colors disabled:opacity-50">
+                            {busy ? "Adding…" : "Add"}
+                          </button>
+                        ) : (
+                          <Link href={`/products/${p.slug}`}
+                            className="mt-2 block w-full text-center bg-[#111] text-white text-[11px] tracking-[0.14em] uppercase
+                              font-serif py-2.5 hover:bg-black transition-colors">
+                            Select
+                          </Link>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
             {/* 4 · Payment */}
             <Card title="Payment">
               <p className="text-[13.5px] text-[#8f8f8a] mb-4">All transactions are secure and encrypted.</p>
@@ -562,6 +686,78 @@ export default function CheckoutPage() {
               </div>
             </Card>
 
+            {/* 4b · Billing address */}
+            <Card title="Billing Address">
+              <div className="space-y-3">
+                <button type="button" onClick={() => setBillingSameAsShipping(true)}
+                  className={`w-full flex items-center gap-4 px-5 py-4 border rounded-[3px] text-left transition-colors ${
+                    billingSameAsShipping ? "border-[#111] bg-[#fbfbfa]" : "border-[#d4d4d0] bg-white hover:border-[#8f8f8a]"
+                  }`}>
+                  <span className={`w-[16px] h-[16px] rounded-full border flex-shrink-0 ${
+                    billingSameAsShipping ? "border-[#111] bg-[#111] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
+                  }`} />
+                  <span className="text-[15.5px] text-[#111]">Same as shipping address</span>
+                </button>
+                <button type="button" onClick={() => setBillingSameAsShipping(false)}
+                  className={`w-full flex items-center gap-4 px-5 py-4 border rounded-[3px] text-left transition-colors ${
+                    !billingSameAsShipping ? "border-[#111] bg-[#fbfbfa]" : "border-[#d4d4d0] bg-white hover:border-[#8f8f8a]"
+                  }`}>
+                  <span className={`w-[16px] h-[16px] rounded-full border flex-shrink-0 ${
+                    !billingSameAsShipping ? "border-[#111] bg-[#111] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
+                  }`} />
+                  <span className="text-[15.5px] text-[#111]">Use a different billing address</span>
+                </button>
+              </div>
+
+              {!billingSameAsShipping && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-5 border-t border-[#e5e5e2]">
+                  <div className="md:col-span-2">
+                    <label className={labelCls}>Country *</label>
+                    <select value={billingCountryCode}
+                      onChange={e => { setBillingCountryCode(e.target.value); setBillingStateCode(""); setBillingState(""); }}
+                      className={inputCls}>
+                      <option value="" disabled>Select Country</option>
+                      {countryOptions.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className={labelCls}>Full Name *</label>
+                    <input value={billingFullName} onChange={e => setBillingFullName(e.target.value)} className={inputCls} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className={labelCls}>Street Address *</label>
+                    <input value={billingAddressLine1} onChange={e => setBillingAddressLine1(e.target.value)}
+                      placeholder="House number and street" className={inputCls} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className={labelCls}>Apartment, Suite, etc. (optional)</label>
+                    <input value={billingAddressLine2} onChange={e => setBillingAddressLine2(e.target.value)} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>State *</label>
+                    <select value={billingStateCode}
+                      onChange={e => {
+                        const code = e.target.value;
+                        const name = billingStateOptions.find(s => s.code === code)?.name || "";
+                        setBillingStateCode(code); setBillingState(name);
+                      }}
+                      className={inputCls}>
+                      <option value="" disabled>{billingLocLoading ? "Loading states..." : "Select State"}</option>
+                      {billingStateOptions.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>City *</label>
+                    <input value={billingCity} onChange={e => setBillingCity(e.target.value)} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Postal Code (optional)</label>
+                    <input value={billingPostalCode} onChange={e => setBillingPostalCode(e.target.value)} className={inputCls} />
+                  </div>
+                </div>
+              )}
+            </Card>
+
             {/* 5 · Notes */}
             <Card title="Order Notes (optional)">
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
@@ -570,48 +766,35 @@ export default function CheckoutPage() {
           </div>
 
           {/* ══ RIGHT — summary ══════════════════════════════════ */}
-          <aside className="lg:sticky lg:top-[104px] self-start space-y-6">
-            <div className="bg-white border border-[#e5e5e2] rounded-[3px] p-6">
-              <p className="text-[14.5px] font-semibold text-[#111] mb-5">
-                Order Summary ({items.length})
-              </p>
-
+          <aside className="bg-[#eeeeee] lg:h-full">
+            <div className="lg:sticky lg:top-[104px] p-6">
               <div className="space-y-5 max-h-[360px] overflow-y-auto pr-1">
                 {items.map(item => {
                   const price = Number(item.variant.priceOverride ?? item.product.basePrice);
-                  const busy = cartBusy === item.id;
                   return (
                     <div key={item.id} className="flex gap-4">
                       <Link href={`/products/${item.product.slug}`}
-                        className="relative w-[68px] h-[90px] flex-shrink-0 rounded-[3px] bg-[#f5f5f4] overflow-hidden">
+                        className="relative w-[56px] h-[74px] flex-shrink-0 rounded-[3px] bg-[#e8e8e6] overflow-hidden">
                         {item.product.images[0] && (
                           <Image src={item.product.images[0].url} alt={item.product.name}
-                            fill className="object-cover object-top" sizes="68px" />
+                            fill className="object-cover object-top" sizes="56px" />
                         )}
+                        <span className="absolute -top-1.5 -left-1.5 w-[18px] h-[18px] rounded-full bg-[#111]
+                          text-white text-[10px] flex items-center justify-center leading-none">
+                          {item.quantity}
+                        </span>
                       </Link>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[15px] text-[#111] leading-snug truncate">{item.product.name}</p>
-                        <p className="text-[13.5px] text-[#767672] mt-0.5">
-                          {item.variant.colorLabel} · {item.variant.size}
-                        </p>
-                        <div className="flex items-center justify-between mt-2.5">
-                          <div className="flex items-center border border-[#d4d4d0] rounded-[3px] overflow-hidden">
-                            <button disabled={busy || item.quantity <= 1}
-                              onClick={() => updateQty(item.id, item.quantity - 1)}
-                              className="w-7 h-7 text-[15.5px] text-[#111] disabled:opacity-30">−</button>
-                            <span className="w-7 text-center text-[14px]">{busy ? "…" : item.quantity}</span>
-                            <button disabled={busy || item.quantity >= item.variant.stockQuantity}
-                              onClick={() => updateQty(item.id, item.quantity + 1)}
-                              className="w-7 h-7 text-[15.5px] text-[#111] disabled:opacity-30">+</button>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-[14.5px] text-[#111]">{fmt(price * item.quantity)}</span>
-                            <button disabled={busy} onClick={() => removeItem(item.id)}
-                              className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111] disabled:opacity-30">
-                              Remove
-                            </button>
-                          </div>
+                      <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[14px] text-[#666666] leading-snug">
+                            <span className="font-semibold">{item.product.name}</span>
+                            {item.product.type && <> — {item.product.type}</>} — {item.variant.colorLabel}
+                          </p>
+                          <p className="text-[12.5px] text-[#666666] mt-1">
+                            {item.variant.size} / {item.variant.colorLabel} / {item.variant.sku}
+                          </p>
                         </div>
+                        <span className="text-[14px] text-[#666666] flex-shrink-0">{fmt(price * item.quantity)}</span>
                       </div>
                     </div>
                   );
@@ -619,12 +802,12 @@ export default function CheckoutPage() {
               </div>
 
               {/* Discount code */}
-              <div className="border-t border-[#e5e5e2] mt-6 pt-5">
+              <div className="border-t border-[#d9d9d5] mt-6 pt-5">
                 {appliedDiscount ? (
-                  <div className="flex items-center justify-between px-3 py-2.5 border border-[#111] rounded-[3px] bg-[#fbfbfa] text-[14px]">
-                    <span className="text-[#111]">Code <b>{appliedDiscount.code}</b> applied</span>
+                  <div className="flex items-center justify-between px-3 py-2.5 border border-[#999999] rounded-[3px] bg-[#e5e5e5] text-[14px]">
+                    <span className="text-[#666666]">Code <b>{appliedDiscount.code}</b> applied</span>
                     <button type="button" onClick={removeDiscount}
-                      className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
+                      className="text-[12.5px] text-[#666666] underline underline-offset-2 hover:text-[#111]">
                       Remove
                     </button>
                   </div>
@@ -632,12 +815,12 @@ export default function CheckoutPage() {
                   <div className="flex gap-2">
                     <input value={discountInput} onChange={e => setDiscountInput(e.target.value)}
                       placeholder="Discount code"
-                      className="flex-1 border border-[#d9d9d5] rounded-[3px] bg-white px-3.5 py-2.5 text-[14px] text-[#111]
-                        outline-none focus:border-[#111] transition-colors placeholder:text-[#b5b5b0]" />
+                      className="flex-1 border border-[#d9d9d5] rounded-[3px] bg-white px-3.5 py-2.5 text-[14px] text-[#666666]
+                        outline-none focus:border-[#111] transition-colors placeholder:text-[#999999]" />
                     <button type="button" onClick={applyDiscount}
                       disabled={applyingDiscount || !discountInput.trim()}
-                      className="px-4 border border-[#111] rounded-[3px] text-[12.5px] tracking-[0.14em] uppercase
-                        text-[#111] hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40">
+                      className="px-4 border border-[#999999] rounded-[3px] text-[12.5px] tracking-[0.14em] uppercase
+                        text-[#666666] hover:bg-[#111] hover:text-white hover:border-[#111] transition-colors disabled:opacity-40">
                       {applyingDiscount ? "…" : "Apply"}
                     </button>
                   </div>
@@ -650,12 +833,12 @@ export default function CheckoutPage() {
                 {appliedDiscount && (
                   <Row label="Discount" value={`− ${fmt(discountAmount)}`} />
                 )}
-                <Row label="Delivery"
-                  value={selectedRate ? fmt(shippingFee) : "—"}
-                  hint={!selectedRate ? "Select a courier" : undefined} />
-                <div className="flex items-center justify-between pt-3 border-t border-[#e5e5e2] mt-3 mb-1">
-                  <span className="text-[14.5px] font-semibold text-[#111]">Total</span>
-                  <span className="text-[20px] text-[#111]">{fmt(total)}</span>
+                <Row label="Shipping"
+                  value={selectedRate ? fmt(shippingFee) : "Enter shipping address"}
+                  muted={!selectedRate} />
+                <div className="flex items-center justify-between pt-3 border-t border-[#d9d9d5] mt-3 mb-1">
+                  <span className="text-[14.5px] font-semibold text-[#666666]">Total</span>
+                  <span className="text-[20px] text-[#666666]">{fmt(total)}</span>
                 </div>
               </div>
 
@@ -664,41 +847,18 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex items-center justify-center gap-4 mt-4">
-                <Link href="/returns" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
+                <Link href="/returns" className="text-[12.5px] text-[#666666] underline underline-offset-2 hover:text-[#111]">
                   Refund Policy
                 </Link>
-                <Link href="/shipping-policy" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
+                <Link href="/shipping-policy" className="text-[12.5px] text-[#666666] underline underline-offset-2 hover:text-[#111]">
                   Shipping
                 </Link>
-                <Link href="/terms" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
+                <Link href="/terms" className="text-[12.5px] text-[#666666] underline underline-offset-2 hover:text-[#111]">
                   Terms of Service
                 </Link>
               </div>
             </div>
 
-            {/* Upsells */}
-            {upsells.length > 0 && (
-              <div className="bg-white border border-[#e5e5e2] rounded-[3px] p-6">
-                <p className="text-[12.5px] tracking-[0.2em] uppercase text-[#767672] mb-4">
-                  Complete the Look
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  {upsells.map(p => {
-                    const img = p.images?.find(i => i.isPrimary)?.url ?? p.images?.[0]?.url;
-                    return (
-                      <Link key={p.id} href={`/products/${p.slug}`} className="group block">
-                        <div className="relative aspect-[3/4] rounded-[3px] bg-[#f5f5f4] overflow-hidden">
-                          {img && <Image src={img} alt={p.name} fill
-                            className="object-cover object-top group-hover:scale-[1.03] transition-transform duration-500" sizes="200px" />}
-                        </div>
-                        <p className="text-[14px] text-[#111] mt-2 truncate">{p.name}</p>
-                        <p className="text-[13.5px] text-[#767672]">{fmt(Number(p.basePrice))}</p>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </aside>
         </div>
       </div>
@@ -719,12 +879,12 @@ function Card({ title, action, children }: { title: string; action?: React.React
   );
 }
 
-function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Row({ label, value, hint, muted }: { label: string; value: string; hint?: string; muted?: boolean }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[14.5px] text-[#767672]">{label}</span>
-      <span className="text-[15px] text-[#111]">
-        {value}{hint && <span className="text-[12.5px] text-[#b5b5b0] ml-2">{hint}</span>}
+      <span className="text-[14.5px] text-[#666666]">{label}</span>
+      <span className={`text-[15px] ${muted ? "text-[#999999]" : "text-[#666666]"}`}>
+        {value}{hint && <span className="text-[12.5px] text-[#999999] ml-2">{hint}</span>}
       </span>
     </div>
   );
