@@ -45,7 +45,7 @@ export default function RegisterPage() {
     });
   }
 
-  const inputClass = "w-full border border-[#e8e2db] px-4 py-3 text-[12px] tracking-wide text-[#1a1008] outline-none focus:border-[#1a1008] transition-colors font-serif placeholder:text-[#c8c0b8] bg-white";
+  const inputClass = "w-full border border-[#e8e2db] px-4 py-3 text-[13.5px] tracking-wide text-[#1a1008] outline-none focus:border-[#1a1008] transition-colors font-serif placeholder:text-[#c8c0b8] bg-white";
 
   if (success) {
     return (
@@ -58,11 +58,11 @@ export default function RegisterPage() {
             <div className="w-10 h-10 rounded-full bg-green-50 border border-green-200 flex items-center justify-center mx-auto mb-4">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
             </div>
-            <h2 className="text-[15px] tracking-wide text-[#1a1008] mb-3">Check your email</h2>
-            <p className="text-[12px] text-[#8a7a6a] leading-relaxed">
+            <h2 className="text-[16px] tracking-wide text-[#1a1008] mb-3">Check your email</h2>
+            <p className="text-[13.5px] text-[#8a7a6a] leading-relaxed">
               We&apos;ve sent a confirmation link to <strong className="text-[#1a1008]">{email}</strong>. Click it to activate your account.
             </p>
-            <Link href="/login" className="block mt-6 text-[11px] text-[#8a7a6a] hover:text-[#1a1008] underline underline-offset-2 transition-colors">Back to Sign In</Link>
+            <Link href="/login" className="block mt-6 text-[12.5px] text-[#8a7a6a] hover:text-[#1a1008] underline underline-offset-2 transition-colors">Back to Sign In</Link>
           </div>
         </div>
       </div>
@@ -74,50 +74,50 @@ export default function RegisterPage() {
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-10">
           <Link href="/"><h1 className="text-[38px] text-[#1a1008] leading-none" style={{ fontFamily: "var(--font-script), cursive" }}>Taylor Vade</h1></Link>
-          <p className="text-[10px] tracking-[0.3em] text-[#8a7a6a] uppercase mt-2">Create an account</p>
+          <p className="text-[11.5px] tracking-[0.3em] text-[#8a7a6a] uppercase mt-2">Create an account</p>
         </div>
 
         <div className="bg-white border border-[#e8e2db] p-8">
-          {error && <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 text-[11.5px] text-red-700 tracking-wide">{error}</div>}
+          {error && <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 text-[13px] text-red-700 tracking-wide">{error}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-[10px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Full Name</label>
+              <label className="block text-[11.5px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Full Name</label>
               <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} required autoComplete="name" placeholder="Amara Johnson" className={inputClass} />
             </div>
             <div>
-              <label className="block text-[10px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Email Address</label>
+              <label className="block text-[11.5px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Email Address</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" placeholder="your@email.com" className={inputClass} />
             </div>
             <div>
-              <label className="block text-[10px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Phone <span className="text-[#c8c0b8] normal-case tracking-normal">(optional)</span></label>
+              <label className="block text-[11.5px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Phone <span className="text-[#c8c0b8] normal-case tracking-normal">(optional)</span></label>
               <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" placeholder="+234 800 000 0000" className={inputClass} />
             </div>
             <div>
-              <label className="block text-[10px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Password</label>
+              <label className="block text-[11.5px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Password</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password" placeholder="Min. 8 chars, 1 uppercase, 1 number" className={inputClass} />
             </div>
             <div>
-              <label className="block text-[10px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Confirm Password</label>
+              <label className="block text-[11.5px] tracking-[0.2em] text-[#8a7a6a] uppercase mb-1.5">Confirm Password</label>
               <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required autoComplete="new-password" placeholder="Re-enter your password" className={inputClass} />
             </div>
-            <p className="text-[10px] text-[#8a7a6a] leading-relaxed tracking-wide pt-1">
+            <p className="text-[11.5px] text-[#8a7a6a] leading-relaxed tracking-wide pt-1">
               By creating an account you agree to our{" "}
               <Link href="/terms" className="underline hover:text-[#1a1008]">Terms &amp; Conditions</Link>{" "}and{" "}
               <Link href="/privacy" className="underline hover:text-[#1a1008]">Privacy Policy</Link>.
             </p>
-            <button type="submit" disabled={isPending} className="w-full bg-[#1a1008] text-white text-[11px] tracking-[0.2em] uppercase py-3.5 hover:bg-[#3a2e22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2">
+            <button type="submit" disabled={isPending} className="w-full bg-[#1a1008] text-white text-[12.5px] tracking-[0.2em] uppercase py-3.5 hover:bg-[#4B3E3C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2">
               {isPending ? "Creating account…" : "Create Account"}
             </button>
           </form>
         </div>
 
-        <p className="text-center mt-6 text-[11px] tracking-wide text-[#8a7a6a]">
+        <p className="text-center mt-6 text-[12.5px] tracking-wide text-[#8a7a6a]">
           Already have an account?{" "}
           <Link href="/login" className="text-[#1a1008] underline underline-offset-2 hover:opacity-60 transition-opacity">Sign in</Link>
         </p>
         <p className="text-center mt-4">
-          <Link href="/" className="text-[10px] tracking-[0.1em] text-[#8a7a6a] hover:text-[#1a1008] transition-colors">← Back to store</Link>
+          <Link href="/" className="text-[11.5px] tracking-[0.1em] text-[#8a7a6a] hover:text-[#1a1008] transition-colors">← Back to store</Link>
         </p>
       </div>
     </div>

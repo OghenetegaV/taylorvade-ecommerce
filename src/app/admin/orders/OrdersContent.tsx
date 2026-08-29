@@ -44,7 +44,7 @@ const fmt = (n: number, cur = "NGN") =>
 
 function Badge({ status }: { status: string }) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px]
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11.5px]
       font-semibold border ${STATUS_COLORS[status] ?? "bg-slate-100 text-slate-600 border-slate-200"}`}>
       {status}
     </span>
@@ -118,7 +118,7 @@ export default function OrdersContent() {
         <div className="flex gap-1.5 flex-wrap">
           {STATUSES.map(s => (
             <button key={s} onClick={() => { setStatus(s); setPage(1); }}
-              className={`px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-all ${
+              className={`px-3 py-1.5 text-[12.5px] font-semibold rounded-lg border transition-all ${
                 status === s
                   ? "bg-slate-900 text-white border-slate-900"
                   : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"
@@ -149,7 +149,7 @@ export default function OrdersContent() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
                   {["Order","Customer","Items","Amount","Payment","Status","Date","Action"].map(h => (
-                    <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold
+                    <th key={h} className="text-left px-5 py-3 text-[11.5px] font-semibold
                       text-slate-500 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -167,15 +167,15 @@ export default function OrdersContent() {
                     </td>
                     <td className="px-5 py-3.5">
                       <p className="text-xs font-medium text-slate-800">{order.profile.fullName ?? "—"}</p>
-                      <p className="text-[10px] text-slate-400">{order.profile.email}</p>
+                      <p className="text-[11.5px] text-slate-400">{order.profile.email}</p>
                     </td>
                     <td className="px-5 py-3.5 text-xs text-slate-500">{order.items.length}</td>
                     <td className="px-5 py-3.5 text-xs font-semibold text-slate-800">
                       {fmt(Number(order.totalAmount), order.currency)}
                     </td>
                     <td className="px-5 py-3.5">
-                      <p className="text-[10px] text-slate-500">{order.paymentProvider ?? "—"}</p>
-                      <p className={`text-[10px] font-semibold ${
+                      <p className="text-[11.5px] text-slate-500">{order.paymentProvider ?? "—"}</p>
+                      <p className={`text-[11.5px] font-semibold ${
                         order.paymentStatus === "SUCCESS" ? "text-emerald-600" : "text-amber-600"
                       }`}>
                         {order.paymentStatus}
@@ -190,7 +190,7 @@ export default function OrdersContent() {
                         {(NEXT[order.status] ?? []).map(next => (
                           <button key={next} disabled={busy}
                             onClick={() => updateStatus(order.id, next)}
-                            className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold
+                            className={`inline-flex items-center gap-1 px-2 py-1 text-[11.5px] font-semibold
                               rounded-lg border transition-all disabled:opacity-40 ${
                               next === "CANCELLED"
                                 ? "border-red-200 text-red-600 hover:bg-red-50"
@@ -222,19 +222,19 @@ export default function OrdersContent() {
                   <p className="text-sm font-semibold text-slate-800">
                     {order.profile.fullName ?? "—"}
                   </p>
-                  <p className="text-[11px] text-slate-400">{order.profile.email}</p>
+                  <p className="text-[12.5px] text-slate-400">{order.profile.email}</p>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <p className="text-sm font-bold text-slate-900">
                     {fmt(Number(order.totalAmount), order.currency)}
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[12.5px] text-slate-400">
                     {order.items.length} item{order.items.length !== 1 ? "s" : ""} ·{" "}
                     {new Date(order.createdAt).toLocaleDateString("en-GB")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className={`text-[10px] font-semibold ${
+                  <span className={`text-[11.5px] font-semibold ${
                     order.paymentStatus === "SUCCESS" ? "text-emerald-600" : "text-amber-600"
                   }`}>
                     {order.paymentProvider ?? "—"} · {order.paymentStatus}
@@ -242,14 +242,14 @@ export default function OrdersContent() {
                 </div>
                 <div className="flex items-center gap-2 mt-3 flex-wrap">
                   <button onClick={() => setSel(order)}
-                    className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border
+                    className="px-3 py-1.5 text-[12.5px] font-semibold rounded-lg border
                       border-slate-200 text-slate-600 hover:border-slate-400 transition-all">
                     Details
                   </button>
                   {(NEXT[order.status] ?? []).map(next => (
                     <button key={next} disabled={busy}
                       onClick={() => updateStatus(order.id, next)}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 text-[12.5px] font-semibold
                         rounded-lg border transition-all disabled:opacity-40 ${
                         next === "CANCELLED"
                           ? "border-red-200 text-red-600 hover:bg-red-50"
@@ -313,7 +313,7 @@ export default function OrdersContent() {
 
               {/* Status + transitions */}
               <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                <p className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
                   Status
                 </p>
                 <Badge status={sel.status} />
@@ -340,7 +340,7 @@ export default function OrdersContent() {
               <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <User className="w-3.5 h-3.5 text-slate-400" />
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Customer</p>
+                  <p className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">Customer</p>
                 </div>
                 <p className="text-sm font-semibold text-slate-800">{sel.profile.fullName ?? "—"}</p>
                 <p className="text-xs text-slate-500">{sel.profile.email}</p>
@@ -351,7 +351,7 @@ export default function OrdersContent() {
               <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Delivery Address</p>
+                  <p className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">Delivery Address</p>
                 </div>
                 <p className="text-xs text-slate-700 leading-relaxed">
                   {sel.address.fullName}<br/>
@@ -367,7 +367,7 @@ export default function OrdersContent() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Package className="w-3.5 h-3.5 text-slate-400" />
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <p className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">
                     Items ({sel.items.length})
                   </p>
                 </div>
@@ -377,10 +377,10 @@ export default function OrdersContent() {
                       border-slate-100 p-3">
                       <div>
                         <p className="text-sm font-medium text-slate-800">{item.product.name}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
+                        <p className="text-[11.5px] text-slate-400 mt-0.5">
                           {item.variant.colorLabel} · {item.variant.size} · {item.variant.sku}
                         </p>
-                        <p className="text-[10px] text-slate-400">Qty: {item.quantity}</p>
+                        <p className="text-[11.5px] text-slate-400">Qty: {item.quantity}</p>
                       </div>
                       <p className="text-sm font-semibold text-slate-800 flex-shrink-0">
                         {fmt(Number(item.total), sel.currency)}
@@ -400,7 +400,7 @@ export default function OrdersContent() {
               <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <CreditCard className="w-3.5 h-3.5 text-slate-400" />
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Payment</p>
+                  <p className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">Payment</p>
                 </div>
                 <p className="text-xs text-slate-700">
                   Provider: <span className="font-semibold">{sel.paymentProvider ?? "—"}</span>
@@ -420,7 +420,7 @@ export default function OrdersContent() {
                 <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <StickyNote className="w-3.5 h-3.5 text-amber-500" />
-                    <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Notes</p>
+                    <p className="text-[11.5px] font-semibold text-amber-600 uppercase tracking-wider">Notes</p>
                   </div>
                   <p className="text-xs text-amber-800">{sel.notes}</p>
                 </div>

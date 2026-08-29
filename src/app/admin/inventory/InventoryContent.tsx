@@ -150,23 +150,23 @@ export default function InventoryContent() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
                   <div className="text-right mr-1">
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase">Total</p>
+                    <p className="text-[11.5px] font-semibold text-slate-400 uppercase">Total</p>
                     <p className="text-sm font-bold text-slate-900">{product.stockSummary.total}</p>
                   </div>
                   {product.stockSummary.outOfStock > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] font-semibold bg-red-100 text-red-700
+                    <span className="px-2 py-0.5 text-[11.5px] font-semibold bg-red-100 text-red-700
                       border border-red-200 rounded-full">
                       {product.stockSummary.outOfStock} out
                     </span>
                   )}
                   {product.stockSummary.lowStock > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700
+                    <span className="px-2 py-0.5 text-[11.5px] font-semibold bg-amber-100 text-amber-700
                       border border-amber-200 rounded-full">
                       {product.stockSummary.lowStock} low
                     </span>
                   )}
                   {!product.isPublished && (
-                    <span className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-500
+                    <span className="px-2 py-0.5 text-[11.5px] font-semibold bg-slate-100 text-slate-500
                       border border-slate-200 rounded-full">
                       Draft
                     </span>
@@ -180,7 +180,7 @@ export default function InventoryContent() {
                   <thead>
                     <tr className="bg-slate-50">
                       {["SKU","Colour","Size","Stock","Edit"].map(h => (
-                        <th key={h} className="text-left px-5 py-2.5 text-[10px] font-semibold
+                        <th key={h} className="text-left px-5 py-2.5 text-[11.5px] font-semibold
                           text-slate-500 uppercase tracking-wider">
                           {h}
                         </th>
@@ -190,11 +190,11 @@ export default function InventoryContent() {
                   <tbody className="divide-y divide-slate-50">
                     {product.variants.map(variant => (
                       <tr key={variant.id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="px-5 py-2.5 text-[11px] font-mono text-slate-500">{variant.sku}</td>
+                        <td className="px-5 py-2.5 text-[12.5px] font-mono text-slate-500">{variant.sku}</td>
                         <td className="px-5 py-2.5 text-xs text-slate-700">{variant.colorLabel}</td>
                         <td className="px-5 py-2.5 text-xs font-semibold text-slate-700">{variant.size}</td>
                         <td className="px-5 py-2.5">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px]
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[11.5px]
                             font-semibold border ${stockBadge(variant.stockQuantity)}`}>
                             {variant.stockQuantity} units
                           </span>
@@ -227,7 +227,7 @@ export default function InventoryContent() {
                           ) : (
                             <button
                               onClick={() => setEditing({ variantId: variant.id, value: String(variant.stockQuantity) })}
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold
+                              className="inline-flex items-center gap-1 text-[12.5px] font-semibold
                                 text-blue-600 hover:text-blue-700 transition-colors">
                               <Pencil className="w-3 h-3" /> Edit
                             </button>
@@ -248,9 +248,9 @@ export default function InventoryContent() {
                         <p className="text-xs font-semibold text-slate-700">
                           {variant.colorLabel} · {variant.size}
                         </p>
-                        <p className="text-[10px] font-mono text-slate-400 truncate">{variant.sku}</p>
+                        <p className="text-[11.5px] font-mono text-slate-400 truncate">{variant.sku}</p>
                       </div>
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px]
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[11.5px]
                         font-semibold border flex-shrink-0 ${stockBadge(variant.stockQuantity)}`}>
                         {variant.stockQuantity}
                       </span>
@@ -281,7 +281,7 @@ export default function InventoryContent() {
                       ) : (
                         <button
                           onClick={() => setEditing({ variantId: variant.id, value: String(variant.stockQuantity) })}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600">
+                          className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-blue-600">
                           <Pencil className="w-3 h-3" /> Edit stock
                         </button>
                       )}

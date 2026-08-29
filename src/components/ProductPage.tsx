@@ -9,7 +9,7 @@ import { useCurrency } from "@/lib/currency";
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SwatchImage  { src: string; colorLabel: string; }
 interface ShopItem     { slug: string; image: string; name: string; }
-interface RelatedItem  { slug: string; image: string; name: string; description: string; }
+interface RelatedItem  { slug: string; image: string; name: string; description: string; price?: number; }
 interface Variant      { id: string; size: string; colorLabel: string; stockQuantity: number; priceOverride?: number | null; }
 
 export interface ProductPageProps {
@@ -18,6 +18,7 @@ export interface ProductPageProps {
   type:           string;
   price:          number;
   isNew?:         boolean;
+  gender?:        string;
   images:         string[];
   swatchImages?:  SwatchImage[];
   sizes?:         string[];
@@ -32,9 +33,11 @@ export interface ProductPageProps {
   sizeChart?:     { label: string; values: Record<string, string> }[] | null;
 }
 
+const GENDER_LABEL: Record<string, string> = { MEN: "Men", WOMEN: "Women", UNISEX: "Unisex" };
+
 // ── Small icon components ─────────────────────────────────────────────────────
 const Plus = ({ rotated }: { rotated: boolean }) => (
-  <span className={`text-[18px] leading-none text-[#3a2e22] transition-transform duration-300 inline-block ${rotated ? "rotate-45" : ""}`}>+</span>
+  <span className={`text-[19px] leading-none text-[#3a2e22] transition-transform duration-300 inline-block ${rotated ? "rotate-45" : ""}`}>+</span>
 );
 
 const StarIcon = ({ filled }: { filled: boolean }) => (
@@ -73,7 +76,7 @@ function Accordion({ label, content, isOpen, onToggle }: {
     <div className="border-b border-[#e8e2db]">
       <button onClick={onToggle}
         className="w-full flex items-center justify-between py-4 group">
-        <span className="text-[11px] tracking-[0.14em] text-[#3a2e22] uppercase font-serif
+        <span className="text-[12.5px] tracking-[0.14em] text-[#3a2e22] uppercase font-serif
           group-hover:opacity-60 transition-opacity">
           {label}
         </span>
@@ -85,11 +88,11 @@ function Accordion({ label, content, isOpen, onToggle }: {
         style={{ maxHeight: isOpen ? (bodyRef.current?.scrollHeight ?? 400) + "px" : "0px" }}
       >
         {content ? (
-          <p className="text-[12px] leading-[1.85] tracking-[0.03em] text-[#5a4a3a] font-serif pb-5 pr-4">
+          <p className="text-[13.5px] leading-[1.85] tracking-[0.03em] text-[#5a4a3a] font-serif pb-5 pr-4">
             {content}
           </p>
         ) : (
-          <p className="text-[11.5px] text-[#9a8a7a] font-serif pb-5 italic">Not provided.</p>
+          <p className="text-[13px] text-[#9a8a7a] font-serif pb-5 italic">Not provided.</p>
         )}
       </div>
     </div>
@@ -98,7 +101,7 @@ function Accordion({ label, content, isOpen, onToggle }: {
 
 export default function ProductPage({
   name, colorLabel, type, price,
-  isNew, images = [], swatchImages = [], sizes = [],
+  isNew, gender, images = [], swatchImages = [], sizes = [],
   orderDeadline, editorNotes, sizeFit, deliveryReturns,
   shopTheLook = [], selectedForYou = [],
   productId, variants = [], sizeChart,
@@ -110,7 +113,7 @@ export default function ProductPage({
   const [imgIdx,       setImgIdx]       = useState(0);
   const [swatchIdx,    setSwatchIdx]    = useState(0);
   const [selSize,      setSelSize]      = useState<string | null>(null);
-  const [accordion,    setAccordion]    = useState<string | null>(null);
+  const [accordion,    setAccordion]    = useState<string | null>("editor");
   const [wished,       setWished]       = useState(false);
   const [wishBusy,     setWishBusy]     = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
@@ -165,6 +168,7 @@ export default function ProductPage({
   };
 
   async function handleAddToCart() {
+    if (outOfStock) return;
     if (!selSize) { setSelSize("__highlight__"); setTimeout(() => setSelSize(null), 800); return; }
     if (!productId) return;
 
@@ -228,7 +232,10 @@ export default function ProductPage({
     touchStartX.current = null;
   }
 
-  const ctaLabel = cartMsg === "adding" ? "Adding…"
+  const outOfStock = variants.length > 0 && variants.every(v => v.stockQuantity <= 0);
+
+  const ctaLabel = outOfStock ? "Notify Me When Available"
+    : cartMsg === "adding" ? "Adding…"
     : cartMsg === "added" ? "Added to Bag ✓"
     : cartMsg === "error" ? "Please try again"
     : selSize ? `Add to Bag — ${selSize}`
@@ -247,10 +254,9 @@ export default function ProductPage({
       `}</style>
 
       <div className="min-h-screen bg-[#faf9f7] font-serif">
-        <div className="h-[76px] md:h-[88px]" />
-        <div className="flex flex-col md:flex-row">
-          <div className="md:w-[58%] md:sticky md:top-[88px] md:self-start">
-            <div className="hidden md:flex">
+        <div className="flex flex-col md:flex-row px-5 md:px-16 md:gap-10">
+          <div className="md:w-[58%] md:sticky md:top-0 md:self-start">
+            <div className="hidden md:flex md:items-center">
               <div className="w-[82px] flex-shrink-0 flex flex-col gap-[3px] p-[3px]">
                 {activeImages.map((src, i) => (
                   <button key={i} onClick={() => changeImg(i)}
@@ -274,8 +280,7 @@ export default function ProductPage({
               </div>
             </div>
 
-            <div className="md:hidden relative overflow-hidden bg-[#f0eeeb]"
-              style={{ aspectRatio: "2/3" }}
+            <div className="md:hidden relative overflow-hidden bg-[#f0eeeb] h-[80svh]"
               onTouchStart={onTouchStart}
               onTouchEnd={onTouchEnd}>
               {activeImages.map((src, i) => (
@@ -289,69 +294,89 @@ export default function ProductPage({
             </div>
           </div>
 
-          <div className={`md:w-[42%] px-5 md:px-8 lg:px-12 py-6 md:py-8 ${loaded ? "" : "opacity-0"}`}
+          <div className={`md:w-[42%] pt-[92px] md:pt-[104px] pb-6 md:pb-8 ${loaded ? "" : "opacity-0"}`}
             style={loaded ? { animation: "ppFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both" } : {}}>
-            {isNew && <p className="text-[10.5px] italic tracking-[0.06em] text-[#3a2e22] mb-2 pp-anim-1">New In</p>}
-            <h1 className="leading-[1.0] text-[#1a1008] pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(36px, 5vw, 52px)" }}>{name}</h1>
-            <p className="italic text-[#5a4a3a] leading-tight mt-0.5 pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(16px, 2.5vw, 22px)" }}>in {swatchImages[swatchIdx]?.colorLabel ?? colorLabel}</p>
-            <p className="text-[10.5px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-2 pp-anim-2">{type}</p>
-            <p className="text-[14px] tracking-[0.06em] text-[#1a1008] font-serif mt-3 pp-anim-2">{format(Number(price))}</p>
-            
-            {swatchImages.length > 1 && (
-              <div className="flex gap-2 mt-4 pp-anim-3">
-                {swatchImages.map((sw, i) => (
-                  <button key={i} onClick={() => changeSwatch(i)}
-                    className={`relative overflow-hidden transition-all duration-200 flex-shrink-0 ${i === swatchIdx ? "ring-1 ring-[#3a2e22] ring-offset-1" : "opacity-55 hover:opacity-85"}`}
-                    style={{ width: 44, height: 60 }}>
-                    <Image src={sw.src} alt={sw.colorLabel} fill className="object-cover object-top" sizes="44px" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {sizes.length > 0 && (
-              <div className="mt-5 pp-anim-3">
-                {sizeChart && sizeChart.length > 0 && (
-                  <button type="button" onClick={() => setSizeGuideOpen(true)}
-                    className="text-[10.5px] tracking-[0.1em] uppercase text-[#8a7a6a] underline
-                      underline-offset-2 hover:text-[#3a2e22] transition-colors mb-2 block">
-                    Size Guide
-                  </button>
-                )}
-                <div className="flex flex-wrap gap-x-5 gap-y-2">
-                  {sizes.map(size => {
-                    const unavailable = isSizeUnavailable(size);
-                    const isSelected  = selSize === size;
-                    return (
-                      <button key={size}
-                        onClick={() => setSelSize(isSelected ? null : size)}
-                        disabled={unavailable}
-                        className={`text-[11.5px] tracking-[0.08em] font-serif pb-0.5 transition-all duration-150 border-b ${
-                          unavailable ? "text-[#c8c0b8] line-through border-transparent cursor-not-allowed"
-                          : isSelected ? "text-[#1a1008] border-[#1a1008]"
-                          : "text-[#5a4a3a] border-transparent hover:text-[#1a1008] hover:border-[#1a1008]"
-                        }`}>
-                        {size}
-                      </button>
-                    );
-                  })}
+            <div className="text-center">
+              {(outOfStock || gender || isNew) && (
+                <div className="flex items-center justify-center gap-3 mb-2 pp-anim-1">
+                  {outOfStock && (
+                    <span className="italic underline underline-offset-2 tracking-[0.02em] text-[12px] text-[#3a2e22]">
+                      Notify Me When Available
+                    </span>
+                  )}
+                  {gender && GENDER_LABEL[gender] && (
+                    <span className="italic underline underline-offset-2 tracking-[0.02em] text-[12px] text-[#3a2e22]">
+                      {GENDER_LABEL[gender]}
+                    </span>
+                  )}
+                  {isNew && (
+                    <span className="italic underline underline-offset-2 tracking-[0.02em] text-[12px] text-[#3a2e22]">
+                      New In
+                    </span>
+                  )}
                 </div>
-              </div>
-            )}
+              )}
+              <h1 className="leading-[1.0] text-[#1a1008] pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(36px, 5vw, 52px)" }}>{name}</h1>
+              <p className="italic text-[#5a4a3a] leading-tight mt-0.5 pp-anim-1" style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(16px, 2.5vw, 22px)" }}>in {swatchImages[swatchIdx]?.colorLabel ?? colorLabel}</p>
+              <p className="text-[12px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-2 pp-anim-2">{type}</p>
+              <p className="text-[12px] tracking-[0.14em] text-[#8a7a6a] uppercase font-serif mt-1 pp-anim-2">{format(Number(price))}</p>
+
+              {swatchImages.length > 1 && (
+                <div className="flex justify-center gap-2 mt-4 pp-anim-3">
+                  {swatchImages.map((sw, i) => (
+                    <button key={i} onClick={() => changeSwatch(i)}
+                      className={`relative overflow-hidden transition-all duration-200 flex-shrink-0 ${i === swatchIdx ? "ring-1 ring-[#3a2e22] ring-offset-1" : "opacity-55 hover:opacity-85"}`}
+                      style={{ width: 44, height: 60 }}>
+                      <Image src={sw.src} alt={sw.colorLabel} fill className="object-cover object-top" sizes="44px" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {sizes.length > 0 && (
+                <div className="mt-5 pp-anim-3">
+                  {sizeChart && sizeChart.length > 0 && (
+                    <button type="button" onClick={() => setSizeGuideOpen(true)}
+                      className="text-[12px] tracking-[0.1em] uppercase text-[#8a7a6a] underline
+                        underline-offset-2 hover:text-[#3a2e22] transition-colors mb-2 block mx-auto">
+                      Size Guide
+                    </button>
+                  )}
+                  <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+                    {sizes.map(size => {
+                      const unavailable = isSizeUnavailable(size);
+                      const isSelected  = selSize === size;
+                      return (
+                        <button key={size}
+                          onClick={() => setSelSize(isSelected ? null : size)}
+                          disabled={unavailable}
+                          className={`text-[13px] tracking-[0.08em] font-serif pb-0.5 transition-all duration-150 border-b ${
+                            unavailable ? "text-[#c8c0b8] line-through border-transparent cursor-not-allowed"
+                            : isSelected ? "text-[#1a1008] border-[#1a1008]"
+                            : "text-[#5a4a3a] border-transparent hover:text-[#1a1008] hover:border-[#1a1008]"
+                          }`}>
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className={`flex gap-2 mt-5 pp-anim-4 ${selSize === "__highlight__" ? "size-shake" : ""}`}>
               <button
                 onClick={handleAddToCart}
-                disabled={cartMsg === "adding"}
-                className={`flex-1 py-[13px] text-[10.5px] tracking-[0.22em] uppercase font-serif transition-all duration-200 ${
-                  cartMsg === "added" ? "bg-green-700 text-white" : cartMsg === "error" ? "bg-red-700 text-white" : "bg-[#3a2e22] text-white hover:bg-[#1a1008]"
+                disabled={cartMsg === "adding" || outOfStock}
+                className={`flex-1 py-[13px] text-[12px] tracking-[0.22em] uppercase font-serif transition-all duration-200 ${
+                  cartMsg === "added" ? "bg-green-700 text-white" : cartMsg === "error" ? "bg-red-700 text-white" : "bg-[#4B3E3C] text-white hover:bg-[#1a1008]"
                 } disabled:opacity-70`}>
                 {ctaLabel}
               </button>
               <button
                 onClick={toggleWishlist}
                 className={`w-[46px] border flex items-center justify-center transition-colors duration-200 ${
-                  wished ? "border-[#3a2e22] bg-[#3a2e22] text-white" : "border-[#3a2e22] text-[#3a2e22] hover:bg-[#3a2e22] hover:text-white"
+                  wished ? "border-[#3a2e22] bg-[#4B3E3C] text-white" : "border-[#3a2e22] text-[#3a2e22] hover:bg-[#4B3E3C] hover:text-white"
                 }`}>
                 <StarIcon filled={wished} />
               </button>
@@ -370,6 +395,66 @@ export default function ProductPage({
             </div>
           </div>
         </div>
+
+        {shopTheLook.length > 0 && (
+          <section className="px-5 md:px-12 py-12 md:py-16 border-t border-[#e8e2db]">
+            <h2 className="text-center text-[#1a1008] mb-2"
+              style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(24px, 3vw, 32px)" }}>
+              Shop the Look
+            </h2>
+            <div className="w-full max-w-[220px] mx-auto border-b border-[#e8e2db] mb-8" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6 max-w-4xl mx-auto">
+              {shopTheLook.map(item => (
+                <Link key={item.slug} href={`/products/${item.slug}`} className="group block">
+                  <div className="relative overflow-hidden bg-[#f0eeeb]" style={{ aspectRatio: "2/3" }}>
+                    {item.image && (
+                      <Image src={item.image} alt={item.name} fill
+                        className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
+                        sizes="(max-width:768px) 33vw, 220px" />
+                    )}
+                  </div>
+                  <p className="text-[15.5px] text-center text-[#111] leading-tight truncate mt-2.5"
+                    style={{ fontFamily: "var(--font-script), cursive" }}>
+                    {item.name}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {selectedForYou.length > 0 && (
+          <section className="px-5 md:px-12 py-12 md:py-16 border-t border-[#e8e2db]">
+            <h2 className="text-center text-[#1a1008] mb-2"
+              style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(24px, 3vw, 32px)" }}>
+              Selected for You
+            </h2>
+            <div className="w-full max-w-[220px] mx-auto border-b border-[#e8e2db] mb-8" />
+            <div className="flex gap-4 md:gap-6 overflow-x-auto pb-2 snap-x snap-mandatory md:grid md:grid-cols-6"
+              style={{ scrollbarWidth: "none" }}>
+              {selectedForYou.map(item => (
+                <Link key={item.slug} href={`/products/${item.slug}`}
+                  className="group block snap-start flex-shrink-0 w-[42vw] sm:w-[28vw] md:w-auto">
+                  <div className="relative overflow-hidden bg-[#f0eeeb]" style={{ aspectRatio: "2/3" }}>
+                    {item.image && (
+                      <Image src={item.image} alt={item.name} fill
+                        className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
+                        sizes="(max-width:768px) 42vw, 200px" />
+                    )}
+                  </div>
+                  <p className="text-[13.5px] text-[#111] leading-tight truncate mt-2.5"
+                    style={{ fontFamily: "var(--font-script), cursive" }}>
+                    {item.name}
+                  </p>
+                  <p className="text-[12px] text-[#999] font-serif truncate">{item.description}</p>
+                  {item.price != null && (
+                    <p className="text-[12.5px] text-[#222] font-serif mt-0.5">{format(item.price)}</p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {sizeGuideOpen && sizeChart && (
@@ -377,19 +462,19 @@ export default function ProductPage({
           <div className="absolute inset-0 bg-black/40" onClick={() => setSizeGuideOpen(false)} />
           <div className="relative bg-[#faf9f7] max-w-lg w-full max-h-[80vh] overflow-y-auto p-6 md:p-8">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-[15px] tracking-[0.14em] uppercase text-[#1a1008] font-serif">Size Guide</h2>
+              <h2 className="text-[16px] tracking-[0.14em] uppercase text-[#1a1008] font-serif">Size Guide</h2>
               <button onClick={() => setSizeGuideOpen(false)}
-                className="text-[#8a7a6a] hover:text-[#1a1008] transition-colors text-[13px]">
+                className="text-[#8a7a6a] hover:text-[#1a1008] transition-colors text-[14.5px]">
                 Close
               </button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-[12px] font-serif border-collapse">
+              <table className="w-full text-[13.5px] font-serif border-collapse">
                 <thead>
                   <tr className="border-b border-[#e8e2db]">
-                    <th className="text-left py-2 pr-3 text-[#8a7a6a] uppercase tracking-[0.06em] text-[10.5px]">Measurement</th>
+                    <th className="text-left py-2 pr-3 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">Measurement</th>
                     {Object.keys(sizeChart[0]?.values ?? {}).map(size => (
-                      <th key={size} className="text-center py-2 px-2 text-[#8a7a6a] uppercase tracking-[0.06em] text-[10.5px]">
+                      <th key={size} className="text-center py-2 px-2 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">
                         {size}
                       </th>
                     ))}

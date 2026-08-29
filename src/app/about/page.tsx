@@ -8,7 +8,7 @@ export const metadata = {
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] tracking-[0.3em] text-[#9a8a7a] uppercase mb-3">{children}</p>
+    <p className="text-[11.5px] tracking-[0.3em] text-[#9a8a7a] uppercase mb-3">{children}</p>
   );
 }
 
@@ -23,7 +23,7 @@ function Heading({ children }: { children: React.ReactNode }) {
 
 function Body({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-4 text-[13px] leading-[1.9] tracking-[0.02em] text-[#5a4a3a] font-serif max-w-[620px]">
+    <div className="space-y-4 text-[14.5px] leading-[1.9] tracking-[0.02em] text-[#5a4a3a] font-serif max-w-[620px]">
       {children}
     </div>
   );
@@ -49,7 +49,7 @@ export default function AboutPage() {
 
       <div className="max-w-3xl mx-auto px-5 md:px-8 pt-10 pb-24 md:pb-32">
 
-        <div className="space-y-5 text-[14px] leading-[1.9] tracking-[0.02em] text-[#3a2e22] font-serif text-center max-w-[640px] mx-auto">
+        <div className="space-y-5 text-[15.5px] leading-[1.9] tracking-[0.02em] text-[#3a2e22] font-serif text-center max-w-[640px] mx-auto">
           <p>
             Taylor Vade is a contemporary fashion house creating premium essentials for individuals
             who understand that true style is defined by intention, not excess.
@@ -137,7 +137,7 @@ export default function AboutPage() {
             style={{ fontFamily: "var(--font-script), cursive" }}>
             Fashion is temporary. Character is enduring.
           </p>
-          <div className="mt-6 space-y-4 text-[13px] leading-[1.9] tracking-[0.02em] text-[#5a4a3a] max-w-[560px] mx-auto">
+          <div className="mt-6 space-y-4 text-[14.5px] leading-[1.9] tracking-[0.02em] text-[#5a4a3a] max-w-[560px] mx-auto">
             <p>The clothes we choose should reflect who we are rather than the trends of the moment.</p>
             <p>
               At Taylor Vade, we design garments that allow the individual to stand out through
@@ -164,14 +164,14 @@ export default function AboutPage() {
           </div>
           <ul className="space-y-2.5 self-center">
             {["Silhouette", "Fit and proportion", "Fabric performance", "Construction quality", "Comfort", "Versatility", "Longevity"].map(item => (
-              <li key={item} className="flex items-center gap-3 text-[12.5px] tracking-[0.05em] text-[#3a2e22]">
+              <li key={item} className="flex items-center gap-3 text-[14px] tracking-[0.05em] text-[#3a2e22]">
                 <span className="w-1 h-1 rounded-full bg-[#8B5E3C] flex-shrink-0" />
                 {item}
               </li>
             ))}
           </ul>
         </div>
-        <p className="mt-8 text-[13px] leading-[1.9] tracking-[0.02em] text-[#5a4a3a] max-w-[620px]">
+        <p className="mt-8 text-[14.5px] leading-[1.9] tracking-[0.02em] text-[#5a4a3a] max-w-[620px]">
           Every detail serves a purpose. Nothing exists merely for decoration.
         </p>
 
@@ -249,7 +249,7 @@ export default function AboutPage() {
         {/* ── Founder's letter ── */}
         <div className="max-w-[640px] mx-auto text-center">
           <Eyebrow>A Letter From The Founder</Eyebrow>
-          <div className="mt-6 space-y-4 text-[13.5px] leading-[1.9] tracking-[0.02em] text-[#5a4a3a] text-left">
+          <div className="mt-6 space-y-4 text-[15px] leading-[1.9] tracking-[0.02em] text-[#5a4a3a] text-left">
             <p>
               Taylor Vade was born from a simple belief: that the finest clothing doesn&rsquo;t need
               to shout to make an impression.
@@ -277,7 +277,7 @@ export default function AboutPage() {
             <p className="text-[26px] text-[#1a1008]" style={{ fontFamily: "var(--font-script), cursive" }}>
               Victor Adeyanju
             </p>
-            <p className="text-[10.5px] tracking-[0.15em] text-[#9a8a7a] uppercase mt-1">
+            <p className="text-[12px] tracking-[0.15em] text-[#9a8a7a] uppercase mt-1">
               Founder &amp; Creative Director
             </p>
           </div>

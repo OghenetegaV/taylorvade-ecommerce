@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* Bump the base type scale up a notch site-wide — the default scale read as
+   too small/washed out. Arbitrary text-[Npx] utilities are sized directly
+   per-component and aren't affected by this. */
+@theme {
+  --text-xs: 0.84375rem;   /* 13.5px, was 12px */
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.96875rem;   /* 15.5px, was 14px */
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1.09375rem; /* 17.5px, was 16px */
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.21875rem;   /* 19.5px, was 18px */
+  --text-lg--line-height: 1.875rem;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

@@ -92,7 +92,7 @@ export default function NewsletterDrawer() {
       className="flex items-center gap-2.5 cursor-pointer group"
     >
       <span className={`w-[14px] h-[14px] flex-shrink-0 border transition-colors ${
-        checked ? "bg-[#3a2e22] border-[#3a2e22]" : "border-[#3a2e22] group-hover:border-[#3a2e22]"
+        checked ? "bg-[#4B3E3C] border-[#3a2e22]" : "border-[#3a2e22] group-hover:border-[#3a2e22]"
       } flex items-center justify-center`}>
         {checked && (
           <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
@@ -101,7 +101,7 @@ export default function NewsletterDrawer() {
         )}
       </span>
       <input id={id} type="checkbox" checked={checked} onChange={onChange} className="sr-only" />
-      <span className="text-[11px] tracking-[0.06em] text-[#3a2e22] font-serif">{label}</span>
+      <span className="text-[12.5px] tracking-[0.06em] text-[#3a2e22] font-serif">{label}</span>
     </label>
   );
 
@@ -142,17 +142,17 @@ export default function NewsletterDrawer() {
                 style={{ fontFamily: "var(--font-script), cursive" }}>
                 Thank you
               </p>
-              <p className="text-[11px] tracking-[0.1em] text-[#3a2e22] font-serif leading-relaxed">
+              <p className="text-[12.5px] tracking-[0.1em] text-[#3a2e22] font-serif leading-relaxed">
                 You&apos;re on the list.
               </p>
             </div>
           ) : (
             /* ── Form ── */
             <>
-              <h2 className="text-[13px] tracking-[0.2em] text-[#3a2e22] font-serif uppercase mb-1.5">
+              <h2 className="text-[14.5px] tracking-[0.2em] text-[#3a2e22] font-serif uppercase mb-1.5">
                 Newsletter
               </h2>
-              <p className="text-[11px] tracking-[0.06em] text-[#3a2e22] font-serif mb-7">
+              <p className="text-[12.5px] tracking-[0.06em] text-[#3a2e22] font-serif mb-7">
                 Sign up to Our Newsletter
               </p>
 
@@ -180,14 +180,14 @@ export default function NewsletterDrawer() {
                     placeholder="Email Address"
                     required
                     className="w-full border-b border-[#3a2e22] bg-transparent pb-2
-                      text-[11px] tracking-[0.08em] text-[#3a2e22] font-serif
+                      text-[12.5px] tracking-[0.08em] text-[#3a2e22] font-serif
                       placeholder:text-[#9a8a7a] outline-none
                       focus:border-[#1a1008] transition-colors"
                   />
                 </div>
 
                 {/* Get updates by */}
-                <p className="text-[10px] tracking-[0.12em] text-[#3a2e22] font-serif uppercase mb-3">
+                <p className="text-[11.5px] tracking-[0.12em] text-[#3a2e22] font-serif uppercase mb-3">
                   Get Updates By:
                 </p>
                 <div className="space-y-2.5 mb-7">
@@ -207,7 +207,7 @@ export default function NewsletterDrawer() {
 
                 {/* Error */}
                 {error && (
-                  <p className="text-[10.5px] text-red-600 font-serif tracking-wide mb-3">
+                  <p className="text-[12px] text-red-600 font-serif tracking-wide mb-3">
                     {error}
                   </p>
                 )}
@@ -217,8 +217,8 @@ export default function NewsletterDrawer() {
                   type="submit"
                   disabled={isPending}
                   className="w-full border border-[#3a2e22] bg-transparent py-3
-                    text-[10.5px] tracking-[0.2em] text-[#3a2e22] font-serif uppercase
-                    hover:bg-[#3a2e22] hover:text-[#FAF9F7] transition-colors
+                    text-[12px] tracking-[0.2em] text-[#3a2e22] font-serif uppercase
+                    hover:bg-[#4B3E3C] hover:text-[#FAF9F7] transition-colors
                     disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isPending ? "Signing up…" : "Sign Up"}
@@ -228,7 +228,7 @@ export default function NewsletterDrawer() {
                 <p className="text-center mt-4">
                   <a
                     href="/privacy"
-                    className="text-[9.5px] tracking-[0.08em] text-[#9a8a7a] font-serif
+                    className="text-[11px] tracking-[0.08em] text-[#9a8a7a] font-serif
                       underline underline-offset-2 hover:text-[#3a2e22] transition-colors"
                   >
                     Privacy Policy

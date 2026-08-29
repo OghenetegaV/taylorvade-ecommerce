@@ -97,14 +97,14 @@ export default function HorizontalLookbook() {
       <div className="absolute left-3 bottom-3 bg-[#fafafa]/95 px-3 py-1.5
         opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0
         transition-all duration-300">
-        <p className="text-[12px] text-[#111] leading-tight"
+        <p className="text-[13.5px] text-[#111] leading-tight"
           style={{ fontFamily: "var(--font-script), cursive" }}>
           {product.name}
         </p>
-        <p className="text-[10px] text-[#555] font-serif">{ngn(product.basePrice)}</p>
+        <p className="text-[11.5px] text-[#555] font-serif">{ngn(product.basePrice)}</p>
       </div>
       {product.isNew && (
-        <span className="absolute top-3 left-3 text-[9px] italic font-serif text-white
+        <span className="absolute top-3 left-3 text-[10.5px] italic font-serif text-white
           bg-[#111]/80 px-2 py-0.5">
           New In
         </span>
@@ -122,7 +122,7 @@ export default function HorizontalLookbook() {
               style={{ fontFamily: "var(--font-script), cursive" }}>
               The Lookbook
             </h2>
-            <span className="text-[10px] tracking-[0.15em] uppercase font-serif text-[#8f8f8a]">
+            <span className="text-[11.5px] tracking-[0.15em] uppercase font-serif text-[#8f8f8a]">
               Swipe →
             </span>
           </div>
@@ -152,7 +152,7 @@ export default function HorizontalLookbook() {
               style={{ fontFamily: "var(--font-script), cursive" }}>
               The Lookbook
             </h2>
-            <p className="text-[10px] tracking-[0.3em] uppercase font-serif text-[#8f8f8a] mt-2">
+            <p className="text-[11.5px] tracking-[0.3em] uppercase font-serif text-[#8f8f8a] mt-2">
               Spring Summer &apos;26 — keep scrolling
             </p>
           </ScrollReveal>
@@ -178,7 +178,7 @@ export default function HorizontalLookbook() {
               style={{ fontFamily: "var(--font-script), cursive" }}>
               View the full collection
             </span>
-            <span className="text-[10px] tracking-[0.25em] uppercase font-serif text-[#555]">
+            <span className="text-[11.5px] tracking-[0.25em] uppercase font-serif text-[#555]">
               Shop now →
             </span>
           </Link>

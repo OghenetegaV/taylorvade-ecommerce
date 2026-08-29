@@ -12,11 +12,11 @@ const LAST_UPDATED = "9 June 2026";
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id} className="mb-12 scroll-mt-20">
-      <h2 className="text-[11px] tracking-[0.25em] text-[#3a2e22] uppercase font-serif mb-5 pb-3
+      <h2 className="text-[12.5px] tracking-[0.25em] text-[#3a2e22] uppercase font-serif mb-5 pb-3
         border-b border-[#e8e2db]">
         {title}
       </h2>
-      <div className="space-y-4 text-[12.5px] leading-[1.9] tracking-[0.03em] text-[#5a4a3a] font-serif">
+      <div className="space-y-4 text-[14px] leading-[1.9] tracking-[0.03em] text-[#5a4a3a] font-serif">
         {children}
       </div>
     </section>
@@ -64,17 +64,17 @@ export default function PrivacyPolicyPage() {
         <div className="max-w-5xl mx-auto px-5 md:px-10 py-4 flex items-center justify-between">
           <Link
             href="/"
-            className="text-[10px] tracking-[0.2em] text-[#9a8a7a] uppercase hover:text-[#3a2e22] transition-colors"
+            className="text-[11.5px] tracking-[0.2em] text-[#9a8a7a] uppercase hover:text-[#3a2e22] transition-colors"
           >
             ← Taylor Vade
           </Link>
           <span
-            className="text-[20px] text-[#3a2e22]"
+            className="text-[21px] text-[#3a2e22]"
             style={{ fontFamily: "var(--font-script), cursive" }}
           >
             Taylor Vade
           </span>
-          <span className="text-[10px] tracking-[0.15em] text-[#9a8a7a] uppercase hidden md:block">
+          <span className="text-[11.5px] tracking-[0.15em] text-[#9a8a7a] uppercase hidden md:block">
             Privacy Policy
           </span>
         </div>
@@ -84,12 +84,12 @@ export default function PrivacyPolicyPage() {
 
         {/* ── Header ── */}
         <div className="mb-14">
-          <p className="text-[10px] tracking-[0.3em] text-[#9a8a7a] uppercase mb-3">Legal</p>
+          <p className="text-[11.5px] tracking-[0.3em] text-[#9a8a7a] uppercase mb-3">Legal</p>
           <h1 className="text-[32px] md:text-[42px] text-[#3a2e22] leading-tight mb-4"
             style={{ fontFamily: "var(--font-script), cursive" }}>
             Privacy Policy
           </h1>
-          <p className="text-[11px] tracking-[0.1em] text-[#9a8a7a] font-serif">
+          <p className="text-[12.5px] tracking-[0.1em] text-[#9a8a7a] font-serif">
             Last updated: {LAST_UPDATED}
           </p>
         </div>
@@ -99,13 +99,13 @@ export default function PrivacyPolicyPage() {
           {/* ── Sticky sidebar TOC ── */}
           <aside className="hidden md:block w-52 flex-shrink-0">
             <div className="sticky top-24">
-              <p className="text-[9px] tracking-[0.25em] text-[#9a8a7a] uppercase mb-4">Contents</p>
+              <p className="text-[10.5px] tracking-[0.25em] text-[#9a8a7a] uppercase mb-4">Contents</p>
               <nav className="space-y-1">
                 {sections.map(s => (
                   <a
                     key={s.id}
                     href={`#${s.id}`}
-                    className="block text-[10.5px] tracking-[0.06em] text-[#9a8a7a]
+                    className="block text-[12px] tracking-[0.06em] text-[#9a8a7a]
                       hover:text-[#3a2e22] transition-colors py-0.5"
                   >
                     {s.label}
@@ -140,7 +140,7 @@ export default function PrivacyPolicyPage() {
 
               <div className="space-y-5">
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">
                     Account &amp; Identity Information
                   </p>
                   <Ul items={[
@@ -151,7 +151,7 @@ export default function PrivacyPolicyPage() {
                 </div>
 
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">
                     Order &amp; Transactional Data
                   </p>
                   <Ul items={[
@@ -163,7 +163,7 @@ export default function PrivacyPolicyPage() {
                 </div>
 
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">
                     Usage &amp; Technical Data
                   </p>
                   <Ul items={[
@@ -176,7 +176,7 @@ export default function PrivacyPolicyPage() {
                 </div>
 
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">
                     Communications Data
                   </p>
                   <Ul items={[
@@ -216,7 +216,7 @@ export default function PrivacyPolicyPage() {
 
               <div className="space-y-4">
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Service Providers</p>
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Service Providers</p>
                   <Ul items={[
                     "Supabase (database and authentication infrastructure) — data hosted on servers in the EU",
                     "Paystack — payment processing",
@@ -226,7 +226,7 @@ export default function PrivacyPolicyPage() {
                 </div>
 
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Legal Disclosure</p>
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Legal Disclosure</p>
                   <P>
                     We may disclose your data if required by law, court order, or to protect the rights, property,
                     or safety of Taylor Vade, our customers, or others.
@@ -234,7 +234,7 @@ export default function PrivacyPolicyPage() {
                 </div>
 
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Business Transfers</p>
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Business Transfers</p>
                   <P>
                     In the event of a merger, acquisition, or sale of assets, your data may be transferred as part
                     of that transaction. You will be notified before any such transfer occurs.
@@ -250,7 +250,7 @@ export default function PrivacyPolicyPage() {
 
               <div className="space-y-4">
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Essential Cookies</p>
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Essential Cookies</p>
                   <P>
                     Required for the website to function. These include authentication session cookies (so you stay
                     logged in) and shopping cart session identifiers. You cannot opt out of these.
@@ -258,7 +258,7 @@ export default function PrivacyPolicyPage() {
                 </div>
 
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Preference Cookies</p>
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Preference Cookies</p>
                   <P>
                     Store your region and currency preferences so we can display the correct information on your
                     next visit. Stored in your browser&apos;s local storage.
@@ -266,7 +266,7 @@ export default function PrivacyPolicyPage() {
                 </div>
 
                 <div>
-                  <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Analytics Cookies</p>
+                  <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase mb-2">Analytics Cookies</p>
                   <P>
                     Help us understand how visitors use our website (pages visited, session duration, etc.)
                     so we can improve the experience. No personally identifiable information is used in analytics.
@@ -389,7 +389,7 @@ export default function PrivacyPolicyPage() {
               </P>
 
               <div className="bg-white border border-[#e8e2db] p-6 space-y-2">
-                <p className="text-[10.5px] tracking-[0.15em] text-[#3a2e22] uppercase font-serif mb-3">
+                <p className="text-[12px] tracking-[0.15em] text-[#3a2e22] uppercase font-serif mb-3">
                   Taylor Vade — Data Protection
                 </p>
                 <p>
@@ -406,7 +406,7 @@ export default function PrivacyPolicyPage() {
                     taylorvade.com
                   </a>
                 </p>
-                <p className="pt-2 text-[11px] text-[#9a8a7a]">
+                <p className="pt-2 text-[12.5px] text-[#9a8a7a]">
                   We aim to respond to all privacy-related enquiries within 5 business days, and to
                   exercise-of-rights requests within 30 days.
                 </p>
@@ -416,16 +416,16 @@ export default function PrivacyPolicyPage() {
             {/* ── Footer divider ── */}
             <div className="mt-16 pt-8 border-t border-[#e8e2db]">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <p className="text-[10px] tracking-[0.1em] text-[#9a8a7a]">
+                <p className="text-[11.5px] tracking-[0.1em] text-[#9a8a7a]">
                   © {new Date().getFullYear()} Taylor Vade. All rights reserved.
                 </p>
                 <div className="flex items-center gap-6">
                   <Link href="/terms"
-                    className="text-[10px] tracking-[0.1em] text-[#9a8a7a] hover:text-[#3a2e22] transition-colors">
+                    className="text-[11.5px] tracking-[0.1em] text-[#9a8a7a] hover:text-[#3a2e22] transition-colors">
                     Terms &amp; Conditions
                   </Link>
                   <Link href="/cookies"
-                    className="text-[10px] tracking-[0.1em] text-[#9a8a7a] hover:text-[#3a2e22] transition-colors">
+                    className="text-[11.5px] tracking-[0.1em] text-[#9a8a7a] hover:text-[#3a2e22] transition-colors">
                     Cookie Policy
                   </Link>
                 </div>

@@ -156,7 +156,7 @@ export default function CollectionPage({ title, gender }: Props) {
           style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(30px, 4vw, 40px)" }}>
           {displayTitle}
         </h1>
-        <p className="mt-2 text-[12px] tracking-[0.12em] text-[#8f8f8a]">
+        <p className="mt-2 text-[13.5px] tracking-[0.12em] text-[#8f8f8a]">
           {loading ? "…" : `${filtered.length} Items`}
         </p>
       </div>
@@ -166,7 +166,7 @@ export default function CollectionPage({ title, gender }: Props) {
         {/* Sort By */}
         <div ref={sortRef} className="relative">
           <button onClick={() => setSortOpen(o => !o)}
-            className="flex items-center gap-1.5 text-[12px] tracking-[0.14em] text-[#111]
+            className="flex items-center gap-1.5 text-[13.5px] tracking-[0.14em] text-[#111]
               hover:opacity-60 transition-opacity">
             Sort By
             <svg width="9" height="6" viewBox="0 0 10 6" fill="none"
@@ -187,7 +187,7 @@ export default function CollectionPage({ title, gender }: Props) {
               {SORT_OPTIONS.map((opt, i) => (
                 <button key={i}
                   onClick={() => { setSortIdx(i); setSortOpen(false); }}
-                  className={`block w-full text-left px-4 py-2.5 text-[11.5px] tracking-[0.05em]
+                  className={`block w-full text-left px-4 py-2.5 text-[13px] tracking-[0.05em]
                     hover:bg-[#f7f7f6] transition-colors ${
                     i === sortIdx ? "text-[#8B5E3C]" : "text-[#111]"
                   }`}>
@@ -203,7 +203,7 @@ export default function CollectionPage({ title, gender }: Props) {
 
         {/* All Filters */}
         <button onClick={() => setDrawerOpen(true)}
-          className="flex items-center gap-1.5 text-[12px] tracking-[0.14em] text-[#111]
+          className="flex items-center gap-1.5 text-[13.5px] tracking-[0.14em] text-[#111]
             hover:opacity-60 transition-opacity">
           All Filters{activeFilterCount > 0 && (
             <span className="text-[#8B5E3C]">({activeFilterCount})</span>
@@ -217,7 +217,7 @@ export default function CollectionPage({ title, gender }: Props) {
       {/* ── Grid — full bleed, images flush (MDV) ── */}
       <div className="pb-16">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-1.5 md:gap-x-2 gap-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-1 md:gap-x-1.5 gap-y-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="bg-[#f5f5f4]" style={{ aspectRatio: "2/3" }} />
@@ -230,15 +230,15 @@ export default function CollectionPage({ title, gender }: Props) {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center">
-            <p className="text-[13px] text-[#111] mb-2">Nothing matches those filters.</p>
+            <p className="text-[14.5px] text-[#111] mb-2">Nothing matches those filters.</p>
             <button onClick={clearFilters}
-              className="text-[11px] tracking-[0.08em] uppercase text-[#8B5E3C]
+              className="text-[12.5px] tracking-[0.08em] uppercase text-[#8B5E3C]
                 underline underline-offset-4">
               Clear all filters
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-1.5 md:gap-x-2 gap-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-1 md:gap-x-1.5 gap-y-6">
             {filtered.map((product, i) => (
               <div key={product.id}
                 style={{
@@ -272,9 +272,9 @@ export default function CollectionPage({ title, gender }: Props) {
         drawerOpen ? "translate-x-0" : "translate-x-full"
       }`}>
         <div className="flex items-center justify-between px-6 pt-7 pb-5">
-          <p className="text-[12px] tracking-[0.2em] uppercase text-[#111]">Filter</p>
+          <p className="text-[13.5px] tracking-[0.2em] uppercase text-[#111]">Filter</p>
           <button onClick={() => setDrawerOpen(false)} aria-label="Close filters"
-            className="text-[#111] text-[18px] leading-none hover:opacity-50 transition-opacity">
+            className="text-[#111] text-[19px] leading-none hover:opacity-50 transition-opacity">
             ×
           </button>
         </div>
@@ -283,13 +283,13 @@ export default function CollectionPage({ title, gender }: Props) {
           {/* Category */}
           {categoryOptions.length > 0 && (
             <div>
-              <p className="text-[10px] tracking-[0.2em] uppercase text-[#999] mb-3">Category</p>
+              <p className="text-[11.5px] tracking-[0.2em] uppercase text-[#999] mb-3">Category</p>
               <div className="flex flex-wrap gap-2">
                 {categoryOptions.map(([slug, name]) => {
                   const on = fCategories.includes(slug);
                   return (
                     <button key={slug} onClick={() => toggleCategory(slug)}
-                      className={`px-3 py-2 text-[11px] tracking-[0.05em] transition-colors ${
+                      className={`px-3 py-2 text-[12.5px] tracking-[0.05em] transition-colors ${
                         on ? "bg-[#111] text-white" : "bg-[#f5f5f4] text-[#111] hover:bg-[#ececea]"
                       }`}>
                       {name}
@@ -303,7 +303,7 @@ export default function CollectionPage({ title, gender }: Props) {
           {/* Colour */}
           {colorOptions.length > 0 && (
             <div>
-              <p className="text-[10px] tracking-[0.2em] uppercase text-[#999] mb-3">Colour</p>
+              <p className="text-[11.5px] tracking-[0.2em] uppercase text-[#999] mb-3">Colour</p>
               <div className="flex flex-wrap gap-3">
                 {colorOptions.map(([label, hex]) => {
                   const on = fColors.includes(label);
@@ -321,13 +321,13 @@ export default function CollectionPage({ title, gender }: Props) {
 
           {/* Sizes */}
           <div>
-            <p className="text-[10px] tracking-[0.2em] uppercase text-[#999] mb-3">Size</p>
+            <p className="text-[11.5px] tracking-[0.2em] uppercase text-[#999] mb-3">Size</p>
             <div className="grid grid-cols-3 gap-2">
               {ALL_SIZES.map(size => {
                 const on = fSizes.includes(size);
                 return (
                   <button key={size} onClick={() => toggleSize(size)}
-                    className={`py-2.5 text-[11px] tracking-[0.05em] transition-colors ${
+                    className={`py-2.5 text-[12.5px] tracking-[0.05em] transition-colors ${
                       on ? "bg-[#111] text-white" : "bg-[#f5f5f4] text-[#111] hover:bg-[#ececea]"
                     }`}>
                     {size}
@@ -339,16 +339,16 @@ export default function CollectionPage({ title, gender }: Props) {
 
           {/* Price */}
           <div>
-            <p className="text-[10px] tracking-[0.2em] uppercase text-[#999] mb-3">Price (₦)</p>
+            <p className="text-[11.5px] tracking-[0.2em] uppercase text-[#999] mb-3">Price (₦)</p>
             <div className="flex items-center gap-3">
               <input type="number" min="0" placeholder="Min" value={fMin}
                 onChange={e => setFMin(e.target.value)}
-                className="w-full bg-[#f5f5f4] px-3 py-2.5 text-[12px] text-[#111]
+                className="w-full bg-[#f5f5f4] px-3 py-2.5 text-[13.5px] text-[#111]
                   placeholder:text-[#bbb] outline-none focus:bg-[#ececea] transition-colors" />
-              <span className="text-[#999] text-[11px]">—</span>
+              <span className="text-[#999] text-[12.5px]">—</span>
               <input type="number" min="0" placeholder="Max" value={fMax}
                 onChange={e => setFMax(e.target.value)}
-                className="w-full bg-[#f5f5f4] px-3 py-2.5 text-[12px] text-[#111]
+                className="w-full bg-[#f5f5f4] px-3 py-2.5 text-[13.5px] text-[#111]
                   placeholder:text-[#bbb] outline-none focus:bg-[#ececea] transition-colors" />
             </div>
           </div>
@@ -366,18 +366,18 @@ export default function CollectionPage({ title, gender }: Props) {
                 </svg>
               )}
             </span>
-            <span className="text-[12px] text-[#111]">In stock only</span>
+            <span className="text-[13.5px] text-[#111]">In stock only</span>
           </button>
         </div>
 
         <div className="px-6 py-5 flex items-center gap-3">
           <button onClick={clearFilters}
-            className="flex-1 py-3 text-[10.5px] tracking-[0.15em] uppercase text-[#111]
+            className="flex-1 py-3 text-[12px] tracking-[0.15em] uppercase text-[#111]
               bg-[#f5f5f4] hover:bg-[#ececea] transition-colors">
             Clear
           </button>
           <button onClick={() => setDrawerOpen(false)}
-            className="flex-1 py-3 text-[10.5px] tracking-[0.15em] uppercase text-white
+            className="flex-1 py-3 text-[12px] tracking-[0.15em] uppercase text-white
               bg-[#111] hover:bg-black transition-colors">
             View {filtered.length}
           </button>

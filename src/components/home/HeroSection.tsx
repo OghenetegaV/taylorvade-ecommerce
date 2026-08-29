@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 const SLIDES = [
-  { src: "/images/women.jpg", alt: "Taylor Vade Woman", href: "/collections/woman" },
+  { src: "/images/women3.jpg", alt: "Taylor Vade Woman", href: "/collections/woman" },
   { src: "/images/men.jpg",   alt: "Taylor Vade Man",   href: "/collections/man"   },
 ];
 
@@ -85,7 +85,7 @@ export default function HeroSection() {
             transition: "clip-path 1.3s cubic-bezier(0.16,1,0.3,1), transform 1.6s cubic-bezier(0.16,1,0.3,1)",
           }}
         >
-          <Image src="/images/women.jpg" alt="Taylor Vade Woman" fill priority
+          <Image src="/images/women3.jpg" alt="Taylor Vade Woman" fill priority
             className="object-cover object-top" sizes="50vw" />
         </Link>
       </div>
@@ -154,12 +154,12 @@ export default function HeroSection() {
           }}
         >
           <Link href="/collections/woman"
-            className="text-[12px] md:text-[13px] tracking-[0.14em] uppercase font-serif text-white
+            className="text-[13.5px] md:text-[14.5px] tracking-[0.14em] uppercase font-serif text-white
               border-b border-white/60 pb-1 hover:border-white transition-colors duration-300">
             Shop Woman
           </Link>
           <Link href="/collections/man"
-            className="text-[12px] md:text-[13px] tracking-[0.14em] uppercase font-serif text-white
+            className="text-[13.5px] md:text-[14.5px] tracking-[0.14em] uppercase font-serif text-white
               border-b border-white/60 pb-1 hover:border-white transition-colors duration-300">
             Shop Man
           </Link>

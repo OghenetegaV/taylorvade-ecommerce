@@ -23,7 +23,7 @@ export default function MadeInLagos() {
         {/* Copy (Right on desktop) */}
         <div className="md:w-[44%] w-full flex flex-col justify-center px-5 md:px-[4vw] py-14 md:py-0 order-2">
           <div>
-            <p className="text-[10px] tracking-[0.3em] uppercase font-serif text-[#8f8f8a] mb-4">
+            <p className="text-[11.5px] tracking-[0.3em] uppercase font-serif text-[#8f8f8a] mb-4">
               The Process
             </p>
             <h2 className="text-[#111] leading-[1.05]"
@@ -32,14 +32,14 @@ export default function MadeInLagos() {
               <br />
               Worn everywhere.
             </h2>
-            <p className="text-[#555] text-[12.5px] md:text-[13.5px] font-serif leading-[1.9]
+            <p className="text-[#555] text-[14px] md:text-[15px] font-serif leading-[1.9]
               tracking-[0.03em] mt-6 max-w-[420px]">
               Every piece starts as cloth on a cutting table in Lagos — measured twice,
               cut once, finished by hand. No mass runs. No shortcuts. When a jacket
               leaves our studio, it carries the hours that went into it.
             </p>
             <Link href="/about"
-              className="inline-block mt-8 text-[10.5px] tracking-[0.2em] uppercase font-serif
+              className="inline-block mt-8 text-[12px] tracking-[0.2em] uppercase font-serif
                 text-[#111] border-b border-[#111]/40 pb-1
                 hover:border-[#111] transition-colors">
               Our story

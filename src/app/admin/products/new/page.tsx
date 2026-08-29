@@ -83,7 +83,7 @@ function StepIndicator({ current }: { current: number }) {
               }`}>
                 {done ? <Check className="w-4 h-4" /> : i + 1}
               </div>
-              <span className={`text-[10px] font-semibold hidden sm:block ${
+              <span className={`text-[11.5px] font-semibold hidden sm:block ${
                 active ? "text-blue-600" : done ? "text-emerald-600" : "text-slate-400"
               }`}>
                 {label}
@@ -401,7 +401,7 @@ export default function NewProductPage() {
               <input type="text" value={name} onChange={e => setName(e.target.value)}
                 placeholder="e.g. Salim" className={inputClass} autoFocus />
               {slug && (
-                <p className="text-[11px] text-slate-400 mt-1.5">
+                <p className="text-[12.5px] text-slate-400 mt-1.5">
                   URL: /products/<span className="font-medium text-slate-500">{slug}</span>
                 </p>
               )}
@@ -457,7 +457,7 @@ export default function NewProductPage() {
                             selected ? "text-white" : "text-slate-600"
                           }`}>
                           {c.name}
-                          <span className={`ml-1 text-[9px] uppercase ${
+                          <span className={`ml-1 text-[10.5px] uppercase ${
                             selected ? "text-blue-200" : "text-slate-400"
                           }`}>{c.gender}</span>
                         </button>
@@ -571,12 +571,12 @@ export default function NewProductPage() {
                       <p className="text-xs font-semibold text-slate-600">Available sizes</p>
                       <div className="flex items-center gap-3">
                         <button type="button" onClick={() => enableAllSizes(color.key)}
-                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-700">
+                          className="text-[12.5px] font-semibold text-blue-600 hover:text-blue-700">
                           All sizes
                         </button>
                         {enabledSizes.length > 0 && (
                           <button type="button" onClick={() => regenSkus(color.key)}
-                            className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-700"
+                            className="flex items-center gap-1 text-[12.5px] font-semibold text-slate-500 hover:text-slate-700"
                             title="Regenerate SKUs from current name + colour">
                             <RefreshCw className="w-3 h-3" /> Regen SKUs
                           </button>
@@ -604,9 +604,9 @@ export default function NewProductPage() {
                   {enabledSizes.length > 0 && (
                     <div className="space-y-2">
                       <div className="hidden sm:grid grid-cols-[44px_1fr_90px] gap-2 px-1">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase">Size</p>
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase">SKU</p>
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase">Stock</p>
+                        <p className="text-[11.5px] font-semibold text-slate-400 uppercase">Size</p>
+                        <p className="text-[11.5px] font-semibold text-slate-400 uppercase">SKU</p>
+                        <p className="text-[11.5px] font-semibold text-slate-400 uppercase">Stock</p>
                       </div>
                       {enabledSizes.map(sz => (
                         <div key={sz} className="grid grid-cols-[44px_1fr_90px] gap-2 items-center">

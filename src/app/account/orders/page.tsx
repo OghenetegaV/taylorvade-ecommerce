@@ -41,15 +41,15 @@ export default async function OrdersPage() {
     <div className="min-h-screen bg-[#f7f5f2] font-serif">
       <div className="max-w-2xl mx-auto px-5 py-12">
         <div className="mb-8">
-          <Link href="/account" className="text-[10px] tracking-[0.15em] text-[#8a7a6a] hover:text-[#1a1008] transition-colors">← My Account</Link>
+          <Link href="/account" className="text-[11.5px] tracking-[0.15em] text-[#8a7a6a] hover:text-[#1a1008] transition-colors">← My Account</Link>
           <h1 className="text-[30px] text-[#1a1008] mt-2" style={{ fontFamily: "var(--font-script), cursive" }}>Order History</h1>
-          <p className="text-[11px] text-[#8a7a6a] mt-0.5">{orders.length} order{orders.length !== 1 ? "s" : ""}</p>
+          <p className="text-[12.5px] text-[#8a7a6a] mt-0.5">{orders.length} order{orders.length !== 1 ? "s" : ""}</p>
         </div>
 
         {orders.length === 0 ? (
           <div className="bg-white border border-[#e8e2db] p-12 text-center">
-            <p className="text-[12px] text-[#8a7a6a] tracking-wide mb-5">No orders yet.</p>
-            <Link href="/" className="inline-block border border-[#1a1008] px-6 py-2.5 text-[10.5px] tracking-[0.15em] uppercase text-[#1a1008] hover:bg-[#1a1008] hover:text-white transition-colors">Shop Now</Link>
+            <p className="text-[13.5px] text-[#8a7a6a] tracking-wide mb-5">No orders yet.</p>
+            <Link href="/" className="inline-block border border-[#1a1008] px-6 py-2.5 text-[12px] tracking-[0.15em] uppercase text-[#1a1008] hover:bg-[#1a1008] hover:text-white transition-colors">Shop Now</Link>
           </div>
         ) : (
           <div className="space-y-4">
@@ -57,16 +57,16 @@ export default async function OrdersPage() {
               <div key={order.id} className="bg-white border border-[#e8e2db]">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-[#f0eeeb]">
                   <div>
-                    <p className="text-[11px] font-mono text-[#1a1008]">#{order.id.slice(-8).toUpperCase()}</p>
-                    <p className="text-[10px] text-[#8a7a6a] mt-0.5">
+                    <p className="text-[12.5px] font-mono text-[#1a1008]">#{order.id.slice(-8).toUpperCase()}</p>
+                    <p className="text-[11.5px] text-[#8a7a6a] mt-0.5">
                       {new Date(order.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${STATUS_COLORS[order.status] ?? "bg-gray-100 text-gray-600"}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[11.5px] ${STATUS_COLORS[order.status] ?? "bg-gray-100 text-gray-600"}`}>
                       {order.status}
                     </span>
-                    <p className="text-[12px] font-medium text-[#1a1008] mt-1.5">
+                    <p className="text-[13.5px] font-medium text-[#1a1008] mt-1.5">
                       {fmt(Number(order.totalAmount), order.currency)}
                     </p>
                   </div>
@@ -80,19 +80,19 @@ export default async function OrdersPage() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12px] text-[#1a1008] truncate">{item.product.name}</p>
-                        <p className="text-[10.5px] text-[#8a7a6a] mt-0.5">
+                        <p className="text-[13.5px] text-[#1a1008] truncate">{item.product.name}</p>
+                        <p className="text-[12px] text-[#8a7a6a] mt-0.5">
                           {item.variant.colorLabel} · {item.variant.size} · Qty {item.quantity}
                         </p>
                       </div>
-                      <p className="text-[12px] text-[#1a1008] flex-shrink-0">
+                      <p className="text-[13.5px] text-[#1a1008] flex-shrink-0">
                         {fmt(Number(item.total), order.currency)}
                       </p>
                     </div>
                   ))}
                 </div>
                 <div className="px-6 py-3 border-t border-[#f0eeeb]">
-                  <p className="text-[10.5px] text-[#8a7a6a]">
+                  <p className="text-[12px] text-[#8a7a6a]">
                     {order.address.fullName} · {order.address.city}, {order.address.country}
                   </p>
                 </div>

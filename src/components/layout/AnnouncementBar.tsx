@@ -25,7 +25,7 @@ export default function AnnouncementBar() {
       >
         {announcements.map((item, index) => (
           <SwiperSlide key={index}>
-            <div className="text-center text-[10px] tracking-[0.2em] uppercase">
+            <div className="text-center text-[11.5px] tracking-[0.2em] uppercase">
               {item}
             </div>
           </SwiperSlide>

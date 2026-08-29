@@ -22,7 +22,7 @@ export default function ExitDoors() {
     <section className="bg-[#0d0d0d]">
       <ScrollReveal>
         <div className="text-center pt-14 pb-8">
-          <p className="text-[10px] tracking-[0.35em] uppercase font-serif text-[#8f8f8a]">
+          <p className="text-[11.5px] tracking-[0.35em] uppercase font-serif text-[#8f8f8a]">
             Where to next
           </p>
         </div>
@@ -60,7 +60,7 @@ export default function ExitDoors() {
                 style={{ fontFamily: "var(--font-script), cursive", fontSize: "clamp(44px,6vw,84px)" }}>
                 {door.label}
               </span>
-              <span className={`text-[10px] tracking-[0.3em] uppercase font-serif text-white/85
+              <span className={`text-[11.5px] tracking-[0.3em] uppercase font-serif text-white/85
                 border-b pb-1 transition-colors duration-300 ${
                 hovered === i ? "border-white" : "border-transparent"
               }`}>

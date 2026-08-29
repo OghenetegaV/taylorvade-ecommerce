@@ -85,7 +85,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
             placeholder="Search Taylor Vade"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="flex-1 text-[13px] tracking-[0.08em] outline-none bg-transparent
+            className="flex-1 text-[14.5px] tracking-[0.08em] outline-none bg-transparent
               text-[#3a2e22] placeholder:text-[#9a8a7a] font-serif"
           />
           <button onClick={onClose} aria-label="Close search">
@@ -95,13 +95,13 @@ export default function SearchOverlay({ open, onClose }: Props) {
 
         {/* Results */}
         {loading && (
-          <p className="text-[10px] tracking-[0.15em] text-[#9a8a7a] font-serif text-center py-4">
+          <p className="text-[11.5px] tracking-[0.15em] text-[#9a8a7a] font-serif text-center py-4">
             Searching…
           </p>
         )}
 
         {!loading && query && results.length === 0 && (
-          <p className="text-[10px] tracking-[0.12em] text-[#9a8a7a] font-serif text-center py-4">
+          <p className="text-[11.5px] tracking-[0.12em] text-[#9a8a7a] font-serif text-center py-4">
             No results for &ldquo;{query}&rdquo;
           </p>
         )}
@@ -120,12 +120,12 @@ export default function SearchOverlay({ open, onClose }: Props) {
                     <div className="w-full h-full bg-[#e8e2db]" />
                   )}
                 </div>
-                <p className="text-[11px] text-[#3a2e22] font-serif tracking-wide truncate
+                <p className="text-[12.5px] text-[#3a2e22] font-serif tracking-wide truncate
                   group-hover:opacity-60 transition-opacity"
                   style={{ fontFamily: "var(--font-script), cursive" }}>
                   {product.name}
                 </p>
-                <p className="text-[10px] text-[#9a8a7a] font-serif tracking-wide">
+                <p className="text-[11.5px] text-[#9a8a7a] font-serif tracking-wide">
                   {product.type}
                 </p>
               </Link>
@@ -134,7 +134,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
         )}
 
         {!query && (
-          <p className="text-[10px] tracking-[0.15em] text-[#9a8a7a] font-serif text-center py-4">
+          <p className="text-[11.5px] tracking-[0.15em] text-[#9a8a7a] font-serif text-center py-4">
             Start typing to search
           </p>
         )}

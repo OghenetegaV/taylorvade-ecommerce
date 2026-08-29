@@ -26,7 +26,7 @@ export default function BrandTicker() {
       <div className="tv-ticker-track flex items-center gap-8 whitespace-nowrap w-max">
         {run.map((phrase, i) => (
           <span key={i} className="flex items-center gap-8">
-            <span className="text-[11px] md:text-[12px] tracking-[0.3em] uppercase font-serif text-[#f5f5f5]/85">
+            <span className="text-[12.5px] md:text-[13.5px] tracking-[0.3em] uppercase font-serif text-[#f5f5f5]/85">
               {phrase === "Black is Boring" ? (
                 <>
                   Black is <span className="line-through decoration-[1.5px] decoration-[#8B5E3C]">Boring</span>
@@ -35,7 +35,7 @@ export default function BrandTicker() {
                 phrase
               )}
             </span>
-            <span className="text-[#8B5E3C] text-[10px]">✦</span>
+            <span className="text-[#8B5E3C] text-[11.5px]">✦</span>
           </span>
         ))}
       </div>

@@ -37,10 +37,10 @@ const fmt = (n: number) =>
   new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
 
 const inputCls =
-  "w-full border border-[#d4d4d0] bg-white px-4 py-3.5 text-[14px] text-[#111] font-serif " +
-  "outline-none focus:border-[#111] transition-colors placeholder:text-[#b5b5b0] rounded-none";
+  "w-full border border-[#d9d9d5] bg-white px-4 py-3 text-[15.5px] text-[#111] font-serif rounded-[3px] " +
+  "outline-none focus:border-[#111] transition-colors placeholder:text-[#b5b5b0]";
 
-const labelCls = "block text-[11px] tracking-[0.14em] uppercase text-[#767672] font-serif mb-2";
+const labelCls = "block text-[12.5px] tracking-[0.1em] uppercase text-[#767672] font-serif mb-1.5";
 
 /* ── Page ──────────────────────────────────────────────────────── */
 export default function CheckoutPage() {
@@ -336,7 +336,7 @@ export default function CheckoutPage() {
   if (authState === "loading" || !cartLoaded) {
     return (
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center font-serif">
-        <p className="text-[12px] tracking-[0.25em] uppercase text-[#8f8f8a]">Loading…</p>
+        <p className="text-[13.5px] tracking-[0.25em] uppercase text-[#8f8f8a]">Loading…</p>
       </div>
     );
   }
@@ -367,7 +367,7 @@ export default function CheckoutPage() {
             style={{ fontFamily: "var(--font-script), cursive" }}>
             Checkout
           </h1>
-          <p className="text-[13px] text-[#767672] mt-1">
+          <p className="text-[14.5px] text-[#767672] mt-1">
             Delivery within Nigeria · Secure payment by Paystack
           </p>
         </div>
@@ -378,48 +378,33 @@ export default function CheckoutPage() {
           <div className="space-y-6 min-w-0">
 
             {error && (
-              <div className="px-5 py-4 border border-[#111] bg-white text-[13.5px] text-[#111]">
+              <div className="px-5 py-4 border border-[#111] rounded-[3px] bg-white text-[15px] text-[#111]">
                 {error}
               </div>
             )}
 
             {/* 1 · Contact */}
-            <Card n="1" title="Contact">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>Email *</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="you@email.com"
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>Phone *</label>
-                  <input value={phone} onChange={e => onAddressChange(setPhone)(e.target.value)}
-                    placeholder="+234 801 234 5678" className={inputCls} />
-                </div>
+            <Card title="Contact"
+              action={authState === "guest" && (
+                <Link href="/login?next=/checkout" className="text-[13.5px] text-[#111] underline underline-offset-2 hover:opacity-60 transition-opacity">
+                  Sign in
+                </Link>
+              )}>
+              <div>
+                <label className={labelCls}>Email *</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@email.com"
+                  className={inputCls}
+                />
               </div>
             </Card>
 
-            {/* 2 · Delivery address */}
-            <Card n="2" title="Delivery Address">
+            {/* 2 · Delivery */}
+            <Card title="Delivery">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className={labelCls}>Full Name *</label>
-                  <input value={fullName} onChange={e => onAddressChange(setFullName)(e.target.value)} className={inputCls} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={labelCls}>Street Address *</label>
-                  <input value={addressLine1} onChange={e => onAddressChange(setAddressLine1)(e.target.value)}
-                    placeholder="House number and street" className={inputCls} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={labelCls}>Apartment, Suite, etc. (optional)</label>
-                  <input value={addressLine2} onChange={e => onAddressChange(setAddressLine2)(e.target.value)} className={inputCls} />
-                </div>
                 <div className="md:col-span-2">
                   <label className={labelCls}>Country *</label>
                   <select
@@ -433,6 +418,19 @@ export default function CheckoutPage() {
                     <option value="" disabled>Select Country</option>
                     {countryOptions.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                   </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelCls}>Full Name *</label>
+                  <input value={fullName} onChange={e => onAddressChange(setFullName)(e.target.value)} className={inputCls} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelCls}>Street Address *</label>
+                  <input value={addressLine1} onChange={e => onAddressChange(setAddressLine1)(e.target.value)}
+                    placeholder="House number and street" className={inputCls} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelCls}>Apartment, Suite, etc. (optional)</label>
+                  <input value={addressLine2} onChange={e => onAddressChange(setAddressLine2)(e.target.value)} className={inputCls} />
                 </div>
                 <div>
                   <label className={labelCls}>State *</label>
@@ -471,9 +469,14 @@ export default function CheckoutPage() {
                     />
                   )}
                 </div>
-                <div className="md:col-span-2">
+                <div>
                   <label className={labelCls}>Postal Code (optional)</label>
                   <input value={postalCode} onChange={e => onAddressChange(setPostalCode)(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Phone *</label>
+                  <input value={phone} onChange={e => onAddressChange(setPhone)(e.target.value)}
+                    placeholder="+234 801 234 5678" className={inputCls} />
                 </div>
               </div>
 
@@ -482,26 +485,26 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={fetchRates}
                 disabled={!addressComplete || ratesLoading}
-                className="mt-5 w-full border border-[#111] bg-white text-[#111] text-[12px]
+                className="mt-5 w-full border border-[#111] rounded-[3px] bg-white text-[#111] text-[13.5px]
                   tracking-[0.2em] uppercase py-4 hover:bg-[#111] hover:text-white
                   transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#111]"
               >
                 {ratesLoading ? "Fetching couriers…" : "Get Shipping Rates"}
               </button>
               {!addressComplete && (
-                <p className="text-[12px] text-[#8f8f8a] mt-2">
+                <p className="text-[13.5px] text-[#8f8f8a] mt-2">
                   Complete the required fields above to fetch delivery options.
                 </p>
               )}
             </Card>
 
-            {/* 3 · Delivery method */}
-            <Card n="3" title="Delivery Method">
+            {/* 3 · Shipping method */}
+            <Card title="Shipping Method">
               {ratesLoading ? (
-                <p className="text-[13.5px] text-[#767672] py-2">Contacting couriers…</p>
+                <p className="text-[15px] text-[#767672] py-2">Contacting couriers…</p>
               ) : rates.length === 0 ? (
-                <p className="text-[13.5px] text-[#767672] py-2">
-                  {ratesError ?? "Enter your delivery address and fetch shipping rates to see courier options."}
+                <p className="text-[15px] text-[#767672] py-2">
+                  {ratesError ?? "Enter your delivery address above to see available shipping methods."}
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -509,7 +512,7 @@ export default function CheckoutPage() {
                     const selected = selectedRate?.id === rate.id;
                     return (
                       <button key={rate.id} type="button" onClick={() => selectRate(rate)}
-                        className={`w-full flex items-center justify-between gap-4 px-5 py-4 border text-left transition-colors ${
+                        className={`w-full flex items-center justify-between gap-4 px-5 py-4 border rounded-[3px] text-left transition-colors ${
                           selected ? "border-[#111] bg-[#fbfbfa]" : "border-[#d4d4d0] bg-white hover:border-[#8f8f8a]"
                         }`}>
                         <span className="flex items-center gap-4 min-w-0">
@@ -521,60 +524,56 @@ export default function CheckoutPage() {
                             <img src={rate.logo} alt={rate.carrier} className="h-6 w-auto flex-shrink-0" />
                           )}
                           <span className="min-w-0">
-                            <span className="block text-[14px] text-[#111] truncate">{rate.carrier}</span>
+                            <span className="block text-[15.5px] text-[#111] truncate">{rate.carrier}</span>
                             {rate.deliveryTime && (
-                              <span className="block text-[12px] text-[#767672] mt-0.5">{rate.deliveryTime}</span>
+                              <span className="block text-[13.5px] text-[#767672] mt-0.5">{rate.deliveryTime}</span>
                             )}
                           </span>
                         </span>
-                        <span className="text-[14px] text-[#111] flex-shrink-0">{fmt(rate.amount)}</span>
+                        <span className="text-[15.5px] text-[#111] flex-shrink-0">{fmt(rate.amount)}</span>
                       </button>
                     );
                   })}
                 </div>
               )}
               {ratesError && rates.length === 0 && !ratesLoading && (
-                <p className="text-[12.5px] text-[#8f8f8a] mt-3">
+                <p className="text-[14px] text-[#8f8f8a] mt-3">
                   Double-check the street, city, and state, then try again.
                 </p>
               )}
             </Card>
 
             {/* 4 · Payment */}
-            <Card n="4" title="Payment">
-              <div className="flex items-center justify-between gap-4 px-5 py-4 border border-[#111] bg-[#fbfbfa]">
-                <div>
-                  <p className="text-[14px] text-[#111]">Paystack — Secure Checkout</p>
-                  <p className="text-[12px] text-[#767672] mt-0.5">
-                    Card · Bank Transfer · USSD · Opay
-                  </p>
+            <Card title="Payment">
+              <p className="text-[13.5px] text-[#8f8f8a] mb-4">All transactions are secure and encrypted.</p>
+              <div className="border border-[#111] rounded-[3px] overflow-hidden">
+                <div className="flex items-center gap-3 px-5 py-4 bg-[#fbfbfa]">
+                  <span className="w-[16px] h-[16px] rounded-full border border-[#111] bg-[#111]
+                    shadow-[inset_0_0_0_3px_#fff] flex-shrink-0" />
+                  <p className="text-[15.5px] text-[#111]">Paystack — Secure Checkout</p>
+                  <span className="ml-auto text-[12.5px] tracking-[0.1em] uppercase text-[#767672]">
+                    Card · Transfer · USSD · Opay
+                  </span>
                 </div>
-                <span className="text-[11px] tracking-[0.18em] uppercase text-[#767672] flex-shrink-0">
-                  ₦ NGN
-                </span>
+                <p className="px-5 py-3 text-[14px] text-[#8f8f8a] border-t border-[#e5e5e2]">
+                  You&apos;ll be redirected to Paystack&apos;s secure page to complete your purchase.
+                  We never see or store your card details.
+                </p>
               </div>
-              <p className="text-[12.5px] text-[#8f8f8a] mt-3">
-                You&apos;ll be redirected to Paystack&apos;s secure page. We never see or store your card details.
-              </p>
             </Card>
 
             {/* 5 · Notes */}
-            <Card n="5" title="Order Notes (optional)">
+            <Card title="Order Notes (optional)">
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
                 placeholder="Delivery instructions, gift note…" className={`${inputCls} resize-none`} />
             </Card>
-
-            {/* Pay — desktop */}
-            <div className="hidden lg:block pt-2">
-              <PayButton paying={paying} ready={!!selectedRate} total={total} onClick={handlePay} />
-            </div>
           </div>
 
           {/* ══ RIGHT — summary ══════════════════════════════════ */}
           <aside className="lg:sticky lg:top-[104px] self-start space-y-6">
-            <div className="bg-white border border-[#e5e5e2] p-6">
-              <p className="text-[11px] tracking-[0.2em] uppercase text-[#767672] mb-5">
-                Your Order ({items.length})
+            <div className="bg-white border border-[#e5e5e2] rounded-[3px] p-6">
+              <p className="text-[14.5px] font-semibold text-[#111] mb-5">
+                Order Summary ({items.length})
               </p>
 
               <div className="space-y-5 max-h-[360px] overflow-y-auto pr-1">
@@ -584,31 +583,31 @@ export default function CheckoutPage() {
                   return (
                     <div key={item.id} className="flex gap-4">
                       <Link href={`/products/${item.product.slug}`}
-                        className="relative w-[68px] h-[90px] flex-shrink-0 bg-[#f5f5f4] overflow-hidden">
+                        className="relative w-[68px] h-[90px] flex-shrink-0 rounded-[3px] bg-[#f5f5f4] overflow-hidden">
                         {item.product.images[0] && (
                           <Image src={item.product.images[0].url} alt={item.product.name}
                             fill className="object-cover object-top" sizes="68px" />
                         )}
                       </Link>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13.5px] text-[#111] leading-snug truncate">{item.product.name}</p>
-                        <p className="text-[12px] text-[#767672] mt-0.5">
+                        <p className="text-[15px] text-[#111] leading-snug truncate">{item.product.name}</p>
+                        <p className="text-[13.5px] text-[#767672] mt-0.5">
                           {item.variant.colorLabel} · {item.variant.size}
                         </p>
                         <div className="flex items-center justify-between mt-2.5">
-                          <div className="flex items-center border border-[#d4d4d0]">
+                          <div className="flex items-center border border-[#d4d4d0] rounded-[3px] overflow-hidden">
                             <button disabled={busy || item.quantity <= 1}
                               onClick={() => updateQty(item.id, item.quantity - 1)}
-                              className="w-7 h-7 text-[14px] text-[#111] disabled:opacity-30">−</button>
-                            <span className="w-7 text-center text-[12.5px]">{busy ? "…" : item.quantity}</span>
+                              className="w-7 h-7 text-[15.5px] text-[#111] disabled:opacity-30">−</button>
+                            <span className="w-7 text-center text-[14px]">{busy ? "…" : item.quantity}</span>
                             <button disabled={busy || item.quantity >= item.variant.stockQuantity}
                               onClick={() => updateQty(item.id, item.quantity + 1)}
-                              className="w-7 h-7 text-[14px] text-[#111] disabled:opacity-30">+</button>
+                              className="w-7 h-7 text-[15.5px] text-[#111] disabled:opacity-30">+</button>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-[13px] text-[#111]">{fmt(price * item.quantity)}</span>
+                            <span className="text-[14.5px] text-[#111]">{fmt(price * item.quantity)}</span>
                             <button disabled={busy} onClick={() => removeItem(item.id)}
-                              className="text-[11px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111] disabled:opacity-30">
+                              className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111] disabled:opacity-30">
                               Remove
                             </button>
                           </div>
@@ -622,10 +621,10 @@ export default function CheckoutPage() {
               {/* Discount code */}
               <div className="border-t border-[#e5e5e2] mt-6 pt-5">
                 {appliedDiscount ? (
-                  <div className="flex items-center justify-between px-3 py-2.5 border border-[#111] bg-[#fbfbfa] text-[12.5px]">
+                  <div className="flex items-center justify-between px-3 py-2.5 border border-[#111] rounded-[3px] bg-[#fbfbfa] text-[14px]">
                     <span className="text-[#111]">Code <b>{appliedDiscount.code}</b> applied</span>
                     <button type="button" onClick={removeDiscount}
-                      className="text-[11px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
+                      className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
                       Remove
                     </button>
                   </div>
@@ -633,17 +632,17 @@ export default function CheckoutPage() {
                   <div className="flex gap-2">
                     <input value={discountInput} onChange={e => setDiscountInput(e.target.value)}
                       placeholder="Discount code"
-                      className="flex-1 border border-[#d4d4d0] bg-white px-3.5 py-2.5 text-[12.5px] text-[#111]
+                      className="flex-1 border border-[#d9d9d5] rounded-[3px] bg-white px-3.5 py-2.5 text-[14px] text-[#111]
                         outline-none focus:border-[#111] transition-colors placeholder:text-[#b5b5b0]" />
                     <button type="button" onClick={applyDiscount}
                       disabled={applyingDiscount || !discountInput.trim()}
-                      className="px-4 border border-[#111] text-[11px] tracking-[0.14em] uppercase
+                      className="px-4 border border-[#111] rounded-[3px] text-[12.5px] tracking-[0.14em] uppercase
                         text-[#111] hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40">
                       {applyingDiscount ? "…" : "Apply"}
                     </button>
                   </div>
                 )}
-                {discountError && <p className="text-[11.5px] text-red-700 mt-2">{discountError}</p>}
+                {discountError && <p className="text-[13px] text-red-700 mt-2">{discountError}</p>}
               </div>
 
               <div className="mt-5 pt-5 space-y-2.5">
@@ -654,17 +653,33 @@ export default function CheckoutPage() {
                 <Row label="Delivery"
                   value={selectedRate ? fmt(shippingFee) : "—"}
                   hint={!selectedRate ? "Select a courier" : undefined} />
-                <div className="flex items-center justify-between pt-3 border-t border-[#e5e5e2] mt-3">
-                  <span className="text-[12px] tracking-[0.18em] uppercase text-[#111]">Total</span>
-                  <span className="text-[19px] text-[#111]">{fmt(total)}</span>
+                <div className="flex items-center justify-between pt-3 border-t border-[#e5e5e2] mt-3 mb-1">
+                  <span className="text-[14.5px] font-semibold text-[#111]">Total</span>
+                  <span className="text-[20px] text-[#111]">{fmt(total)}</span>
                 </div>
+              </div>
+
+              <div className="mt-5">
+                <PayButton paying={paying} ready={!!selectedRate} total={total} onClick={handlePay} />
+              </div>
+
+              <div className="flex items-center justify-center gap-4 mt-4">
+                <Link href="/returns" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
+                  Refund Policy
+                </Link>
+                <Link href="/shipping-policy" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
+                  Shipping
+                </Link>
+                <Link href="/terms" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#111]">
+                  Terms of Service
+                </Link>
               </div>
             </div>
 
             {/* Upsells */}
             {upsells.length > 0 && (
-              <div className="bg-white border border-[#e5e5e2] p-6">
-                <p className="text-[11px] tracking-[0.2em] uppercase text-[#767672] mb-4">
+              <div className="bg-white border border-[#e5e5e2] rounded-[3px] p-6">
+                <p className="text-[12.5px] tracking-[0.2em] uppercase text-[#767672] mb-4">
                   Complete the Look
                 </p>
                 <div className="grid grid-cols-2 gap-4">
@@ -672,23 +687,18 @@ export default function CheckoutPage() {
                     const img = p.images?.find(i => i.isPrimary)?.url ?? p.images?.[0]?.url;
                     return (
                       <Link key={p.id} href={`/products/${p.slug}`} className="group block">
-                        <div className="relative aspect-[3/4] bg-[#f5f5f4] overflow-hidden">
+                        <div className="relative aspect-[3/4] rounded-[3px] bg-[#f5f5f4] overflow-hidden">
                           {img && <Image src={img} alt={p.name} fill
                             className="object-cover object-top group-hover:scale-[1.03] transition-transform duration-500" sizes="200px" />}
                         </div>
-                        <p className="text-[12.5px] text-[#111] mt-2 truncate">{p.name}</p>
-                        <p className="text-[12px] text-[#767672]">{fmt(Number(p.basePrice))}</p>
+                        <p className="text-[14px] text-[#111] mt-2 truncate">{p.name}</p>
+                        <p className="text-[13.5px] text-[#767672]">{fmt(Number(p.basePrice))}</p>
                       </Link>
                     );
                   })}
                 </div>
               </div>
             )}
-
-            {/* Pay — mobile */}
-            <div className="lg:hidden">
-              <PayButton paying={paying} ready={!!selectedRate} total={total} onClick={handlePay} />
-            </div>
           </aside>
         </div>
       </div>
@@ -697,13 +707,12 @@ export default function CheckoutPage() {
 }
 
 /* ── Small pieces ──────────────────────────────────────────────── */
-function Card({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
+function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="bg-white border border-[#e5e5e2] p-6 md:p-7">
-      <div className="flex items-center gap-3 mb-5">
-        <span className="w-6 h-6 rounded-full bg-[#111] text-white text-[11px]
-          flex items-center justify-center flex-shrink-0">{n}</span>
-        <h2 className="text-[14px] tracking-[0.16em] uppercase text-[#111]">{title}</h2>
+    <section className="bg-white border border-[#e5e5e2] rounded-[3px] p-6 md:p-7">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-[16px] font-semibold text-[#111]">{title}</h2>
+        {action}
       </div>
       {children}
     </section>
@@ -713,9 +722,9 @@ function Card({ n, title, children }: { n: string; title: string; children: Reac
 function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[13px] text-[#767672]">{label}</span>
-      <span className="text-[13.5px] text-[#111]">
-        {value}{hint && <span className="text-[11px] text-[#b5b5b0] ml-2">{hint}</span>}
+      <span className="text-[14.5px] text-[#767672]">{label}</span>
+      <span className="text-[15px] text-[#111]">
+        {value}{hint && <span className="text-[12.5px] text-[#b5b5b0] ml-2">{hint}</span>}
       </span>
     </div>
   );
@@ -726,7 +735,7 @@ function PayButton({ paying, ready, total, onClick }: {
 }) {
   return (
     <button onClick={onClick} disabled={paying || !ready}
-      className="w-full bg-[#111] text-white text-[12px] tracking-[0.25em] uppercase py-4
+      className="w-full bg-[#111] text-white text-[13.5px] tracking-[0.25em] uppercase py-4 rounded-[3px]
         hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
       {paying ? "Redirecting to Paystack…" : ready ? `Pay ${fmt(total)}` : "Select delivery to continue"}
     </button>
@@ -744,9 +753,9 @@ function Gate({ title, body, cta }: {
           <p className="text-[32px] text-[#111] mb-3" style={{ fontFamily: "var(--font-script), cursive" }}>
             {title}
           </p>
-          <p className="text-[13.5px] text-[#767672] leading-relaxed mb-7">{body}</p>
+          <p className="text-[15px] text-[#767672] leading-relaxed mb-7">{body}</p>
           <button onClick={cta.onClick}
-            className="bg-[#111] text-white text-[12px] tracking-[0.22em] uppercase px-8 py-4 hover:bg-black transition-colors">
+            className="bg-[#111] text-white text-[13.5px] tracking-[0.22em] uppercase px-8 py-4 hover:bg-black transition-colors">
             {cta.label}
           </button>
         </div>

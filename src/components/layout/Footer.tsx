@@ -28,15 +28,15 @@ export default function Footer() {
   const [cookieVisible, setCookieVisible] = useState(true);
 
   return (
-    <footer className="bg-[#FAF9F7] text-[#1A1A18] font-sans antialiased text-[11px] tracking-wide border-t border-[#E5E5E0]">
+    <footer className="bg-[#FAF9F7] text-[#1A1A18] font-sans antialiased text-[12.5px] tracking-wide border-t border-[#E5E5E0]">
 
       {/* Modern Asymmetrical Layout */}
       <div className="max-w-[1600px] mx-auto px-8 py-20 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
         {/* Left Side: Newsletter & Brand Brief (Takes 5 Columns) */}
         <div className="lg:col-span-5 flex flex-col space-y-8">
           <div className="space-y-2">
-            <p className="text-[13px] font-bold uppercase tracking-[0.25em] text-[#1A1A18]">Join the Discerning</p>
-            <p className="text-[#575754] font-serif italic text-[13px] max-w-md leading-relaxed">
+            <p className="text-[14.5px] font-bold uppercase tracking-[0.25em] text-[#1A1A18]">Join the Discerning</p>
+            <p className="text-[#575754] font-serif italic text-[14.5px] max-w-md leading-relaxed">
               Sign up for private access to upcoming capsule drops, seasonal collections, and brand updates.
             </p>
           </div>
@@ -57,7 +57,7 @@ export default function Footer() {
 
             <div className="flex items-center gap-6 text-[#575754]">
               {(["woman", "man", "all"] as const).map((key) => (
-                <label key={key} className="flex items-center gap-2 cursor-pointer select-none uppercase text-[10px] tracking-wider hover:text-[#1A1A18] transition-colors">
+                <label key={key} className="flex items-center gap-2 cursor-pointer select-none uppercase text-[11.5px] tracking-wider hover:text-[#1A1A18] transition-colors">
                   <input
                     type="radio"
                     name="newsletter-pref"
@@ -76,7 +76,7 @@ export default function Footer() {
         <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-6 w-full">
           {/* Column 1: Brand */}
           <div className="flex flex-col space-y-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A18]">The Brand</p>
+            <p className="text-[11.5px] font-bold uppercase tracking-[0.2em] text-[#1A1A18]">The Brand</p>
             <nav className="flex flex-col space-y-3 text-[#575754]">
               {BRAND_LINKS.map((link) => (
                 <a key={link.text} href={link.href} className="hover:text-[#1A1A18] transition-colors">
@@ -88,7 +88,7 @@ export default function Footer() {
 
           {/* Column 2: Client Services */}
           <div className="flex flex-col space-y-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A18]">Services</p>
+            <p className="text-[11.5px] font-bold uppercase tracking-[0.2em] text-[#1A1A18]">Services</p>
             <nav className="flex flex-col space-y-3 text-[#575754]">
               {CUSTOMER_LINKS.map((link) => (
                 <a key={link.text} href={link.href} className="hover:text-[#1A1A18] transition-colors">
@@ -101,7 +101,7 @@ export default function Footer() {
           {/* Column 3: Legal & Social Panel */}
           <div className="flex flex-col space-y-6">
             <div className="flex flex-col space-y-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A18]">Legal</p>
+              <p className="text-[11.5px] font-bold uppercase tracking-[0.2em] text-[#1A1A18]">Legal</p>
               <nav className="flex flex-col space-y-3 text-[#575754]">
                 {LEGAL_LINKS.map((link) => (
                   <a key={link.text} href={link.href} className="hover:text-[#1A1A18] transition-colors">
@@ -123,7 +123,7 @@ export default function Footer() {
 
       {/* Global Announcement Bar */}
       <div>
-        <div className="max-w-[1600px] mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-[#E5E5E0] text-center text-[10px] uppercase tracking-[0.15em] text-[#575754]">
+        <div className="max-w-[1600px] mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-[#E5E5E0] text-center text-[11.5px] uppercase tracking-[0.15em] text-[#575754]">
           {[
             "Complimentary Global Shipping",
             "Premium Express Worldwide",
@@ -139,7 +139,7 @@ export default function Footer() {
 
       
       {/* Bottom Legal Metadata & Gateway List */}
-      <div className="border-t border-[#E5E5E0] bg-[#F0EFEA] text-[#737370] text-[10px]">
+      <div className="border-t border-[#E5E5E0] bg-[#F0EFEA] text-[#737370] text-[11.5px]">
         <div className="max-w-[1600px] mx-auto px-8 py-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 text-center md:text-left">
             <p>© {new Date().getFullYear()} TAYLOR VADE. ALL RIGHTS RESERVED.</p>
@@ -152,7 +152,7 @@ export default function Footer() {
           {/* Gateways Display */}
           <div className="flex flex-wrap gap-2 items-center opacity-80 hover:opacity-100 transition-opacity duration-300">
             {["VISA", "PAYSTACK", "APPLE PAY", "GOOGLE PAY"].map((gateway) => (
-              <div key={gateway} className="border border-[#E5E5E0] bg-[#FAF9F7] px-2 py-1 text-[8px] font-bold tracking-[0.1em] text-[#1A1A18] rounded-sm shadow-xs">
+              <div key={gateway} className="border border-[#E5E5E0] bg-[#FAF9F7] px-2 py-1 text-[9.5px] font-bold tracking-[0.1em] text-[#1A1A18] rounded-sm shadow-xs">
                 {gateway}
               </div>
             ))}
@@ -164,7 +164,7 @@ export default function Footer() {
       {cookieVisible && (
         <div className="fixed bottom-6 right-6 max-w-sm border border-[#E5E5E0] bg-[#FAF9F7] p-5 text-[#575754] rounded shadow-2xl z-50 flex flex-col gap-4">
           <p className="leading-relaxed">We utilize secure cookies to personalize your transaction pathways, regional parameters, and browsing choices.</p>
-          <div className="flex gap-2 justify-end text-[10px] font-bold tracking-wider">
+          <div className="flex gap-2 justify-end text-[11.5px] font-bold tracking-wider">
             <button onClick={() => setCookieVisible(false)} className="bg-[#1A1A18] text-white px-4 py-2 uppercase hover:bg-[#575754] transition-colors">ACCEPT</button>
             <button onClick={() => setCookieVisible(false)} className="border border-[#B5B5B0] text-[#1A1A18] px-4 py-2 uppercase hover:bg-black/5 transition-colors">DECLINE</button>
           </div>

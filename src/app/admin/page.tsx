@@ -308,7 +308,7 @@ export default function AdminDashboard() {
                           <div className="h-full bg-gradient-to-r from-blue-500 to-violet-500 rounded-full"
                             style={{width:`${(p.revenue / max) * 100}%`}} />
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{ngnFull(p.revenue)}</p>
+                        <p className="text-[11.5px] text-slate-400 mt-0.5">{ngnFull(p.revenue)}</p>
                       </div>
                     );
                   })}
@@ -373,7 +373,7 @@ export default function AdminDashboard() {
             <thead>
               <tr className="bg-slate-50">
                 {["Order","Customer","Items","Amount","Status","Date"].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold
+                  <th key={h} className="text-left px-5 py-3 text-[11.5px] font-semibold
                     text-slate-500 uppercase tracking-wider whitespace-nowrap">
                     {h}
                   </th>
@@ -390,14 +390,14 @@ export default function AdminDashboard() {
                     <p className="text-xs font-medium text-slate-800">
                       {o.profile?.fullName ?? "—"}
                     </p>
-                    <p className="text-[10px] text-slate-400">{o.address?.city}</p>
+                    <p className="text-[11.5px] text-slate-400">{o.address?.city}</p>
                   </td>
                   <td className="px-5 py-3.5 text-xs text-slate-500">{o.items?.length ?? 0}</td>
                   <td className="px-5 py-3.5 text-xs font-semibold text-slate-800">
                     {ngnFull(Number(o.totalAmount))}
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px]
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11.5px]
                       font-semibold border ${STATUS_COLORS[o.status] ?? "bg-slate-100 text-slate-600 border-slate-200"}`}>
                       {o.status}
                     </span>
@@ -419,7 +419,7 @@ export default function AdminDashboard() {
                 <p className="text-xs font-mono font-bold text-slate-700">
                   #{o.id.slice(-8).toUpperCase()}
                 </p>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px]
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11.5px]
                   font-semibold border ${STATUS_COLORS[o.status] ?? "bg-slate-100 text-slate-600 border-slate-200"}`}>
                   {o.status}
                 </span>
@@ -427,11 +427,11 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mt-1.5">
                 <div>
                   <p className="text-sm font-semibold text-slate-800">{o.profile?.fullName ?? "—"}</p>
-                  <p className="text-[10px] text-slate-400">{o.address?.city}</p>
+                  <p className="text-[11.5px] text-slate-400">{o.address?.city}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-slate-900">{ngnFull(Number(o.totalAmount))}</p>
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[11.5px] text-slate-400">
                     {o.items?.length ?? 0} item{(o.items?.length ?? 0) !== 1 ? "s" : ""} ·{" "}
                     {new Date(o.createdAt).toLocaleDateString("en-GB")}
                   </p>

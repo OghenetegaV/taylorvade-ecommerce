@@ -80,7 +80,7 @@ export default function OrderMap({ data }: Props) {
         </ZoomableGroup>
       </ComposableMap>
       {data.length === 0 && (
-        <p className="text-center text-[11px] text-[#8a7a6a] mt-4 -translate-y-12">
+        <p className="text-center text-[12.5px] text-[#8a7a6a] mt-4 -translate-y-12">
           No order location data yet
         </p>
       )}

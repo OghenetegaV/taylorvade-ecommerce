@@ -31,7 +31,7 @@ export default function NewInRail() {
       <ScrollReveal>
         <div className="flex items-end justify-between px-5 md:px-12 mb-6 md:mb-8">
           <div>
-            <p className="text-[10px] tracking-[0.3em] uppercase font-serif text-[#8f8f8a] mb-2">
+            <p className="text-[11.5px] tracking-[0.3em] uppercase font-serif text-[#8f8f8a] mb-2">
               Just landed
             </p>
             <h2 className="text-[#111] leading-none"
@@ -40,7 +40,7 @@ export default function NewInRail() {
             </h2>
           </div>
           <Link href="/collections/woman"
-            className="text-[10px] tracking-[0.2em] uppercase font-serif text-[#555]
+            className="text-[11.5px] tracking-[0.2em] uppercase font-serif text-[#555]
               border-b border-[#555]/40 pb-1 hover:border-[#111] hover:text-[#111]
               transition-colors whitespace-nowrap">
             View all
@@ -61,19 +61,19 @@ export default function NewInRail() {
                   sizes="(max-width:640px) 62vw, (max-width:768px) 38vw, 240px" />
               )}
               {product.isNew && (
-                <span className="absolute top-2.5 left-2.5 text-[9px] italic font-serif
+                <span className="absolute top-2.5 left-2.5 text-[10.5px] italic font-serif
                   text-white bg-[#111]/85 px-2 py-0.5">
                   New In
                 </span>
               )}
             </div>
             <div className="pt-2.5">
-              <p className="text-[14px] text-[#111] leading-tight truncate"
+              <p className="text-[15.5px] text-[#111] leading-tight truncate"
                 style={{ fontFamily: "var(--font-script), cursive" }}>
                 {product.name}
               </p>
-              <p className="text-[10.5px] text-[#999] font-serif mt-0.5 truncate">{product.type}</p>
-              <p className="text-[11px] text-[#222] font-serif mt-0.5">
+              <p className="text-[12px] text-[#999] font-serif mt-0.5 truncate">{product.type}</p>
+              <p className="text-[12.5px] text-[#222] font-serif mt-0.5">
                 ₦{Number(product.basePrice).toLocaleString()}
               </p>
             </div>

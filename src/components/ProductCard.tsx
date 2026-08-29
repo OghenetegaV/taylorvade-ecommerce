@@ -123,7 +123,7 @@ export default function ProductCard({
             style={{ background: "linear-gradient(to top, rgba(255,255,255,0.92), rgba(255,255,255,0))" }}>
             {sizes.map(([size, qty]) => (
               <span key={size}
-                className={`text-[11px] tracking-[0.08em] ${
+                className={`text-[12.5px] tracking-[0.08em] ${
                   qty > 0 ? "text-[#555]" : "text-[#c8c8c4] line-through"
                 }`}>
                 {size}
@@ -136,7 +136,7 @@ export default function ProductCard({
       {/* ── Info stack ── */}
       <div className="px-3 md:px-4 pt-4 md:pt-5">
         {isNew && (
-          <p className="text-[12px] text-[#8B5E3C] underline underline-offset-[3px] mb-1"
+          <p className="text-[13.5px] text-[#8B5E3C] underline underline-offset-[3px] mb-1"
             style={{ fontFamily: "var(--font-script), cursive" }}>
             New In
           </p>
@@ -145,7 +145,7 @@ export default function ProductCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
             <Link href={`/products/${slug}`}
-              className="text-[17px] leading-none text-[#111] hover:opacity-60 transition-opacity"
+              className="text-[18px] leading-none text-[#111] hover:opacity-60 transition-opacity"
               style={{ fontFamily: "var(--font-script), cursive" }}>
               {name}
             </Link>
@@ -175,10 +175,10 @@ export default function ProductCard({
         </div>
 
         <Link href={`/products/${slug}`} className="block mt-1.5">
-          <p className="text-[12.5px] text-[#111] leading-snug">{type}</p>
+          <p className="text-[14px] text-[#111] leading-snug">{type}</p>
         </Link>
 
-        <p className="text-[12.5px] text-[#111] mt-1.5">{format(Number(basePrice))}</p>
+        <p className="text-[14px] text-[#111] mt-1.5">{format(Number(basePrice))}</p>
       </div>
     </div>
   );

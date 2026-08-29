@@ -57,7 +57,7 @@ function Sidebar({ profile, onClose }: { profile: Profile; onClose?: () => void 
             </div>
             <div>
               <p className="text-white text-sm font-bold leading-tight">Taylor Vade</p>
-              <p className="text-slate-400 text-[10px] tracking-wide">Admin Console</p>
+              <p className="text-slate-400 text-[11.5px] tracking-wide">Admin Console</p>
             </div>
           </div>
           {onClose && (
@@ -70,7 +70,7 @@ function Sidebar({ profile, onClose }: { profile: Profile; onClose?: () => void 
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        <p className="text-[10px] font-semibold text-slate-500 tracking-widest uppercase px-3 mb-2">
+        <p className="text-[11.5px] font-semibold text-slate-500 tracking-widest uppercase px-3 mb-2">
           Main Menu
         </p>
         {NAV.map(item => {
@@ -96,7 +96,7 @@ function Sidebar({ profile, onClose }: { profile: Profile; onClose?: () => void 
         })}
 
         {/* Insights */}
-        <p className="text-[10px] font-semibold text-slate-500 tracking-widest uppercase px-3 mb-2 mt-6">
+        <p className="text-[11.5px] font-semibold text-slate-500 tracking-widest uppercase px-3 mb-2 mt-6">
           Insights
         </p>
         <a
@@ -148,7 +148,7 @@ function Sidebar({ profile, onClose }: { profile: Profile; onClose?: () => void 
             <p className="text-white text-xs font-semibold truncate">
               {profile.fullName ?? "Admin"}
             </p>
-            <p className="text-slate-500 text-[10px] truncate">{profile.email}</p>
+            <p className="text-slate-500 text-[11.5px] truncate">{profile.email}</p>
           </div>
         </div>
       </div>

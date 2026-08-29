@@ -45,7 +45,23 @@ async function loadProduct(slug: string) {
     },
   });
 
-  return { product, selectedForYou };
+  // No curated "shop the look" pairings exist yet — stand in with a random
+  // sample of other published products until that's built.
+  const shopTheLookPool = await prisma.product.findMany({
+    where: { isPublished: true, id: { not: product.id } },
+    take: 20,
+    orderBy: { createdAt: "desc" },
+    include: {
+      images: { where: { isPrimary: true }, take: 1 },
+    },
+  });
+  const shopTheLook = shopTheLookPool
+    .map(p => ({ p, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .slice(0, 3)
+    .map(({ p }) => p);
+
+  return { product, selectedForYou, shopTheLook };
 }
 
 export async function generateMetadata({
@@ -74,7 +90,7 @@ export default async function ProductRoute({
 
   if (!data) notFound();
 
-  const { product, selectedForYou = [] } = data;
+  const { product, selectedForYou = [], shopTheLook = [] } = data;
 
   // ── Build props from DB data ─────────────────────────────────────────
   const images = product.images
@@ -123,6 +139,13 @@ export default async function ProductRoute({
     image: p.images?.[0]?.url ?? "",
     name: p.name,
     description: p.type,
+    price: Number(p.basePrice),
+  }));
+
+  const lookItems = shopTheLook.map((p: any) => ({
+    slug: p.slug,
+    image: p.images?.[0]?.url ?? "",
+    name: p.name,
   }));
 
   return (
@@ -132,13 +155,14 @@ export default async function ProductRoute({
       type={product.type}
       price={Number(product.basePrice)}
       isNew={product.isNew}
+      gender={product.gender}
       images={images}
       swatchImages={swatchImages}
       sizes={sizes}
       editorNotes={product.editorNotes ?? undefined}
       sizeFit={product.sizeFit ?? undefined}
       deliveryReturns={product.deliveryReturns ?? undefined}
-      shopTheLook={[]}
+      shopTheLook={lookItems}
       selectedForYou={relatedItems}
       productId={product.id}
       sizeChart={(product.category.sizeChart?.sizes as { label: string; values: Record<string, string> }[]) ?? null}

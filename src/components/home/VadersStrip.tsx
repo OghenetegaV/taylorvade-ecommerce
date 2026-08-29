@@ -31,7 +31,7 @@ export default function VadersStrip() {
     <section className="bg-[#0d0d0d] py-14 md:py-20">
       <ScrollReveal>
         <div className="text-center px-5">
-          <p className="text-[10px] tracking-[0.35em] uppercase font-serif text-[#8f8f8a] mb-3">
+          <p className="text-[11.5px] tracking-[0.35em] uppercase font-serif text-[#8f8f8a] mb-3">
             The community
           </p>
           <h2
@@ -40,7 +40,7 @@ export default function VadersStrip() {
           >
             The Vaders
           </h2>
-          <p className="text-[#999] text-[12px] font-serif tracking-[0.04em] mt-3 mb-5">
+          <p className="text-[#999] text-[13.5px] font-serif tracking-[0.04em] mt-3 mb-5">
             Worn by the discerning. Tag <span className="text-[#b5b5b0]">@taylor_vade</span> to be featured.
           </p>
         </div>
@@ -76,7 +76,7 @@ export default function VadersStrip() {
               )}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-400" />
               <span
-                className="absolute left-3 bottom-3 text-[10.5px] font-serif text-white
+                className="absolute left-3 bottom-3 text-[12px] font-serif text-white
                 opacity-0 translate-y-1.5 group-hover:opacity-100 group-hover:translate-y-0
                 transition-all duration-300"
               >

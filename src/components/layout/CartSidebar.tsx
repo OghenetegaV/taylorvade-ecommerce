@@ -158,13 +158,13 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
         <div className="flex items-center justify-between px-6 pt-6 border-b border-[#d5cec4]">
           <div className="flex items-center gap-6">
             <button onClick={() => setTab("basket")}
-              className={`pb-4 text-[11px] tracking-[0.2em] uppercase font-serif border-b-2 -mb-px transition-colors ${
+              className={`pb-4 text-[12.5px] tracking-[0.2em] uppercase font-serif border-b-2 -mb-px transition-colors ${
                 tab === "basket" ? "text-[#3a2e22] border-[#3a2e22]" : "text-[#9a8a7a] border-transparent"
               }`}>
               Bag {items.length > 0 && `(${items.length})`}
             </button>
             <button onClick={() => setTab("wishlist")}
-              className={`pb-4 text-[11px] tracking-[0.2em] uppercase font-serif border-b-2 -mb-px transition-colors ${
+              className={`pb-4 text-[12.5px] tracking-[0.2em] uppercase font-serif border-b-2 -mb-px transition-colors ${
                 tab === "wishlist" ? "text-[#3a2e22] border-[#3a2e22]" : "text-[#9a8a7a] border-transparent"
               }`}>
               Wishlist
@@ -178,23 +178,23 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
         {tab === "wishlist" ? (
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {wishLoading ? (
-              <p className="text-[10px] tracking-[0.15em] text-[#9a8a7a] font-serif text-center pt-8">
+              <p className="text-[11.5px] tracking-[0.15em] text-[#9a8a7a] font-serif text-center pt-8">
                 Loading…
               </p>
             ) : wishSignedOut ? (
               <div className="pt-12 text-center">
-                <p className="text-[11px] tracking-[0.1em] text-[#3a2e22] font-serif mb-1">My Wishlist</p>
-                <p className="text-[10.5px] tracking-[0.05em] text-[#9a8a7a] font-serif mb-5">
+                <p className="text-[12.5px] tracking-[0.1em] text-[#3a2e22] font-serif mb-1">My Wishlist</p>
+                <p className="text-[12px] tracking-[0.05em] text-[#9a8a7a] font-serif mb-5">
                   Log in or Register to view your Wishlist.
                 </p>
                 <div className="flex items-center justify-center gap-4">
                   <Link href="/login" onClick={onClose}
-                    className="text-[10px] tracking-[0.12em] uppercase text-[#FAF9F7] bg-[#3a2e22]
+                    className="text-[11.5px] tracking-[0.12em] uppercase text-[#FAF9F7] bg-[#4B3E3C]
                       px-5 py-2.5 hover:bg-[#1a1008] transition-colors">
                     Log In
                   </Link>
                   <Link href="/register" onClick={onClose}
-                    className="text-[10px] tracking-[0.12em] text-[#3a2e22] font-serif
+                    className="text-[11.5px] tracking-[0.12em] text-[#3a2e22] font-serif
                       underline underline-offset-4 hover:opacity-50 transition-opacity">
                     Register
                   </Link>
@@ -202,11 +202,11 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
               </div>
             ) : wished.length === 0 ? (
               <div className="pt-12 text-center">
-                <p className="text-[11px] tracking-[0.1em] text-[#9a8a7a] font-serif mb-5">
+                <p className="text-[12.5px] tracking-[0.1em] text-[#9a8a7a] font-serif mb-5">
                   Your wishlist is empty
                 </p>
                 <button onClick={onClose}
-                  className="text-[10px] tracking-[0.12em] text-[#3a2e22] font-serif
+                  className="text-[11.5px] tracking-[0.12em] text-[#3a2e22] font-serif
                     underline underline-offset-4 hover:opacity-50 transition-opacity">
                   Continue Shopping
                 </button>
@@ -227,20 +227,20 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
                     <div className="flex-1 min-w-0 flex flex-col justify-between">
                       <div>
                         <Link href={`/products/${w.product.slug}`} onClick={onClose}>
-                          <p className="text-[11.5px] tracking-[0.06em] text-[#3a2e22] font-serif
+                          <p className="text-[13px] tracking-[0.06em] text-[#3a2e22] font-serif
                             hover:opacity-60 transition-opacity truncate"
                             style={{ fontFamily: "var(--font-script), cursive" }}>
                             {w.product.name}
                           </p>
                         </Link>
-                        <p className="text-[10.5px] tracking-[0.06em] text-[#3a2e22] font-serif mt-1">
+                        <p className="text-[12px] tracking-[0.06em] text-[#3a2e22] font-serif mt-1">
                           {fmt(Number(w.product.basePrice))}
                         </p>
                       </div>
                       <button
                         disabled={wishBusy === w.product.id}
                         onClick={() => removeWishlistItem(w.product.id)}
-                        className="self-start text-[10px] tracking-wide text-[#9a8a7a] font-serif
+                        className="self-start text-[11.5px] tracking-wide text-[#9a8a7a] font-serif
                           underline underline-offset-2 hover:text-[#3a2e22] transition-colors
                           disabled:opacity-30">
                         Remove
@@ -255,16 +255,16 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
         <>
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
-            <p className="text-[10px] tracking-[0.15em] text-[#9a8a7a] font-serif text-center pt-8">
+            <p className="text-[11.5px] tracking-[0.15em] text-[#9a8a7a] font-serif text-center pt-8">
               Loading…
             </p>
           ) : items.length === 0 ? (
             <div className="pt-12 text-center">
-              <p className="text-[11px] tracking-[0.1em] text-[#9a8a7a] font-serif mb-5">
+              <p className="text-[12.5px] tracking-[0.1em] text-[#9a8a7a] font-serif mb-5">
                 Your bag is empty
               </p>
               <button onClick={onClose}
-                className="text-[10px] tracking-[0.12em] text-[#3a2e22] font-serif
+                className="text-[11.5px] tracking-[0.12em] text-[#3a2e22] font-serif
                   underline underline-offset-4 hover:opacity-50 transition-opacity">
                 Continue Shopping
               </button>
@@ -289,16 +289,16 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
                     <div className="flex-1 min-w-0 flex flex-col justify-between">
                       <div>
                         <Link href={`/products/${item.product.slug}`} onClick={onClose}>
-                          <p className="text-[11.5px] tracking-[0.06em] text-[#3a2e22] font-serif
+                          <p className="text-[13px] tracking-[0.06em] text-[#3a2e22] font-serif
                             hover:opacity-60 transition-opacity truncate"
                             style={{ fontFamily: "var(--font-script), cursive" }}>
                             {item.product.name}
                           </p>
                         </Link>
-                        <p className="text-[10px] tracking-[0.08em] text-[#9a8a7a] font-serif mt-0.5">
+                        <p className="text-[11.5px] tracking-[0.08em] text-[#9a8a7a] font-serif mt-0.5">
                           {item.variant.colorLabel} · {item.variant.size}
                         </p>
-                        <p className="text-[10.5px] tracking-[0.06em] text-[#3a2e22] font-serif mt-1">
+                        <p className="text-[12px] tracking-[0.06em] text-[#3a2e22] font-serif mt-1">
                           {fmt(price)}
                         </p>
                       </div>
@@ -309,24 +309,24 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
                             disabled={isBusy || item.quantity <= 1}
                             onClick={() => updateQty(item.id, item.quantity - 1)}
                             className="w-7 h-7 flex items-center justify-center text-[#3a2e22]
-                              text-[13px] hover:bg-[#f0eeeb] transition-colors disabled:opacity-30">
+                              text-[14.5px] hover:bg-[#f0eeeb] transition-colors disabled:opacity-30">
                             −
                           </button>
-                          <span className="w-7 text-center text-[10.5px] font-serif text-[#3a2e22]">
+                          <span className="w-7 text-center text-[12px] font-serif text-[#3a2e22]">
                             {isBusy ? "…" : item.quantity}
                           </span>
                           <button
                             disabled={isBusy || item.quantity >= item.variant.stockQuantity}
                             onClick={() => updateQty(item.id, item.quantity + 1)}
                             className="w-7 h-7 flex items-center justify-center text-[#3a2e22]
-                              text-[13px] hover:bg-[#f0eeeb] transition-colors disabled:opacity-30">
+                              text-[14.5px] hover:bg-[#f0eeeb] transition-colors disabled:opacity-30">
                             +
                           </button>
                         </div>
                         <button
                           disabled={isBusy}
                           onClick={() => removeItem(item.id)}
-                          className="text-[10px] tracking-wide text-[#9a8a7a] font-serif
+                          className="text-[11.5px] tracking-wide text-[#9a8a7a] font-serif
                             underline underline-offset-2 hover:text-[#3a2e22] transition-colors
                             disabled:opacity-30">
                           Remove
@@ -343,23 +343,23 @@ export default function CartSidebar({ open, onClose, onCountChange, initialTab =
         {items.length > 0 && (
           <div className="px-6 py-5 border-t border-[#d5cec4]">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-[10px] tracking-[0.12em] text-[#9a8a7a] font-serif uppercase">Subtotal</p>
-              <p className="text-[12px] tracking-[0.06em] text-[#3a2e22] font-serif">{fmt(subtotal)}</p>
+              <p className="text-[11.5px] tracking-[0.12em] text-[#9a8a7a] font-serif uppercase">Subtotal</p>
+              <p className="text-[13.5px] tracking-[0.06em] text-[#3a2e22] font-serif">{fmt(subtotal)}</p>
             </div>
-            <p className="text-[9.5px] tracking-[0.08em] text-[#9a8a7a] font-serif mb-4">
+            <p className="text-[11px] tracking-[0.08em] text-[#9a8a7a] font-serif mb-4">
               Shipping calculated at checkout
             </p>
             <Link
               href="/checkout"
               onClick={onClose}
-              className="block w-full bg-[#3a2e22] text-[#FAF9F7] text-center
-                text-[10.5px] tracking-[0.2em] uppercase font-serif py-3.5
+              className="block w-full bg-[#4B3E3C] text-[#FAF9F7] text-center
+                text-[12px] tracking-[0.2em] uppercase font-serif py-3.5
                 hover:bg-[#1a1008] transition-colors">
               Checkout
             </Link>
             <button
               onClick={onClose}
-              className="mt-3 w-full text-[10px] tracking-[0.12em] text-[#3a2e22] font-serif
+              className="mt-3 w-full text-[11.5px] tracking-[0.12em] text-[#3a2e22] font-serif
                 underline underline-offset-4 hover:opacity-50 transition-opacity">
               Continue Shopping
             </button>

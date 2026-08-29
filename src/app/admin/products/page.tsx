@@ -22,7 +22,7 @@ type Product = {
 
 function StatusBadge({ published }: { published: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11.5px] font-semibold ${
       published
         ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
         : "bg-slate-100 text-slate-500 border border-slate-200"
@@ -149,7 +149,7 @@ function ProductsContent() {
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
                     {["Product","Category","Price","Stock","Status","Orders","Actions"].map(h => (
-                      <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold
+                      <th key={h} className="text-left px-5 py-3 text-[11.5px] font-semibold
                         text-slate-500 uppercase tracking-wider whitespace-nowrap">
                         {h}
                       </th>
@@ -178,7 +178,7 @@ function ProductsContent() {
                             </p>
                             <p className="text-xs text-slate-400">{product.type}</p>
                             {product.isNew && (
-                              <span className="text-[9px] bg-violet-100 text-violet-700 font-semibold
+                              <span className="text-[10.5px] bg-violet-100 text-violet-700 font-semibold
                                 px-1.5 py-0.5 rounded-full">
                                 New In
                               </span>
@@ -188,7 +188,7 @@ function ProductsContent() {
                       </td>
                       <td className="px-5 py-3.5 text-xs text-slate-500">
                         {product.category?.name ?? "—"}
-                        <p className="text-[10px] text-slate-400 capitalize">{product.gender.toLowerCase()}</p>
+                        <p className="text-[11.5px] text-slate-400 capitalize">{product.gender.toLowerCase()}</p>
                       </td>
                       <td className="px-5 py-3.5 text-sm font-semibold text-slate-800">
                         ₦{Number(product.basePrice).toLocaleString()}
@@ -197,7 +197,7 @@ function ProductsContent() {
                         <p className={`text-xs font-semibold ${stockColor(totalStock(product.variants))}`}>
                           {totalStock(product.variants)} units
                         </p>
-                        <p className="text-[10px] text-slate-400">{product._count.variants} variants</p>
+                        <p className="text-[11.5px] text-slate-400">{product._count.variants} variants</p>
                       </td>
                       <td className="px-5 py-3.5">
                         <StatusBadge published={product.isPublished} />

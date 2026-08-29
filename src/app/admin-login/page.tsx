@@ -122,7 +122,7 @@ export default function AdminLoginPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1.5">
+                  <label className="block text-[12.5px] font-semibold text-slate-400 mb-1.5">
                     Email
                   </label>
                   <div className="relative">
@@ -139,7 +139,7 @@ export default function AdminLoginPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1.5">
+                  <label className="block text-[12.5px] font-semibold text-slate-400 mb-1.5">
                     Password
                   </label>
                   <div className="relative">
@@ -175,11 +175,11 @@ export default function AdminLoginPage() {
 
               <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/8">
                 <Link href="/reset-password"
-                  className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors">
+                  className="text-[12.5px] text-slate-500 hover:text-slate-300 transition-colors">
                   Forgot password?
                 </Link>
                 <Link href="/"
-                  className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors">
+                  className="text-[12.5px] text-slate-500 hover:text-slate-300 transition-colors">
                   ← Back to store
                 </Link>
               </div>
@@ -187,7 +187,7 @@ export default function AdminLoginPage() {
           )}
         </div>
 
-        <p className="text-center text-[10px] text-slate-600 mt-6">
+        <p className="text-center text-[11.5px] text-slate-600 mt-6">
           Authorised personnel only. Access is logged.
         </p>
       </div>

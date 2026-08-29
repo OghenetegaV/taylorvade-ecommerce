@@ -3,7 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_ROUTES = ["/account", "/checkout", "/orders"];
+const PROTECTED_ROUTES = ["/account", "/orders"];
 const AUTH_ROUTES      = ["/login", "/register"];
 const ADMIN_ROUTES     = ["/admin"];
 

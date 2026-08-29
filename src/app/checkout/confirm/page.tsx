@@ -84,7 +84,7 @@ function ConfirmInner() {
             >
               One moment
             </p>
-            <p className="text-[12.5px] text-[#8f8f8a] leading-relaxed">
+            <p className="text-[14px] text-[#8f8f8a] leading-relaxed">
               {message}
             </p>
             <div className="mt-8 mx-auto w-8 h-[1px] bg-[#111] animate-pulse" />
@@ -97,19 +97,19 @@ function ConfirmInner() {
             >
               Payment not completed
             </p>
-            <p className="text-[12.5px] text-[#8f8f8a] leading-relaxed mb-7">
+            <p className="text-[14px] text-[#8f8f8a] leading-relaxed mb-7">
               {message}
             </p>
             <div className="flex items-center justify-center gap-4">
               <Link
                 href="/checkout"
-                className="bg-[#111] text-white text-[11px] tracking-[0.22em] uppercase px-7 py-3.5 hover:bg-black transition-colors"
+                className="bg-[#111] text-white text-[12.5px] tracking-[0.22em] uppercase px-7 py-3.5 hover:bg-black transition-colors"
               >
                 Try Again
               </Link>
               <Link
                 href="/"
-                className="text-[11px] tracking-[0.15em] uppercase text-[#8f8f8a] underline underline-offset-4 hover:text-[#111]"
+                className="text-[12.5px] tracking-[0.15em] uppercase text-[#8f8f8a] underline underline-offset-4 hover:text-[#111]"
               >
                 Home
               </Link>

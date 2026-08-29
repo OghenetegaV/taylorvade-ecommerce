@@ -27,7 +27,7 @@ export default async function SizeGuidePage() {
         </h1>
 
         {categories.length === 0 ? (
-          <p className="text-[13.5px] text-[#5a4a3a]">
+          <p className="text-[15px] text-[#5a4a3a]">
             Size charts are being added — check back soon, or see the Size &amp; Fit
             notes on individual product pages.
           </p>
@@ -38,16 +38,16 @@ export default async function SizeGuidePage() {
               const cols = Object.keys(rows[0]?.values ?? {});
               return (
                 <div key={cat.id}>
-                  <h2 className="text-[13px] tracking-[0.14em] uppercase text-[#1a1008] mb-3">
+                  <h2 className="text-[14.5px] tracking-[0.14em] uppercase text-[#1a1008] mb-3">
                     {cat.gender === "MEN" ? "Men — " : cat.gender === "WOMEN" ? "Women — " : ""}{cat.name}
                   </h2>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-[12.5px] border-collapse">
+                    <table className="w-full text-[14px] border-collapse">
                       <thead>
                         <tr className="border-b border-[#e8e2db]">
-                          <th className="text-left py-2 pr-3 text-[#8a7a6a] uppercase tracking-[0.06em] text-[10.5px]">Measurement</th>
+                          <th className="text-left py-2 pr-3 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">Measurement</th>
                           {cols.map(size => (
-                            <th key={size} className="text-center py-2 px-2 text-[#8a7a6a] uppercase tracking-[0.06em] text-[10.5px]">
+                            <th key={size} className="text-center py-2 px-2 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">
                               {size}
                             </th>
                           ))}
