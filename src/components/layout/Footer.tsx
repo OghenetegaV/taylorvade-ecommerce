@@ -26,7 +26,7 @@ export default function Footer() {
   const [cookieVisible, setCookieVisible] = useState(true);
   const [isContactOpen, setIsContactOpen] = useState(false);
 
-  const togglePreference = (key) => {
+  const togglePreference = (key: "woman" | "man" | "all") => {
     setPreferences((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
@@ -105,7 +105,7 @@ export default function Footer() {
           <div className="flex flex-col space-y-2 text-[14px] md:pl-16">
             <a href="#" className="hover:text-[#575754] transition-colors py-1">About Us</a>
             
-            {/* <details className="group cursor-pointer">
+            <details className="group cursor-pointer">
               <summary className="flex justify-between items-center hover:text-[#575754] transition-colors py-1 list-none">
                 The Brand
                 <span className="text-[14px] inline-block rotate-180 group-open:rotate-0 transition-transform duration-300">^</span>
@@ -115,7 +115,7 @@ export default function Footer() {
                   <a key={link.text} href={link.href} className="hover:text-[#1A1A18] transition-colors">{link.text}</a>
                 ))}
               </div>
-            </details> */}
+            </details>
 
             <details className="group cursor-pointer">
               <summary className="flex justify-between items-center hover:text-[#575754] transition-colors py-1 list-none">
