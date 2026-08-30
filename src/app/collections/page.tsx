@@ -2,5 +2,5 @@
 import { redirect } from "next/navigation";
 
 export default function CollectionsIndex() {
-  redirect("/collections/woman");
+  redirect("/collections/man");
 }

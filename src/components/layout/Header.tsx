@@ -81,9 +81,8 @@ const primaryLinks = [
   { label: "Taylor Vade Unisex", href: "/collections/unisex", gender: null },
 ];
 const secondaryLinks = [
-  { label: "Our Story",  href: "/stores" },
   { label: "About Us",   href: "/about" },
-  { label: "Collection",  href: "/gift-cards" },
+  { label: "Collection",  href: "/collection" },
   // { label: "",  href: "/rewards" },
 ];
 

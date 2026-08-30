@@ -28,7 +28,7 @@ function Ul({ items }: { items: string[] }) {
     <ul className="space-y-1.5 ml-4">
       {items.map((item, i) => (
         <li key={i} className="flex items-start gap-2.5">
-          <span className="mt-[7px] w-1 h-1 rounded-full bg-[#6b5c4a] flex-shrink-0" />
+          <span className="mt-[7px] w-1 h-1 rounded-full bg-[#000000] flex-shrink-0" />
           <span>{item}</span>
         </li>
       ))}
@@ -60,7 +60,7 @@ export default function TermsPage() {
       <div className="max-w-5xl mx-auto px-5 md:px-14 py-12 md:py-16 md:bg-[#f7f5f2] md:shadow-[0_0_50px_rgba(58,46,34,0.06)]">
         <div className="mb-14">
           <p className="text-[11.5px] tracking-[0.3em] text-[#6b5c4a] uppercase mb-3">Legal</p>
-          <h1 className="text-[32px] md:text-[42px] text-[#3a2e22] leading-tight mb-4"
+          <h1 className="text-[32px] md:text-[42px] text-[#685746] leading-tight mb-4"
             style={{ fontFamily: "var(--font-script), cursive" }}>
             Terms of Service
           </h1>
