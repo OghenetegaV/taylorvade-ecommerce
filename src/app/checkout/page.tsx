@@ -4,7 +4,7 @@
 //   the fixed header height, same as CollectionPage)
 // - Paystack only
 // - Live Terminal Africa rates: fill address → "Get Shipping Rates" → pick courier
-// - White cards on #fafafa, larger type throughout
+// - White cards on #ffffff, larger type throughout
 // Flow: address → rates → pay (Paystack redirect) → /checkout/confirm verifies.
 
 "use client";
@@ -21,8 +21,8 @@ import { COUNTRY_CODE_NAMES } from "@/lib/shipping";
 type CartItem = {
   id: string;
   quantity: number;
-  product: { id: string; name: string; slug: string; type: string; basePrice: number; images: { url: string }[] };
-  variant: { id: string; colorLabel: string; size: string; sku: string; stockQuantity: number; priceOverride: number | null };
+  product: { id: string; name: string; slug: string; basePrice: number; images: { url: string }[] };
+  variant: { id: string; colorLabel: string; size: string; stockQuantity: number; priceOverride: number | null };
 };
 type Rate = {
   id: string; carrier: string; logo: string | null;
@@ -40,10 +40,63 @@ const fmt = (n: number) =>
   new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
 
 const inputCls =
-  "w-full border border-[#d9d9d5] bg-white px-4 py-3 text-[15.5px] text-[#111] font-serif rounded-[3px] " +
-  "outline-none focus:border-[#111] transition-colors placeholder:text-[#b5b5b0]";
+  "w-full border border-[#d9d9d9] bg-white px-4 py-3.5 text-[15px] text-[#1a1a1a] font-sans rounded-[4px] " +
+  "outline-none focus:border-[#1a1a1a] transition-colors placeholder:text-[#8f8f8a]";
 
-const labelCls = "block text-[12.5px] tracking-[0.1em] uppercase text-[#767672] font-serif mb-1.5";
+const labelCls = "block text-[13px] text-[#767676] font-sans mb-1.5";
+
+/* ── Floating-label fields (matches the reference's inline-label inputs) ── */
+function TextField({
+  label, value, onChange, type = "text", placeholder = " ", icon, className = "",
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  type?: string; placeholder?: string; icon?: React.ReactNode; className?: string;
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="peer w-full border border-[#d9d9d9] bg-white rounded-[4px] px-4 pt-6 pb-2 text-[15px]
+          text-[#1a1a1a] font-sans outline-none focus:border-[#1a1a1a] transition-colors"
+      />
+      <label className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#767676] text-[15px]
+        font-sans transition-all duration-150
+        peer-focus:top-3.5 peer-focus:translate-y-0 peer-focus:text-[11px]
+        peer-[:not(:placeholder-shown)]:top-3.5 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px]">
+        {label}
+      </label>
+      {icon && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8f8f8a]">{icon}</span>}
+    </div>
+  );
+}
+
+function SelectField({
+  label, value, options, onChange, loading, className = "",
+}: {
+  label: string; value: string; options: { name: string; code: string }[];
+  onChange: (v: string) => void; loading?: boolean; className?: string;
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="peer w-full appearance-none border border-[#d9d9d9] bg-white rounded-[4px] px-4 pt-6 pb-2 text-[15px]
+          text-[#1a1a1a] font-sans outline-none focus:border-[#1a1a1a] transition-colors"
+      >
+        <option value="" disabled hidden>{" "}</option>
+        {options.map(o => <option key={o.code || o.name} value={o.code || o.name}>{o.name}</option>)}
+      </select>
+      <label className="pointer-events-none absolute left-4 top-3.5 text-[11px] text-[#767676] font-sans">
+        {loading ? "Loading…" : label}
+      </label>
+      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#767676] text-[11px]">▾</span>
+    </div>
+  );
+}
 
 /* ── Page ──────────────────────────────────────────────────────── */
 export default function CheckoutPage() {
@@ -53,6 +106,7 @@ export default function CheckoutPage() {
   const [authState, setAuthState] = useState<"loading" | "guest" | "authed">("loading");
   const [email, setEmail]         = useState("");
   const [items, setItems]         = useState<CartItem[]>([]);
+  const [cartBusy, setCartBusy]   = useState<string | null>(null);
   const [upsellBusy, setUpsellBusy] = useState<string | null>(null);
   const upsellScrollRef = useRef<HTMLDivElement>(null);
   const [cartLoaded, setCartLoaded] = useState(false);
@@ -302,6 +356,26 @@ export default function CheckoutPage() {
     setDiscountError(null);
   }
 
+  /* ── Cart editing (same endpoints as CartSidebar) ────────────── */
+  async function updateQty(cartItemId: string, quantity: number) {
+    setCartBusy(cartItemId);
+    await fetch("/api/cart", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cartItemId, quantity }),
+    });
+    await fetchCart();
+    setRates([]); setSelectedRate(null); // parcel changed → rates stale
+    setCartBusy(null);
+  }
+  async function removeItem(cartItemId: string) {
+    setCartBusy(cartItemId);
+    await fetch(`/api/cart?id=${cartItemId}`, { method: "DELETE" });
+    await fetchCart();
+    setRates([]); setSelectedRate(null);
+    setCartBusy(null);
+  }
+
   // A single-variant upsell can be added in one tap; anything with a real
   // size/colour choice sends the shopper to the product page instead.
   function singleVariant(p: Upsell) {
@@ -394,8 +468,8 @@ export default function CheckoutPage() {
   /* ── Gates ───────────────────────────────────────────────────── */
   if (authState === "loading" || !cartLoaded) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center font-serif">
-        <p className="text-[13.5px] tracking-[0.25em] uppercase text-[#8f8f8a]">Loading…</p>
+      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center font-sans">
+        <p className="text-[14px] text-[#8f8f8a]">Loading…</p>
       </div>
     );
   }
@@ -415,37 +489,37 @@ export default function CheckoutPage() {
 
   /* ── Layout ──────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#fafafa] font-serif">
+    <div className="min-h-screen bg-white font-sans">
       {/* Spacer for the main fixed Header */}
       <div className="h-[76px] md:h-[88px]" />
 
-      <div className="max-w-6xl mx-auto px-5 md:px-8 pt-8 md:pt-12 pb-16">
-        {/* Page title */}
-        <div className="mb-8 md:mb-10">
-          <h1 className="text-[26px] md:text-[32px] text-[#111]"
-            style={{ fontFamily: "var(--font-script), cursive" }}>
-            Checkout
-          </h1>
-          <p className="text-[14.5px] text-[#767672] mt-1">
-            Delivery within Nigeria · Secure payment by Paystack
-          </p>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr]">
 
-        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-12">
+        {/* ══ LEFT — form (white) ══════════════════════════════════════ */}
+        <div className="px-5 md:px-10 lg:px-14 pt-8 md:pt-12 pb-16">
+          <div className="max-w-[560px] space-y-0">
 
-          {/* ══ LEFT — form ══════════════════════════════════════ */}
-          <div className="space-y-6 min-w-0">
+            {/* Page title */}
+            <div className="mb-8">
+              <h1 className="text-[22px] font-semibold text-[#1a1a1a] font-sans">Checkout</h1>
+              <p className="text-[14px] text-[#767676] mt-1">
+                Delivery within Nigeria · Secure payment by Paystack
+              </p>
+            </div>
 
             {error && (
-              <div className="px-5 py-4 border border-[#111] rounded-[3px] bg-white text-[15px] text-[#111]">
+              <div className="px-5 py-4 border border-[#1a1a1a] rounded-[4px] bg-white text-[15px] text-[#1a1a1a] mb-6">
                 {error}
               </div>
             )}
 
+            <div className="space-y-8">
+
+
             {/* 1 · Contact */}
             <Card title="Contact"
               action={authState === "guest" && (
-                <Link href="/login?next=/checkout" className="text-[13.5px] text-[#111] underline underline-offset-2 hover:opacity-60 transition-opacity">
+                <Link href="/login?next=/checkout" className="text-[13.5px] text-[#1a1a1a] underline underline-offset-2 hover:opacity-60 transition-opacity">
                   Sign in
                 </Link>
               )}>
@@ -544,9 +618,9 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={fetchRates}
                 disabled={!addressComplete || ratesLoading}
-                className="mt-5 w-full border border-[#111] rounded-[3px] bg-white text-[#111] text-[13.5px]
-                  tracking-[0.2em] uppercase py-4 hover:bg-[#111] hover:text-white
-                  transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#111]"
+                className="mt-5 w-full border border-[#1a1a1a] rounded-[4px] bg-white text-[#1a1a1a] text-[14px] font-medium
+                  py-3.5 hover:bg-[#1a1a1a] hover:text-white
+                  transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#1a1a1a]"
               >
                 {ratesLoading ? "Fetching couriers…" : "Get Shipping Rates"}
               </button>
@@ -560,9 +634,9 @@ export default function CheckoutPage() {
             {/* 3 · Shipping method */}
             <Card title="Shipping Method">
               {ratesLoading ? (
-                <p className="text-[15px] text-[#767672] py-2">Contacting couriers…</p>
+                <p className="text-[15px] text-[#767676] py-2">Contacting couriers…</p>
               ) : rates.length === 0 ? (
-                <p className="text-[15px] text-[#767672] py-2">
+                <p className="text-[15px] text-[#767676] py-2">
                   {ratesError ?? "Enter your delivery address above to see available shipping methods."}
                 </p>
               ) : (
@@ -571,25 +645,25 @@ export default function CheckoutPage() {
                     const selected = selectedRate?.id === rate.id;
                     return (
                       <button key={rate.id} type="button" onClick={() => selectRate(rate)}
-                        className={`w-full flex items-center justify-between gap-4 px-5 py-4 border rounded-[3px] text-left transition-colors ${
-                          selected ? "border-[#111] bg-[#fbfbfa]" : "border-[#d4d4d0] bg-white hover:border-[#8f8f8a]"
+                        className={`w-full flex items-center justify-between gap-4 px-5 py-4 border rounded-[4px] text-left transition-colors ${
+                          selected ? "border-[#1a1a1a] bg-[#f2f2f0]" : "border-[#d9d9d9] bg-white hover:border-[#8f8f8a]"
                         }`}>
                         <span className="flex items-center gap-4 min-w-0">
                           <span className={`w-[16px] h-[16px] rounded-full border flex-shrink-0 ${
-                            selected ? "border-[#111] bg-[#111] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
+                            selected ? "border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
                           }`} />
                           {rate.logo && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={rate.logo} alt={rate.carrier} className="h-6 w-auto flex-shrink-0" />
                           )}
                           <span className="min-w-0">
-                            <span className="block text-[15.5px] text-[#111] truncate">{rate.carrier}</span>
+                            <span className="block text-[15.5px] text-[#1a1a1a] truncate">{rate.carrier}</span>
                             {rate.deliveryTime && (
-                              <span className="block text-[13.5px] text-[#767672] mt-0.5">{rate.deliveryTime}</span>
+                              <span className="block text-[13.5px] text-[#767676] mt-0.5">{rate.deliveryTime}</span>
                             )}
                           </span>
                         </span>
-                        <span className="text-[15.5px] text-[#111] flex-shrink-0">{fmt(rate.amount)}</span>
+                        <span className="text-[15.5px] text-[#1a1a1a] flex-shrink-0">{fmt(rate.amount)}</span>
                       </button>
                     );
                   })}
@@ -607,11 +681,11 @@ export default function CheckoutPage() {
               <Card title="Selected for You">
                 <div className="flex items-center gap-4 mb-5">
                   <div className="flex-1">
-                    <div className="h-[3px] bg-[#e5e5e2] overflow-hidden rounded-full">
-                      <div className="h-full bg-[#111] transition-all duration-500"
+                    <div className="h-[3px] bg-[#ececec] overflow-hidden rounded-full">
+                      <div className="h-full bg-[#1a1a1a] transition-all duration-500"
                         style={{ width: `${Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100)}%` }} />
                     </div>
-                    <p className="text-[13px] text-[#111] font-serif mt-2.5">
+                    <p className="text-[13px] text-[#1a1a1a] font-sans mt-2.5">
                       {subtotal >= FREE_DELIVERY_THRESHOLD
                         ? "You've unlocked free delivery!"
                         : `Free delivery is ${fmt(FREE_DELIVERY_THRESHOLD - subtotal)} away!`}
@@ -620,12 +694,12 @@ export default function CheckoutPage() {
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button type="button" aria-label="Scroll left"
                       onClick={() => upsellScrollRef.current?.scrollBy({ left: -160, behavior: "smooth" })}
-                      className="w-8 h-8 flex items-center justify-center border border-[#d4d4d0] rounded-[3px] hover:border-[#111] transition-colors">
+                      className="w-8 h-8 flex items-center justify-center border border-[#d9d9d9] rounded-[4px] hover:border-[#1a1a1a] transition-colors">
                       ←
                     </button>
                     <button type="button" aria-label="Scroll right"
                       onClick={() => upsellScrollRef.current?.scrollBy({ left: 160, behavior: "smooth" })}
-                      className="w-8 h-8 flex items-center justify-center border border-[#d4d4d0] rounded-[3px] hover:border-[#111] transition-colors">
+                      className="w-8 h-8 flex items-center justify-center border border-[#d9d9d9] rounded-[4px] hover:border-[#1a1a1a] transition-colors">
                       →
                     </button>
                   </div>
@@ -640,23 +714,23 @@ export default function CheckoutPage() {
                     return (
                       <div key={p.id} className="flex-shrink-0 w-[150px]">
                         <Link href={`/products/${p.slug}`} className="group block">
-                          <div className="relative aspect-[3/4] rounded-[3px] bg-[#f5f5f4] overflow-hidden">
+                          <div className="relative aspect-[3/4] rounded-[4px] bg-[#f5f5f4] overflow-hidden">
                             {img && <Image src={img} alt={p.name} fill
                               className="object-cover object-top group-hover:scale-[1.03] transition-transform duration-500" sizes="150px" />}
                           </div>
-                          <p className="text-[13.5px] text-[#111] mt-2 truncate">{p.name}</p>
-                          <p className="text-[13px] text-[#767672]">{fmt(Number(p.basePrice))}</p>
+                          <p className="text-[13.5px] text-[#1a1a1a] mt-2 truncate">{p.name}</p>
+                          <p className="text-[13px] text-[#767676]">{fmt(Number(p.basePrice))}</p>
                         </Link>
                         {variant ? (
                           <button type="button" onClick={() => addUpsell(p)} disabled={busy}
-                            className="mt-2 w-full bg-[#111] text-white text-[11px] tracking-[0.14em] uppercase
-                              font-serif py-2.5 hover:bg-black transition-colors disabled:opacity-50">
+                            className="mt-2 w-full bg-[#1a1a1a] text-white text-[13px] font-medium rounded-[4px]
+                              font-sans py-2.5 hover:bg-black transition-colors disabled:opacity-50">
                             {busy ? "Adding…" : "Add"}
                           </button>
                         ) : (
                           <Link href={`/products/${p.slug}`}
-                            className="mt-2 block w-full text-center bg-[#111] text-white text-[11px] tracking-[0.14em] uppercase
-                              font-serif py-2.5 hover:bg-black transition-colors">
+                            className="mt-2 block w-full text-center bg-[#1a1a1a] text-white text-[13px] font-medium rounded-[4px]
+                              font-sans py-2.5 hover:bg-black transition-colors">
                             Select
                           </Link>
                         )}
@@ -670,16 +744,16 @@ export default function CheckoutPage() {
             {/* 4 · Payment */}
             <Card title="Payment">
               <p className="text-[13.5px] text-[#8f8f8a] mb-4">All transactions are secure and encrypted.</p>
-              <div className="border border-[#111] rounded-[3px] overflow-hidden">
-                <div className="flex items-center gap-3 px-5 py-4 bg-[#fbfbfa]">
-                  <span className="w-[16px] h-[16px] rounded-full border border-[#111] bg-[#111]
+              <div className="border border-[#1a1a1a] rounded-[4px] overflow-hidden">
+                <div className="flex items-center gap-3 px-5 py-4 bg-[#f2f2f0]">
+                  <span className="w-[16px] h-[16px] rounded-full border border-[#1a1a1a] bg-[#1a1a1a]
                     shadow-[inset_0_0_0_3px_#fff] flex-shrink-0" />
-                  <p className="text-[15.5px] text-[#111]">Paystack — Secure Checkout</p>
-                  <span className="ml-auto text-[12.5px] tracking-[0.1em] uppercase text-[#767672]">
+                  <p className="text-[15.5px] text-[#1a1a1a]">Paystack — Secure Checkout</p>
+                  <span className="ml-auto text-[12.5px] tracking-[0.1em] uppercase text-[#767676]">
                     Card · Transfer · USSD · Opay
                   </span>
                 </div>
-                <p className="px-5 py-3 text-[14px] text-[#8f8f8a] border-t border-[#e5e5e2]">
+                <p className="px-5 py-3 text-[14px] text-[#8f8f8a] border-t border-[#ececec]">
                   You&apos;ll be redirected to Paystack&apos;s secure page to complete your purchase.
                   We never see or store your card details.
                 </p>
@@ -690,27 +764,27 @@ export default function CheckoutPage() {
             <Card title="Billing Address">
               <div className="space-y-3">
                 <button type="button" onClick={() => setBillingSameAsShipping(true)}
-                  className={`w-full flex items-center gap-4 px-5 py-4 border rounded-[3px] text-left transition-colors ${
-                    billingSameAsShipping ? "border-[#111] bg-[#fbfbfa]" : "border-[#d4d4d0] bg-white hover:border-[#8f8f8a]"
+                  className={`w-full flex items-center gap-4 px-5 py-4 border rounded-[4px] text-left transition-colors ${
+                    billingSameAsShipping ? "border-[#1a1a1a] bg-[#f2f2f0]" : "border-[#d9d9d9] bg-white hover:border-[#8f8f8a]"
                   }`}>
                   <span className={`w-[16px] h-[16px] rounded-full border flex-shrink-0 ${
-                    billingSameAsShipping ? "border-[#111] bg-[#111] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
+                    billingSameAsShipping ? "border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
                   }`} />
-                  <span className="text-[15.5px] text-[#111]">Same as shipping address</span>
+                  <span className="text-[15.5px] text-[#1a1a1a]">Same as shipping address</span>
                 </button>
                 <button type="button" onClick={() => setBillingSameAsShipping(false)}
-                  className={`w-full flex items-center gap-4 px-5 py-4 border rounded-[3px] text-left transition-colors ${
-                    !billingSameAsShipping ? "border-[#111] bg-[#fbfbfa]" : "border-[#d4d4d0] bg-white hover:border-[#8f8f8a]"
+                  className={`w-full flex items-center gap-4 px-5 py-4 border rounded-[4px] text-left transition-colors ${
+                    !billingSameAsShipping ? "border-[#1a1a1a] bg-[#f2f2f0]" : "border-[#d9d9d9] bg-white hover:border-[#8f8f8a]"
                   }`}>
                   <span className={`w-[16px] h-[16px] rounded-full border flex-shrink-0 ${
-                    !billingSameAsShipping ? "border-[#111] bg-[#111] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
+                    !billingSameAsShipping ? "border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
                   }`} />
-                  <span className="text-[15.5px] text-[#111]">Use a different billing address</span>
+                  <span className="text-[15.5px] text-[#1a1a1a]">Use a different billing address</span>
                 </button>
               </div>
 
               {!billingSameAsShipping && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-5 border-t border-[#e5e5e2]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-5 border-t border-[#ececec]">
                   <div className="md:col-span-2">
                     <label className={labelCls}>Country *</label>
                     <select value={billingCountryCode}
@@ -763,38 +837,58 @@ export default function CheckoutPage() {
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
                 placeholder="Delivery instructions, gift note…" className={`${inputCls} resize-none`} />
             </Card>
+            </div>
+          </div>
           </div>
 
-          {/* ══ RIGHT — summary ══════════════════════════════════ */}
-          <aside className="bg-[#eeeeee] lg:h-full">
-            <div className="lg:sticky lg:top-[104px] p-6">
+          {/* ══ RIGHT — summary (light-grey panel) ══════════════════════════════════ */}
+          <aside className="bg-[#f7f7f5] px-5 md:px-8 pt-8 md:pt-12 pb-16 lg:min-h-[calc(100vh-88px)]">
+            <div className="lg:sticky lg:top-[104px] max-w-[380px] space-y-6">
+            <div className="p-0">
+              <p className="text-[15px] font-semibold text-[#1a1a1a] font-sans mb-5">
+                Order Summary ({items.length})
+              </p>
+
               <div className="space-y-5 max-h-[360px] overflow-y-auto pr-1">
                 {items.map(item => {
                   const price = Number(item.variant.priceOverride ?? item.product.basePrice);
+                  const busy = cartBusy === item.id;
                   return (
                     <div key={item.id} className="flex gap-4">
                       <Link href={`/products/${item.product.slug}`}
-                        className="relative w-[56px] h-[74px] flex-shrink-0 rounded-[3px] bg-[#e8e8e6] overflow-hidden">
+                        className="relative w-[64px] h-[80px] flex-shrink-0 rounded-[4px] bg-[#f0f0ee] overflow-hidden">
                         {item.product.images[0] && (
                           <Image src={item.product.images[0].url} alt={item.product.name}
-                            fill className="object-cover object-top" sizes="56px" />
+                            fill className="object-cover object-top" sizes="64px" />
                         )}
-                        <span className="absolute -top-1.5 -left-1.5 w-[18px] h-[18px] rounded-full bg-[#111]
-                          text-white text-[10px] flex items-center justify-center leading-none">
+                        <span className="absolute -top-1.5 -right-1.5 w-[19px] h-[19px] rounded-full bg-[#1a1a1a] text-white
+                          text-[11px] font-medium flex items-center justify-center">
                           {item.quantity}
                         </span>
                       </Link>
-                      <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[14px] text-[#666666] leading-snug">
-                            <span className="font-semibold">{item.product.name}</span>
-                            {item.product.type && <> — {item.product.type}</>} — {item.variant.colorLabel}
-                          </p>
-                          <p className="text-[12.5px] text-[#666666] mt-1">
-                            {item.variant.size} / {item.variant.colorLabel} / {item.variant.sku}
-                          </p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[15px] text-[#1a1a1a] leading-snug truncate">{item.product.name}</p>
+                        <p className="text-[13.5px] text-[#767676] mt-0.5">
+                          {item.variant.colorLabel} · {item.variant.size}
+                        </p>
+                        <div className="flex items-center justify-between mt-2.5">
+                          <div className="flex items-center border border-[#d9d9d9] rounded-[4px] overflow-hidden">
+                            <button disabled={busy || item.quantity <= 1}
+                              onClick={() => updateQty(item.id, item.quantity - 1)}
+                              className="w-7 h-7 text-[15.5px] text-[#1a1a1a] disabled:opacity-30">−</button>
+                            <span className="w-7 text-center text-[14px]">{busy ? "…" : item.quantity}</span>
+                            <button disabled={busy || item.quantity >= item.variant.stockQuantity}
+                              onClick={() => updateQty(item.id, item.quantity + 1)}
+                              className="w-7 h-7 text-[15.5px] text-[#1a1a1a] disabled:opacity-30">+</button>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[14.5px] text-[#1a1a1a]">{fmt(price * item.quantity)}</span>
+                            <button disabled={busy} onClick={() => removeItem(item.id)}
+                              className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a] disabled:opacity-30">
+                              Remove
+                            </button>
+                          </div>
                         </div>
-                        <span className="text-[14px] text-[#666666] flex-shrink-0">{fmt(price * item.quantity)}</span>
                       </div>
                     </div>
                   );
@@ -802,25 +896,25 @@ export default function CheckoutPage() {
               </div>
 
               {/* Discount code */}
-              <div className="border-t border-[#d9d9d5] mt-6 pt-5">
+              <div className="border-t border-[#ececec] mt-6 pt-5">
                 {appliedDiscount ? (
-                  <div className="flex items-center justify-between px-3 py-2.5 border border-[#999999] rounded-[3px] bg-[#e5e5e5] text-[14px]">
-                    <span className="text-[#666666]">Code <b>{appliedDiscount.code}</b> applied</span>
+                  <div className="flex items-center justify-between px-3 py-2.5 border border-[#1a1a1a] rounded-[4px] bg-[#f2f2f0] text-[14px]">
+                    <span className="text-[#1a1a1a]">Code <b>{appliedDiscount.code}</b> applied</span>
                     <button type="button" onClick={removeDiscount}
-                      className="text-[12.5px] text-[#666666] underline underline-offset-2 hover:text-[#111]">
+                      className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a]">
                       Remove
                     </button>
                   </div>
                 ) : (
                   <div className="flex gap-2">
                     <input value={discountInput} onChange={e => setDiscountInput(e.target.value)}
-                      placeholder="Discount code"
-                      className="flex-1 border border-[#d9d9d5] rounded-[3px] bg-white px-3.5 py-2.5 text-[14px] text-[#666666]
-                        outline-none focus:border-[#111] transition-colors placeholder:text-[#999999]" />
+                      placeholder="Discount code or gift card"
+                      className="flex-1 border border-[#d9d9d9] rounded-[4px] bg-white px-3.5 py-2.5 text-[14px] text-[#1a1a1a]
+                        outline-none focus:border-[#1a1a1a] transition-colors placeholder:text-[#8f8f8a]" />
                     <button type="button" onClick={applyDiscount}
                       disabled={applyingDiscount || !discountInput.trim()}
-                      className="px-4 border border-[#999999] rounded-[3px] text-[12.5px] tracking-[0.14em] uppercase
-                        text-[#666666] hover:bg-[#111] hover:text-white hover:border-[#111] transition-colors disabled:opacity-40">
+                      className="px-5 rounded-[4px] text-[14px] font-medium bg-[#ececec] text-[#8f8f8a]
+                        enabled:bg-[#1a1a1a] enabled:text-white transition-colors disabled:cursor-not-allowed">
                       {applyingDiscount ? "…" : "Apply"}
                     </button>
                   </div>
@@ -833,12 +927,12 @@ export default function CheckoutPage() {
                 {appliedDiscount && (
                   <Row label="Discount" value={`− ${fmt(discountAmount)}`} />
                 )}
-                <Row label="Shipping"
-                  value={selectedRate ? fmt(shippingFee) : "Enter shipping address"}
-                  muted={!selectedRate} />
-                <div className="flex items-center justify-between pt-3 border-t border-[#d9d9d5] mt-3 mb-1">
-                  <span className="text-[14.5px] font-semibold text-[#666666]">Total</span>
-                  <span className="text-[20px] text-[#666666]">{fmt(total)}</span>
+                <Row label="Delivery"
+                  value={selectedRate ? fmt(shippingFee) : "—"}
+                  hint={!selectedRate ? "Select a courier" : undefined} />
+                <div className="flex items-center justify-between pt-3 border-t border-[#ececec] mt-3 mb-1">
+                  <span className="text-[14.5px] font-semibold text-[#1a1a1a]">Total</span>
+                  <span className="text-[20px] text-[#1a1a1a]">{fmt(total)}</span>
                 </div>
               </div>
 
@@ -847,31 +941,31 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex items-center justify-center gap-4 mt-4">
-                <Link href="/returns" className="text-[12.5px] text-[#666666] underline underline-offset-2 hover:text-[#111]">
+                <Link href="/returns" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a]">
                   Refund Policy
                 </Link>
-                <Link href="/shipping-policy" className="text-[12.5px] text-[#666666] underline underline-offset-2 hover:text-[#111]">
+                <Link href="/shipping-policy" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a]">
                   Shipping
                 </Link>
-                <Link href="/terms" className="text-[12.5px] text-[#666666] underline underline-offset-2 hover:text-[#111]">
+                <Link href="/terms" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a]">
                   Terms of Service
                 </Link>
               </div>
+            </div>
             </div>
 
           </aside>
         </div>
       </div>
-    </div>
   );
 }
 
 /* ── Small pieces ──────────────────────────────────────────────── */
 function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="bg-white border border-[#e5e5e2] rounded-[3px] p-6 md:p-7">
+    <section className="pb-8 border-b border-[#ececec] last:border-b-0">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-[16px] font-semibold text-[#111]">{title}</h2>
+        <h2 className="text-[19px] font-semibold text-[#1a1a1a] font-sans">{title}</h2>
         {action}
       </div>
       {children}
@@ -879,12 +973,12 @@ function Card({ title, action, children }: { title: string; action?: React.React
   );
 }
 
-function Row({ label, value, hint, muted }: { label: string; value: string; hint?: string; muted?: boolean }) {
+function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[14.5px] text-[#666666]">{label}</span>
-      <span className={`text-[15px] ${muted ? "text-[#999999]" : "text-[#666666]"}`}>
-        {value}{hint && <span className="text-[12.5px] text-[#999999] ml-2">{hint}</span>}
+      <span className="text-[14.5px] text-[#767676]">{label}</span>
+      <span className="text-[15px] text-[#1a1a1a]">
+        {value}{hint && <span className="text-[12.5px] text-[#b5b5b0] ml-2">{hint}</span>}
       </span>
     </div>
   );
@@ -895,7 +989,7 @@ function PayButton({ paying, ready, total, onClick }: {
 }) {
   return (
     <button onClick={onClick} disabled={paying || !ready}
-      className="w-full bg-[#111] text-white text-[13.5px] tracking-[0.25em] uppercase py-4 rounded-[3px]
+      className="w-full bg-[#1a1a1a] text-white text-[15px] font-medium py-3.5 rounded-[4px]
         hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
       {paying ? "Redirecting to Paystack…" : ready ? `Pay ${fmt(total)}` : "Select delivery to continue"}
     </button>
@@ -906,16 +1000,16 @@ function Gate({ title, body, cta }: {
   title: string; body: string; cta: { label: string; onClick: () => void };
 }) {
   return (
-    <div className="min-h-screen bg-[#fafafa] font-serif">
+    <div className="min-h-screen bg-[#ffffff] font-sans">
       <div className="h-[76px] md:h-[88px]" />
       <div className="flex items-center justify-center px-6 py-28">
         <div className="text-center max-w-sm">
-          <p className="text-[32px] text-[#111] mb-3" style={{ fontFamily: "var(--font-script), cursive" }}>
+          <p className="text-[22px] font-semibold text-[#1a1a1a] mb-3 font-sans">
             {title}
           </p>
-          <p className="text-[15px] text-[#767672] leading-relaxed mb-7">{body}</p>
+          <p className="text-[15px] text-[#767676] leading-relaxed mb-7">{body}</p>
           <button onClick={cta.onClick}
-            className="bg-[#111] text-white text-[13.5px] tracking-[0.22em] uppercase px-8 py-4 hover:bg-black transition-colors">
+            className="bg-[#1a1a1a] text-white text-[14px] font-medium rounded-[4px] px-8 py-3.5 hover:bg-black transition-colors">
             {cta.label}
           </button>
         </div>
