@@ -4,7 +4,7 @@ import { useState } from "react";
 import { InstagramIcon, FacebookIcon, XIcon, TikTokIcon } from "@/components/icons/SocialIcons";
 
 const BRAND_LINKS = [
-  { text: "About Us", href: "#" },
+  { text: "About Us", href: "/about" },
 ];
 
 const CUSTOMER_LINKS = [
