@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { X, ShoppingBag } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { CURRENCY_CHANGE_EVENT } from "@/lib/currency";
+import { CURRENCY_CHANGE_EVENT, formatConverted } from "@/lib/currency";
+import { FREE_SHIPPING_THRESHOLD_NGN } from "@/lib/shipping";
 import { InstagramIcon, XIcon as XSocialIcon, WhatsAppIcon } from "@/components/icons/SocialIcons";
 import CartSidebar from "./CartSidebar";
 import SearchOverlay from "./SearchOverlay";
@@ -75,6 +76,138 @@ const NigeriaFlag = () => (
   </svg>
 );
 
+// Flag shown in the header mirrors whatever the shopper picks in the "Ship
+// To" dropdown, so every entry in ALL_COUNTRIES needs an ISO 3166-1 alpha-2
+// code to look up its flag image from.
+const COUNTRY_NAME_TO_CODE: Record<string, string> = {
+  Afghanistan: "AF", Aland: "AX", Albania: "AL", Algeria: "DZ", "American Samoa": "AS",
+  Andorra: "AD", Angola: "AO", Anguilla: "AI", Antarctica: "AQ", "Antigua and Barbuda": "AG",
+  Argentina: "AR", Armenia: "AM", Aruba: "AW", "Ascension Island": "AC", Australia: "AU",
+  Austria: "AT", Azerbaijan: "AZ", Bahamas: "BS", Bahrain: "BH", Bangladesh: "BD",
+  Barbados: "BB", Belarus: "BY", Belgium: "BE", Belize: "BZ", Benin: "BJ",
+  Bermuda: "BM", Bhutan: "BT", Bolivia: "BO", Bonaire: "BQ", "Bosnia and Herzegovina": "BA",
+  Botswana: "BW", "Bouvet Island": "BV", Brazil: "BR", "British Indian Ocean Territory": "IO",
+  "British Virgin Islands": "VG", Brunei: "BN", Bulgaria: "BG", "Burkina Faso": "BF",
+  Burundi: "BI", Cambodia: "KH", Cameroon: "CM", Canada: "CA", "Cape Verde": "CV",
+  "Cayman Islands": "KY", "Central African Republic": "CF", Chad: "TD", Chile: "CL",
+  China: "CN", "Christmas Island": "CX", "Cocos (Keeling) Islands": "CC", Colombia: "CO",
+  Comoros: "KM", "Cook Islands": "CK", "Costa Rica": "CR", Croatia: "HR", Cuba: "CU",
+  Curacao: "CW", Cyprus: "CY", "Czech Republic": "CZ", "Democratic Republic of the Congo": "CD",
+  Denmark: "DK", Djibouti: "DJ", Dominica: "DM", "Dominican Republic": "DO", "East Timor": "TL",
+  Ecuador: "EC", Egypt: "EG", "El Salvador": "SV", "Equatorial Guinea": "GQ", Eritrea: "ER",
+  Estonia: "EE", Eswatini: "SZ", Ethiopia: "ET", "Falkland Islands": "FK", "Faroe Islands": "FO",
+  Fiji: "FJ", Finland: "FI", France: "FR", "French Guiana": "GF", "French Polynesia": "PF",
+  "French Southern Territories": "TF", Gabon: "GA", Gambia: "GM", Georgia: "GE", Germany: "DE",
+  Ghana: "GH", Gibraltar: "GI", Greece: "GR", Greenland: "GL", Grenada: "GD",
+  Guadeloupe: "GP", Guam: "GU", Guatemala: "GT", Guernsey: "GG", Guinea: "GN",
+  "Guinea-Bissau": "GW", Guyana: "GY", Haiti: "HT", "Heard Island and McDonald Islands": "HM",
+  Honduras: "HN", "Hong Kong": "HK", Hungary: "HU", Iceland: "IS", India: "IN",
+  Indonesia: "ID", Iran: "IR", Iraq: "IQ", Ireland: "IE", "Isle of Man": "IM",
+  Israel: "IL", Italy: "IT", "Ivory Coast": "CI", Jamaica: "JM", Japan: "JP",
+  Jersey: "JE", Jordan: "JO", Kazakhstan: "KZ", Kenya: "KE", Kiribati: "KI",
+  Kosovo: "XK", Kuwait: "KW", Kyrgyzstan: "KG", Laos: "LA", Latvia: "LV",
+  Lebanon: "LB", Lesotho: "LS", Liberia: "LR", Libya: "LY", Liechtenstein: "LI",
+  Lithuania: "LT", Luxembourg: "LU", Macao: "MO", Madagascar: "MG", Malawi: "MW",
+  Malaysia: "MY", Maldives: "MV", Mali: "ML", Malta: "MT", "Marshall Islands": "MH",
+  Martinique: "MQ", Mauritania: "MR", Mauritius: "MU", Mayotte: "YT", Mexico: "MX",
+  Micronesia: "FM", Moldova: "MD", Monaco: "MC", Mongolia: "MN", Montenegro: "ME",
+  Montserrat: "MS", Morocco: "MA", Mozambique: "MZ", "Myanmar (Burma)": "MM", Namibia: "NA",
+  Nauru: "NR", Nepal: "NP", Netherlands: "NL", "New Caledonia": "NC", "New Zealand": "NZ",
+  Nicaragua: "NI", Niger: "NE", Nigeria: "NG", Niue: "NU", "Norfolk Island": "NF",
+  "North Korea": "KP", "North Macedonia": "MK", "Northern Mariana Islands": "MP", Norway: "NO",
+  Oman: "OM", Pakistan: "PK", Palau: "PW", Palestine: "PS", Panama: "PA",
+  "Papua New Guinea": "PG", Paraguay: "PY", Peru: "PE", Philippines: "PH", "Pitcairn Islands": "PN",
+  Poland: "PL", Portugal: "PT", "Puerto Rico": "PR", Qatar: "QA", "Republic of the Congo": "CG",
+  Reunion: "RE", Romania: "RO", Russia: "RU", Rwanda: "RW", "Saint Barthelemy": "BL",
+  "Saint Helena": "SH", "Saint Kitts and Nevis": "KN", "Saint Lucia": "LC", "Saint Martin": "MF",
+  "Saint Pierre and Miquelon": "PM", "Saint Vincent and the Grenadines": "VC", Samoa: "WS",
+  "San Marino": "SM", "Sao Tome and Principe": "ST", "Saudi Arabia": "SA", Senegal: "SN",
+  Serbia: "RS", Seychelles: "SC", "Sierra Leone": "SL", Singapore: "SG", "Sint Maarten": "SX",
+  Slovakia: "SK", Slovenia: "SI", "Solomon Islands": "SB", Somalia: "SO", "South Africa": "ZA",
+  "South Georgia and the South Sandwich Islands": "GS", "South Korea": "KR", "South Sudan": "SS",
+  Spain: "ES", "Sri Lanka": "LK", Sudan: "SD", Suriname: "SR", "Svalbard and Jan Mayen": "SJ",
+  Sweden: "SE", Switzerland: "CH", Syria: "SY", Taiwan: "TW", Tajikistan: "TJ",
+  Tanzania: "TZ", Thailand: "TH", Togo: "TG", Tokelau: "TK", Tonga: "TO",
+  "Trinidad and Tobago": "TT", "Tristan da Cunha": "TA", Tunisia: "TN", Turkmenistan: "TM",
+  "Turks and Caicos Islands": "TC", Tuvalu: "TV", Türkiye: "TR", "U.S. Minor Outlying Islands": "UM",
+  "U.S. Virgin Islands": "VI", Uganda: "UG", Ukraine: "UA", "United Arab Emirates": "AE",
+  "United Kingdom": "GB", "United States": "US", Uruguay: "UY", Uzbekistan: "UZ",
+  Vanuatu: "VU", "Vatican City": "VA", Venezuela: "VE", Vietnam: "VN", "Wallis and Futuna": "WF",
+  "Western Sahara": "EH", Yemen: "YE", Zambia: "ZM", Zimbabwe: "ZW",
+};
+
+// Picking a country suggests that country's currency, but the shopper can
+// still override it independently afterward via the currency select below.
+const COUNTRY_TO_CURRENCY: Record<string, string> = {
+  Afghanistan: "AFN", Aland: "EUR", Albania: "ALL", Algeria: "DZD", "American Samoa": "USD",
+  Andorra: "EUR", Angola: "AOA", Anguilla: "XCD", Antarctica: "USD", "Antigua and Barbuda": "XCD",
+  Argentina: "ARS", Armenia: "AMD", Aruba: "AWG", "Ascension Island": "SHP", Australia: "AUD",
+  Austria: "EUR", Azerbaijan: "AZN", Bahamas: "BSD", Bahrain: "BHD", Bangladesh: "BDT",
+  Barbados: "BBD", Belarus: "BYN", Belgium: "EUR", Belize: "BZD", Benin: "XOF",
+  Bermuda: "BMD", Bhutan: "BTN", Bolivia: "BOB", Bonaire: "USD", "Bosnia and Herzegovina": "BAM",
+  Botswana: "BWP", "Bouvet Island": "NOK", Brazil: "BRL", "British Indian Ocean Territory": "USD",
+  "British Virgin Islands": "USD", Brunei: "BND", Bulgaria: "EUR", "Burkina Faso": "XOF",
+  Burundi: "BIF", Cambodia: "KHR", Cameroon: "XAF", Canada: "CAD", "Cape Verde": "CVE",
+  "Cayman Islands": "KYD", "Central African Republic": "XAF", Chad: "XAF", Chile: "CLP",
+  China: "CNY", "Christmas Island": "AUD", "Cocos (Keeling) Islands": "AUD", Colombia: "COP",
+  Comoros: "KMF", "Cook Islands": "NZD", "Costa Rica": "CRC", Croatia: "EUR", Cuba: "CUP",
+  Curacao: "ANG", Cyprus: "EUR", "Czech Republic": "CZK", "Democratic Republic of the Congo": "CDF",
+  Denmark: "DKK", Djibouti: "DJF", Dominica: "XCD", "Dominican Republic": "DOP", "East Timor": "USD",
+  Ecuador: "USD", Egypt: "EGP", "El Salvador": "USD", "Equatorial Guinea": "XAF", Eritrea: "ERN",
+  Estonia: "EUR", Eswatini: "SZL", Ethiopia: "ETB", "Falkland Islands": "FKP", "Faroe Islands": "DKK",
+  Fiji: "FJD", Finland: "EUR", France: "EUR", "French Guiana": "EUR", "French Polynesia": "XPF",
+  "French Southern Territories": "EUR", Gabon: "XAF", Gambia: "GMD", Georgia: "GEL", Germany: "EUR",
+  Ghana: "GHS", Gibraltar: "GIP", Greece: "EUR", Greenland: "DKK", Grenada: "XCD",
+  Guadeloupe: "EUR", Guam: "USD", Guatemala: "GTQ", Guernsey: "GBP", Guinea: "GNF",
+  "Guinea-Bissau": "XOF", Guyana: "GYD", Haiti: "HTG", "Heard Island and McDonald Islands": "AUD",
+  Honduras: "HNL", "Hong Kong": "HKD", Hungary: "HUF", Iceland: "ISK", India: "INR",
+  Indonesia: "IDR", Iran: "IRR", Iraq: "IQD", Ireland: "EUR", "Isle of Man": "GBP",
+  Israel: "ILS", Italy: "EUR", "Ivory Coast": "XOF", Jamaica: "JMD", Japan: "JPY",
+  Jersey: "GBP", Jordan: "JOD", Kazakhstan: "KZT", Kenya: "KES", Kiribati: "AUD",
+  Kosovo: "EUR", Kuwait: "KWD", Kyrgyzstan: "KGS", Laos: "LAK", Latvia: "EUR",
+  Lebanon: "LBP", Lesotho: "LSL", Liberia: "LRD", Libya: "LYD", Liechtenstein: "CHF",
+  Lithuania: "EUR", Luxembourg: "EUR", Macao: "MOP", Madagascar: "MGA", Malawi: "MWK",
+  Malaysia: "MYR", Maldives: "MVR", Mali: "XOF", Malta: "EUR", "Marshall Islands": "USD",
+  Martinique: "EUR", Mauritania: "MRU", Mauritius: "MUR", Mayotte: "EUR", Mexico: "MXN",
+  Micronesia: "USD", Moldova: "MDL", Monaco: "EUR", Mongolia: "MNT", Montenegro: "EUR",
+  Montserrat: "XCD", Morocco: "MAD", Mozambique: "MZN", "Myanmar (Burma)": "MMK", Namibia: "NAD",
+  Nauru: "AUD", Nepal: "NPR", Netherlands: "EUR", "New Caledonia": "XPF", "New Zealand": "NZD",
+  Nicaragua: "NIO", Niger: "XOF", Nigeria: "NGN", Niue: "NZD", "Norfolk Island": "AUD",
+  "North Korea": "KPW", "North Macedonia": "MKD", "Northern Mariana Islands": "USD", Norway: "NOK",
+  Oman: "OMR", Pakistan: "PKR", Palau: "USD", Palestine: "ILS", Panama: "PAB",
+  "Papua New Guinea": "PGK", Paraguay: "PYG", Peru: "PEN", Philippines: "PHP", "Pitcairn Islands": "NZD",
+  Poland: "PLN", Portugal: "EUR", "Puerto Rico": "USD", Qatar: "QAR", "Republic of the Congo": "XAF",
+  Reunion: "EUR", Romania: "RON", Russia: "RUB", Rwanda: "RWF", "Saint Barthelemy": "EUR",
+  "Saint Helena": "SHP", "Saint Kitts and Nevis": "XCD", "Saint Lucia": "XCD", "Saint Martin": "EUR",
+  "Saint Pierre and Miquelon": "EUR", "Saint Vincent and the Grenadines": "XCD", Samoa: "WST",
+  "San Marino": "EUR", "Sao Tome and Principe": "STN", "Saudi Arabia": "SAR", Senegal: "XOF",
+  Serbia: "RSD", Seychelles: "SCR", "Sierra Leone": "SLL", Singapore: "SGD", "Sint Maarten": "ANG",
+  Slovakia: "EUR", Slovenia: "EUR", "Solomon Islands": "SBD", Somalia: "SOS", "South Africa": "ZAR",
+  "South Georgia and the South Sandwich Islands": "GBP", "South Korea": "KRW", "South Sudan": "SSP",
+  Spain: "EUR", "Sri Lanka": "LKR", Sudan: "SDG", Suriname: "SRD", "Svalbard and Jan Mayen": "NOK",
+  Sweden: "SEK", Switzerland: "CHF", Syria: "SYP", Taiwan: "TWD", Tajikistan: "TJS",
+  Tanzania: "TZS", Thailand: "THB", Togo: "XOF", Tokelau: "NZD", Tonga: "TOP",
+  "Trinidad and Tobago": "TTD", "Tristan da Cunha": "SHP", Tunisia: "TND", Turkmenistan: "TMT",
+  "Turks and Caicos Islands": "USD", Tuvalu: "AUD", Türkiye: "TRY", "U.S. Minor Outlying Islands": "USD",
+  "U.S. Virgin Islands": "USD", Uganda: "UGX", Ukraine: "UAH", "United Arab Emirates": "AED",
+  "United Kingdom": "GBP", "United States": "USD", Uruguay: "UYU", Uzbekistan: "UZS",
+  Vanuatu: "VUV", "Vatican City": "EUR", Venezuela: "VES", Vietnam: "VND", "Wallis and Futuna": "XPF",
+  "Western Sahara": "MAD", Yemen: "YER", Zambia: "ZMW", Zimbabwe: "USD",
+};
+
+const CountryFlag = ({ country, className }: { country: string; className?: string }) => {
+  const code = COUNTRY_NAME_TO_CODE[country];
+  if (!code) return <NigeriaFlag />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://flagcdn.com/${code.toLowerCase()}.svg`}
+      alt={country}
+      className={className ?? "w-full h-full object-cover"}
+    />
+  );
+};
+
 const primaryLinks = [
   { label: "Taylor Vade Woman",  href: "/collections/woman",  gender: "WOMEN" },
   { label: "Taylor Vade Man",    href: "/collections/man",    gender: "MEN" },
@@ -110,6 +243,7 @@ export default function Header() {
   const [search,     setSearch]     = useState("");
   const [country,    setCountry]    = useState("Nigeria");
   const [currency,   setCurrency]   = useState("NGN");
+  const [fxRates,    setFxRates]    = useState<Record<string, number> | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen,   setCartOpen]   = useState(false);
   const [cartTab,    setCartTab]    = useState<"basket" | "wishlist">("basket");
@@ -136,6 +270,12 @@ export default function Header() {
     const savedCurrency = localStorage.getItem("tv_currency");
     if (savedCountry)  setCountry(savedCountry);
     if (savedCurrency) setCurrency(savedCurrency);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/currency/rates").then(r => r.json()).then(d => {
+      if (d.success) setFxRates(d.data.rates);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -236,7 +376,7 @@ export default function Header() {
               className="w-[19px] h-[19px] md:w-[23px] md:h-[23px] rounded-full overflow-hidden flex-shrink-0"
               style={{ padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
             >
-              <NigeriaFlag />
+              <CountryFlag country={country} />
             </button>
           </div>
         </div>
@@ -352,7 +492,12 @@ export default function Header() {
 
             <p className="text-center text-[12.5px] tracking-[0.12em] text-[#3a2e22] mb-2 font-serif">Ship To:</p>
             <div className="relative mb-5">
-              <select value={country} onChange={e => setCountry(e.target.value)}
+              <select value={country} onChange={e => {
+                  const next = e.target.value;
+                  setCountry(next);
+                  const suggestedCurrency = COUNTRY_TO_CURRENCY[next];
+                  if (suggestedCurrency) setCurrency(suggestedCurrency);
+                }}
                 className="w-full border border-[#3a2e22] bg-[#FAF9F7] px-4 py-2.5
                   text-[12.5px] text-center tracking-[0.06em] text-[#3a2e22] font-serif
                   appearance-none outline-none cursor-pointer">
@@ -378,9 +523,9 @@ export default function Header() {
             </div>
 
             <div className="text-center text-[11.5px] tracking-[0.06em] text-[#3a2e22] leading-loose mb-6 font-serif">
-              <p>Free Delivery Over £150</p>
-              <p>£2.99 Fixed-Fee UK Postal Returns</p>
-              <p>Free In-Store Returns</p>
+              <p>Free Delivery Over {formatConverted(FREE_SHIPPING_THRESHOLD_NGN, currency, fxRates)}</p>
+              <p>Global Shipping Available</p>
+              <p>Secure International Checkouts</p>
             </div>
 
             <div className="text-center">

@@ -33,7 +33,7 @@ const SORT_OPTIONS = [
 const ALL_SIZES = ["XS","S","M","L","XL","XXL"];
 const FETCH_LIMIT = 60; // fetch generously; filters run client-side
 
-interface Props { title: string; gender: "WOMEN" | "MEN" | "UNISEX"; }
+interface Props { title: string; gender?: "WOMEN" | "MEN" | "UNISEX"; }
 
 export default function CollectionPage({ title, gender }: Props) {
   const searchParams = useSearchParams();
@@ -69,9 +69,10 @@ export default function CollectionPage({ title, gender }: Props) {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({
-      gender, sortBy: sort.sortBy, order: sort.order,
+      sortBy: sort.sortBy, order: sort.order,
       page: "1", limit: String(FETCH_LIMIT),
     });
+    if (gender) params.set("gender", gender);
     try {
       const res  = await fetch(`/api/products?${params}`);
       const data = await res.json();

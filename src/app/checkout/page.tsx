@@ -1,12 +1,3 @@
-// src/app/checkout/page.tsx
-// v2 — cleaner + more legible:
-// - Uses the MAIN site Header (no custom checkout header; spacer below matches
-//   the fixed header height, same as CollectionPage)
-// - Paystack only
-// - Live Terminal Africa rates: fill address → "Get Shipping Rates" → pick courier
-// - White cards on #ffffff, larger type throughout
-// Flow: address → rates → pay (Paystack redirect) → /checkout/confirm verifies.
-
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -17,205 +8,193 @@ import { sendGAEvent } from "@next/third-parties/google";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { COUNTRY_CODE_NAMES } from "@/lib/shipping";
 
-/* ── Types ─────────────────────────────────────────────────────── */
 type CartItem = {
   id: string;
   quantity: number;
   product: { id: string; name: string; slug: string; basePrice: number; images: { url: string }[] };
   variant: { id: string; colorLabel: string; size: string; stockQuantity: number; priceOverride: number | null };
 };
+
 type Rate = {
-  id: string; carrier: string; logo: string | null;
-  amount: number; deliveryTime: string; pickupTime: string;
+  id: string;
+  carrier: string;
+  logo: string | null;
+  amount: number;
+  deliveryTime: string;
+  pickupTime: string;
 };
+
 type Upsell = {
-  id: string; name: string; slug: string; basePrice: number;
+  id: string;
+  name: string;
+  slug: string;
+  basePrice: number;
   images?: { url: string; isPrimary?: boolean }[];
   variants?: { id: string; size: string; colorLabel: string; stockQuantity: number }[];
 };
 
-const FREE_DELIVERY_THRESHOLD = 250000; // matches the Shipping Policy's free-delivery threshold
+const FREE_DELIVERY_THRESHOLD = 250000;
 
 const fmt = (n: number) =>
-  new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 2 }).format(n);
 
-const inputCls =
-  "w-full border border-[#d9d9d9] bg-white px-4 py-3.5 text-[15px] text-[#1a1a1a] font-sans rounded-[4px] " +
-  "outline-none focus:border-[#1a1a1a] transition-colors placeholder:text-[#8f8f8a]";
-
-const labelCls = "block text-[13px] text-[#767676] font-sans mb-1.5";
-
-/* ── Floating-label fields (matches the reference's inline-label inputs) ── */
-function TextField({
-  label, value, onChange, type = "text", placeholder = " ", icon, className = "",
+function FloatingInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+  required = false,
+  icon,
 }: {
-  label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; icon?: React.ReactNode; className?: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  required?: boolean;
+  icon?: React.ReactNode;
 }) {
   return (
-    <div className={`relative ${className}`}>
+    <div className="relative w-full">
       <input
         type={type}
+        required={required}
         value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="peer w-full border border-[#d9d9d9] bg-white rounded-[4px] px-4 pt-6 pb-2 text-[15px]
-          text-[#1a1a1a] font-sans outline-none focus:border-[#1a1a1a] transition-colors"
+        onChange={(e) => onChange(e.target.value)}
+        placeholder=" "
+        className="peer w-full border border-[#d9d9d9] bg-white rounded-[6px] px-3.5 pt-5 pb-1.5 text-[14px] text-[#1a1a1a] font-sans outline-none focus:border-[#1a1a1a] transition-colors"
       />
-      <label className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#767676] text-[15px]
-        font-sans transition-all duration-150
-        peer-focus:top-3.5 peer-focus:translate-y-0 peer-focus:text-[11px]
-        peer-[:not(:placeholder-shown)]:top-3.5 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px]">
+      <label className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#707070] text-[13px] font-sans transition-all duration-150 peer-focus:top-2.5 peer-focus:translate-y-0 peer-focus:text-[10px] peer-[:not(:placeholder-shown)]:top-2.5 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[10px]">
         {label}
       </label>
-      {icon && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8f8f8a]">{icon}</span>}
+      {icon && <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#707070]">{icon}</div>}
     </div>
   );
 }
 
-function SelectField({
-  label, value, options, onChange, loading, className = "",
+function FloatingSelect({
+  label,
+  value,
+  options,
+  onChange,
+  disabled = false,
 }: {
-  label: string; value: string; options: { name: string; code: string }[];
-  onChange: (v: string) => void; loading?: boolean; className?: string;
+  label: string;
+  value: string;
+  options: { name: string; code: string }[];
+  onChange: (v: string) => void;
+  disabled?: boolean;
 }) {
   return (
-    <div className={`relative ${className}`}>
+    <div className="relative w-full">
       <select
         value={value}
-        onChange={e => onChange(e.target.value)}
-        className="peer w-full appearance-none border border-[#d9d9d9] bg-white rounded-[4px] px-4 pt-6 pb-2 text-[15px]
-          text-[#1a1a1a] font-sans outline-none focus:border-[#1a1a1a] transition-colors"
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="peer w-full appearance-none border border-[#d9d9d9] bg-white rounded-[6px] px-3.5 pt-5 pb-1.5 text-[14px] text-[#1a1a1a] font-sans outline-none focus:border-[#1a1a1a] transition-colors disabled:bg-[#f9f9f9]"
       >
-        <option value="" disabled hidden>{" "}</option>
-        {options.map(o => <option key={o.code || o.name} value={o.code || o.name}>{o.name}</option>)}
+        <option value="" disabled hidden></option>
+        {options.map((o) => (
+          <option key={o.code || o.name} value={o.code || o.name}>
+            {o.name}
+          </option>
+        ))}
       </select>
-      <label className="pointer-events-none absolute left-4 top-3.5 text-[11px] text-[#767676] font-sans">
-        {loading ? "Loading…" : label}
+      <label className="pointer-events-none absolute left-3.5 top-2.5 text-[10px] text-[#707070] font-sans">
+        {label}
       </label>
-      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#767676] text-[11px]">▾</span>
+      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#707070] text-[10px]">
+        ▼
+      </span>
     </div>
   );
 }
 
-/* ── Page ──────────────────────────────────────────────────────── */
+function CheckboxField({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer select-none text-[13px] text-[#333333]">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="w-4 h-4 rounded border-[#d9d9d9] accent-black cursor-pointer"
+      />
+      <span>{label}</span>
+    </label>
+  );
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
 
-  // Auth + cart
   const [authState, setAuthState] = useState<"loading" | "guest" | "authed">("loading");
-  const [email, setEmail]         = useState("");
-  const [items, setItems]         = useState<CartItem[]>([]);
-  const [cartBusy, setCartBusy]   = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [newsletter, setNewsletter] = useState(true);
+  const [smsNewsletter, setSmsNewsletter] = useState(false);
+  const [saveInfo, setSaveInfo] = useState(false);
+
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [cartBusy, setCartBusy] = useState<string | null>(null);
   const [upsellBusy, setUpsellBusy] = useState<string | null>(null);
   const upsellScrollRef = useRef<HTMLDivElement>(null);
   const [cartLoaded, setCartLoaded] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
-  // Address form
-  const [fullName, setFullName]         = useState("");
-  const [phone, setPhone]               = useState("");
+  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
-  const [countryCode, setCountryCode]   = useState("NG");
+  const [countryCode, setCountryCode] = useState("NG");
   const [countryOptions, setCountryOptions] = useState<{ name: string; code: string }[]>([]);
-  const [city, setCity]                 = useState("");
-  const [state, setState]               = useState("");
-  const [stateCode, setStateCode]       = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [stateCode, setStateCode] = useState("");
   const [stateOptions, setStateOptions] = useState<{ name: string; code: string }[]>([]);
-  const [cityOptions, setCityOptions]   = useState<{ name: string; code: string }[]>([]);
-  const [locLoading, setLocLoading]     = useState(false);
-  const [postalCode, setPostalCode]     = useState("");
-  const [notes, setNotes]               = useState("");
+  const [cityOptions, setCityOptions] = useState<{ name: string; code: string }[]>([]);
+  const [locLoading, setLocLoading] = useState(false);
+  const [postalCode, setPostalCode] = useState("");
+  const [notes, setNotes] = useState("");
 
-  // Billing address (mirrors MDV's "Same as shipping" / "Use a different billing address")
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
-  const [billingFullName, setBillingFullName]         = useState("");
+  const [billingFullName, setBillingFullName] = useState("");
   const [billingAddressLine1, setBillingAddressLine1] = useState("");
   const [billingAddressLine2, setBillingAddressLine2] = useState("");
-  const [billingCountryCode, setBillingCountryCode]   = useState("NG");
-  const [billingCity, setBillingCity]                 = useState("");
-  const [billingState, setBillingState]               = useState("");
-  const [billingStateCode, setBillingStateCode]       = useState("");
+  const [billingCountryCode, setBillingCountryCode] = useState("NG");
+  const [billingCity, setBillingCity] = useState("");
+  const [billingState, setBillingState] = useState("");
+  const [billingStateCode, setBillingStateCode] = useState("");
   const [billingStateOptions, setBillingStateOptions] = useState<{ name: string; code: string }[]>([]);
-  const [billingPostalCode, setBillingPostalCode]     = useState("");
-  const [billingLocLoading, setBillingLocLoading]     = useState(false);
+  const [billingPostalCode, setBillingPostalCode] = useState("");
+  const [billingLocLoading, setBillingLocLoading] = useState(false);
 
-  const billingComplete =
-    billingSameAsShipping ||
-    (billingFullName.trim() && billingAddressLine1.trim() && billingCity.trim() && billingState.trim());
-
-  // Load Terminal countries once.
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/shipping/locations?type=countries")
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled && d.success) setCountryOptions(d.data); });
-    return () => { cancelled = true; };
-  }, []);
-
-  // Load Terminal states whenever the chosen country changes.
-  useEffect(() => {
-    let cancelled = false;
-    setStateOptions([]);
-    setStateCode(""); setState("");
-    setCityOptions([]); setCity("");
-    if (!countryCode) return;
-    setLocLoading(true);
-    fetch(`/api/shipping/locations?type=states&country=${encodeURIComponent(countryCode)}`)
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled && d.success) setStateOptions(d.data); })
-      .finally(() => { if (!cancelled) setLocLoading(false); });
-    return () => { cancelled = true; };
-  }, [countryCode]);
-
-  // Load Terminal cities whenever the chosen state code changes.
-  useEffect(() => {
-    let cancelled = false;
-    setCityOptions([]);
-    setCity("");
-    if (!stateCode || !countryCode) return;
-    setLocLoading(true);
-    fetch(`/api/shipping/locations?type=cities&country=${encodeURIComponent(countryCode)}&state_code=${encodeURIComponent(stateCode)}`)
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled && d.success) setCityOptions(d.data); })
-      .finally(() => { if (!cancelled) setLocLoading(false); });
-    return () => { cancelled = true; };
-  }, [stateCode, countryCode]);
-
-  // Billing states load only once the shopper opts into a different billing address.
-  useEffect(() => {
-    let cancelled = false;
-    if (billingSameAsShipping || !billingCountryCode) { setBillingStateOptions([]); return; }
-    setBillingLocLoading(true);
-    fetch(`/api/shipping/locations?type=states&country=${encodeURIComponent(billingCountryCode)}`)
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled && d.success) setBillingStateOptions(d.data); })
-      .finally(() => { if (!cancelled) setBillingLocLoading(false); });
-    return () => { cancelled = true; };
-  }, [billingCountryCode, billingSameAsShipping]);
-
-  // Shipping rates (Terminal Africa)
-  const [rates, setRates]             = useState<Rate[]>([]);
+  const [rates, setRates] = useState<Rate[]>([]);
   const [selectedRate, setSelectedRate] = useState<Rate | null>(null);
   const [ratesLoading, setRatesLoading] = useState(false);
-  const [ratesError, setRatesError]     = useState<string | null>(null);
+  const [ratesError, setRatesError] = useState<string | null>(null);
 
-  // Discount code
-  const [discountInput, setDiscountInput]     = useState("");
+  const [discountInput, setDiscountInput] = useState("");
   const [applyingDiscount, setApplyingDiscount] = useState(false);
-  const [discountError, setDiscountError]     = useState<string | null>(null);
-  const [appliedDiscount, setAppliedDiscount] = useState<
-    { code: string; amount: number } | null
-  >(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
 
-  // Submit
   const [paying, setPaying] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
-
-  // Upsells
+  const [error, setError] = useState<string | null>(null);
   const [upsells, setUpsells] = useState<Upsell[]>([]);
 
-  /* ── Data loading ────────────────────────────────────────────── */
+  useEffect(() => {
+    const combined = `${firstName} ${lastName}`.trim();
+    if (combined) setFullName(combined);
+  }, [firstName, lastName]);
+
   const fetchCart = useCallback(async () => {
     const r = await fetch("/api/cart");
     const d = await r.json();
@@ -229,7 +208,13 @@ export default function CheckoutPage() {
       if (session) {
         setAuthState("authed");
         setEmail(session.user.email ?? "");
-        setFullName(prev => prev || (session.user.user_metadata?.full_name ?? ""));
+        const metaName = session.user.user_metadata?.full_name ?? "";
+        setFullName(metaName);
+        if (metaName) {
+          const parts = metaName.split(" ");
+          setFirstName(parts[0] || "");
+          setLastName(parts.slice(1).join(" ") || "");
+        }
       } else {
         setAuthState("guest");
       }
@@ -238,22 +223,95 @@ export default function CheckoutPage() {
   }, [fetchCart]);
 
   useEffect(() => {
+    let cancelled = false;
+    fetch("/api/shipping/locations?type=countries")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d.success) setCountryOptions(d.data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStateOptions([]);
+    setStateCode("");
+    setState("");
+    setCityOptions([]);
+    setCity("");
+    if (!countryCode) return;
+    setLocLoading(true);
+    fetch(`/api/shipping/locations?type=states&country=${encodeURIComponent(countryCode)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d.success) setStateOptions(d.data);
+      })
+      .finally(() => {
+        if (!cancelled) setLocLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [countryCode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCityOptions([]);
+    setCity("");
+    if (!stateCode || !countryCode) return;
+    setLocLoading(true);
+    fetch(
+      `/api/shipping/locations?type=cities&country=${encodeURIComponent(countryCode)}&state_code=${encodeURIComponent(stateCode)}`
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d.success) setCityOptions(d.data);
+      })
+      .finally(() => {
+        if (!cancelled) setLocLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [stateCode, countryCode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (billingSameAsShipping || !billingCountryCode) {
+      setBillingStateOptions([]);
+      return;
+    }
+    setBillingLocLoading(true);
+    fetch(`/api/shipping/locations?type=states&country=${encodeURIComponent(billingCountryCode)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d.success) setBillingStateOptions(d.data);
+      })
+      .finally(() => {
+        if (!cancelled) setBillingLocLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [billingCountryCode, billingSameAsShipping]);
+
+  useEffect(() => {
     if (!cartLoaded) return;
-    const inCart = new Set(items.map(i => i.product.id));
+    const inCart = new Set(items.map((i) => i.product.id));
     fetch("/api/products?limit=8&sortBy=createdAt&order=desc")
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (!d.success) return;
         setUpsells((d.data.products ?? d.data ?? []).filter((p: Upsell) => !inCart.has(p.id)).slice(0, 6));
       })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartLoaded, items.length]);
 
-  /* ── Money ───────────────────────────────────────────────────── */
   const subtotal = useMemo(
     () => items.reduce((s, i) => s + Number(i.variant.priceOverride ?? i.product.basePrice) * i.quantity, 0),
-    [items],
+    [items]
   );
   const shippingFee = selectedRate?.amount ?? 0;
   const discountAmount = appliedDiscount?.amount ?? 0;
@@ -261,15 +319,23 @@ export default function CheckoutPage() {
 
   const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const addressComplete =
-    emailValid && fullName.trim() && phone.trim() && addressLine1.trim() && city.trim() && state.trim();
+    emailValid &&
+    (fullName.trim() || (firstName.trim() && lastName.trim())) &&
+    phone.trim() &&
+    addressLine1.trim() &&
+    city.trim() &&
+    state.trim();
 
-  /* ── GA4 ─────────────────────────────────────────────────────── */
+  const billingComplete =
+    billingSameAsShipping ||
+    (billingFullName.trim() && billingAddressLine1.trim() && billingCity.trim() && billingState.trim());
+
   useEffect(() => {
     if (!cartLoaded || items.length === 0) return;
     sendGAEvent("event", "begin_checkout", {
       currency: "NGN",
       value: subtotal,
-      items: items.map(i => ({
+      items: items.map((i) => ({
         item_id: i.product.id,
         item_name: i.product.name,
         item_variant: `${i.variant.colorLabel} / ${i.variant.size}`,
@@ -277,22 +343,15 @@ export default function CheckoutPage() {
         quantity: i.quantity,
       })),
     });
-  // fire once when the cart first loads
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartLoaded]);
 
-  /* ── Address edits invalidate fetched rates ──────────────────── */
-  function onAddressChange<T>(setter: (v: T) => void) {
-    return (v: T) => {
-      setter(v);
-      if (rates.length > 0 || selectedRate) {
-        setRates([]);
-        setSelectedRate(null);
-      }
-    };
+  function resetRates() {
+    if (rates.length > 0 || selectedRate) {
+      setRates([]);
+      setSelectedRate(null);
+    }
   }
 
-  /* ── Terminal Africa rates ───────────────────────────────────── */
   async function fetchRates() {
     if (!addressComplete) return;
     setRatesLoading(true);
@@ -305,9 +364,15 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           address: {
-            name: fullName, phone,
-            line1: addressLine1, line2: addressLine2,
-            city, state, stateCode, country: countryCode, postalCode,
+            name: fullName || `${firstName} ${lastName}`.trim(),
+            phone,
+            line1: addressLine1,
+            line2: addressLine2,
+            city,
+            state,
+            stateCode,
+            country: countryCode,
+            postalCode,
           },
         }),
       });
@@ -316,7 +381,9 @@ export default function CheckoutPage() {
       setRates(d.data.rates);
       if (d.data.rates[0]) selectRate(d.data.rates[0]);
     } catch (e) {
-      setRatesError(e instanceof Error ? e.message : "Could not fetch shipping rates. Please check the address and try again.");
+      setRatesError(
+        e instanceof Error ? e.message : "Could not fetch shipping rates. Please check the address and try again."
+      );
     } finally {
       setRatesLoading(false);
     }
@@ -325,11 +392,12 @@ export default function CheckoutPage() {
   function selectRate(rate: Rate) {
     setSelectedRate(rate);
     sendGAEvent("event", "add_shipping_info", {
-      currency: "NGN", value: subtotal, shipping_tier: rate.carrier,
+      currency: "NGN",
+      value: subtotal,
+      shipping_tier: rate.carrier,
     });
   }
 
-  /* ── Discount code ───────────────────────────────────────────── */
   async function applyDiscount() {
     if (!discountInput.trim()) return;
     setApplyingDiscount(true);
@@ -350,13 +418,13 @@ export default function CheckoutPage() {
       setApplyingDiscount(false);
     }
   }
+
   function removeDiscount() {
     setAppliedDiscount(null);
     setDiscountInput("");
     setDiscountError(null);
   }
 
-  /* ── Cart editing (same endpoints as CartSidebar) ────────────── */
   async function updateQty(cartItemId: string, quantity: number) {
     setCartBusy(cartItemId);
     await fetch("/api/cart", {
@@ -365,21 +433,22 @@ export default function CheckoutPage() {
       body: JSON.stringify({ cartItemId, quantity }),
     });
     await fetchCart();
-    setRates([]); setSelectedRate(null); // parcel changed → rates stale
+    setRates([]);
+    setSelectedRate(null);
     setCartBusy(null);
   }
+
   async function removeItem(cartItemId: string) {
     setCartBusy(cartItemId);
     await fetch(`/api/cart?id=${cartItemId}`, { method: "DELETE" });
     await fetchCart();
-    setRates([]); setSelectedRate(null);
+    setRates([]);
+    setSelectedRate(null);
     setCartBusy(null);
   }
 
-  // A single-variant upsell can be added in one tap; anything with a real
-  // size/colour choice sends the shopper to the product page instead.
   function singleVariant(p: Upsell) {
-    const inStock = (p.variants ?? []).filter(v => v.stockQuantity > 0);
+    const inStock = (p.variants ?? []).filter((v) => v.stockQuantity > 0);
     return inStock.length === 1 ? inStock[0] : null;
   }
 
@@ -394,14 +463,14 @@ export default function CheckoutPage() {
         body: JSON.stringify({ productId: p.id, variantId: variant.id, quantity: 1 }),
       });
       await fetchCart();
-      setRates([]); setSelectedRate(null);
+      setRates([]);
+      setSelectedRate(null);
       window.dispatchEvent(new Event("cartUpdated"));
     } finally {
       setUpsellBusy(null);
     }
   }
 
-  /* ── Pay ─────────────────────────────────────────────────────── */
   async function handlePay() {
     setError(null);
     if (!addressComplete) {
@@ -422,23 +491,34 @@ export default function CheckoutPage() {
     setPaying(true);
     try {
       const shippingAddress = {
-        fullName, phone, addressLine1, addressLine2,
-        city, state, stateCode,
-        country: countryOptions.find(c => c.code === countryCode)?.name
-          ?? COUNTRY_CODE_NAMES[countryCode]
-          ?? countryCode,
+        fullName: fullName || `${firstName} ${lastName}`.trim(),
+        phone,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        stateCode,
+        country:
+          countryOptions.find((c) => c.code === countryCode)?.name ??
+          COUNTRY_CODE_NAMES[countryCode] ??
+          countryCode,
         countryCode,
         postalCode,
       };
       const billingAddress = billingSameAsShipping
         ? shippingAddress
         : {
-            fullName: billingFullName, phone,
-            addressLine1: billingAddressLine1, addressLine2: billingAddressLine2,
-            city: billingCity, state: billingState, stateCode: billingStateCode,
-            country: countryOptions.find(c => c.code === billingCountryCode)?.name
-              ?? COUNTRY_CODE_NAMES[billingCountryCode]
-              ?? billingCountryCode,
+            fullName: billingFullName,
+            phone,
+            addressLine1: billingAddressLine1,
+            addressLine2: billingAddressLine2,
+            city: billingCity,
+            state: billingState,
+            stateCode: billingStateCode,
+            country:
+              countryOptions.find((c) => c.code === billingCountryCode)?.name ??
+              COUNTRY_CODE_NAMES[billingCountryCode] ??
+              billingCountryCode,
             countryCode: billingCountryCode,
             postalCode: billingPostalCode,
           };
@@ -458,279 +538,572 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error ?? "Could not start payment");
-      window.location.href = data.data.paymentUrl; // Paystack hosted page
+      window.location.href = data.data.paymentUrl;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
       setPaying(false);
     }
   }
 
-  /* ── Gates ───────────────────────────────────────────────────── */
+  const renderOrderSummaryContent = () => (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        {items.map((item) => {
+          const price = Number(item.variant.priceOverride ?? item.product.basePrice);
+          const busy = cartBusy === item.id;
+          return (
+            <div key={item.id} className="flex items-center gap-4">
+              <div className="relative w-[60px] h-[68px] rounded-[6px] bg-[#e5e5e0] border border-[#e0e0e0] flex-shrink-0">
+                {item.product.images[0] && (
+                  <Image
+                    src={item.product.images[0].url}
+                    alt={item.product.name}
+                    fill
+                    className="object-cover rounded-[6px]"
+                    sizes="60px"
+                  />
+                )}
+                <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#000000] text-white text-[11px] font-semibold flex items-center justify-center border-2 border-white">
+                  {item.quantity}
+                </span>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium text-[#1a1a1a] leading-tight truncate">
+                  {item.product.name}
+                </p>
+                <p className="text-[11.5px] text-[#707070] mt-0.5">
+                  {item.variant.size} / {item.variant.colorLabel}
+                </p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <div className="flex items-center border border-[#d9d9d9] bg-white rounded-[4px]">
+                    <button
+                      type="button"
+                      disabled={busy || item.quantity <= 1}
+                      onClick={() => updateQty(item.id, item.quantity - 1)}
+                      className="w-5 h-5 flex items-center justify-center text-[12px] disabled:opacity-30"
+                    >
+                      -
+                    </button>
+                    <span className="text-[11px] font-medium px-1.5">{item.quantity}</span>
+                    <button
+                      type="button"
+                      disabled={busy || item.quantity >= item.variant.stockQuantity}
+                      onClick={() => updateQty(item.id, item.quantity + 1)}
+                      className="w-5 h-5 flex items-center justify-center text-[12px] disabled:opacity-30"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => removeItem(item.id)}
+                    className="text-[11px] text-[#707070] underline hover:text-black"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-[13.5px] font-medium text-[#1a1a1a] flex-shrink-0">
+                {fmt(price * item.quantity)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Discount code or gift card"
+          value={discountInput}
+          onChange={(e) => setDiscountInput(e.target.value)}
+          className="flex-1 border border-[#d9d9d9] bg-white rounded-[6px] px-3.5 py-2.5 text-[13px] text-[#1a1a1a] outline-none focus:border-[#1a1a1a] placeholder:text-[#999999]"
+        />
+        <button
+          type="button"
+          onClick={applyDiscount}
+          disabled={applyingDiscount || !discountInput.trim()}
+          className="bg-[#e5e5e5] text-[#707070] text-[13px] font-semibold px-5 rounded-[6px] hover:bg-[#d9d9d9] hover:text-[#1a1a1a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {applyingDiscount ? "…" : "Apply"}
+        </button>
+      </div>
+
+      {appliedDiscount && (
+        <div className="flex items-center justify-between px-3 py-2 border border-[#1a1a1a] rounded-[6px] bg-white text-[13px]">
+          <span>Code <strong>{appliedDiscount.code}</strong> applied</span>
+          <button type="button" onClick={removeDiscount} className="text-[#707070] underline text-[12px]">
+            Remove
+          </button>
+        </div>
+      )}
+      {discountError && <p className="text-[12px] text-red-700">{discountError}</p>}
+
+      <div className="space-y-2.5 pt-2 border-t border-[#e5e5e0]">
+        <div className="flex items-center justify-between text-[13.5px]">
+          <span className="text-[#333333]">Subtotal</span>
+          <span className="font-medium text-[#1a1a1a]">{fmt(subtotal)}</span>
+        </div>
+        {appliedDiscount && (
+          <div className="flex items-center justify-between text-[13.5px]">
+            <span className="text-[#333333]">Discount</span>
+            <span className="font-medium text-[#1a1a1a]">- {fmt(discountAmount)}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between text-[13.5px]">
+          <span className="flex items-center gap-1.5 text-[#333333]">
+            Shipping
+            <span className="w-3.5 h-3.5 rounded-full border border-[#707070] text-[9px] flex items-center justify-center font-bold text-[#707070]">
+              ?
+            </span>
+          </span>
+          <span className="text-[#707070]">
+            {selectedRate ? fmt(shippingFee) : "Enter shipping address"}
+          </span>
+        </div>
+        <div className="flex items-baseline justify-between pt-3 border-t border-[#e5e5e0]">
+          <span className="text-[15px] font-semibold text-[#1a1a1a]">Total</span>
+          <div className="text-right">
+            <span className="text-[11px] text-[#707070] mr-2 font-mono">NGN</span>
+            <span className="text-[18px] font-bold text-[#1a1a1a]">{fmt(total)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (authState === "loading" || !cartLoaded) {
     return (
-      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center font-sans">
-        <p className="text-[14px] text-[#8f8f8a]">Loading…</p>
+      <div className="min-h-screen bg-white flex items-center justify-center font-sans pt-24 pb-12">
+        <p className="text-[14px] text-[#707070]">Loading checkout…</p>
       </div>
     );
   }
 
-  // Guest checkout is allowed — no sign-in gate. Logged-in users still get their
-  // email prefilled; guests simply type theirs in the Contact section.
-
   if (items.length === 0) {
     return (
-      <Gate
-        title="Your bag is empty"
-        body="Add something you love, then come back — we'll be here."
-        cta={{ label: "Shop the Collection", onClick: () => router.push("/collections/woman") }}
-      />
+      <div className="min-h-screen bg-white font-sans flex items-center justify-center px-6 pt-28 pb-16">
+        <div className="text-center max-w-sm">
+          <p className="text-[20px] font-semibold text-[#1a1a1a] mb-2 font-serif">Your bag is empty</p>
+          <p className="text-[14px] text-[#707070] leading-relaxed mb-6">
+            Add something you love to your cart, then return to complete checkout.
+          </p>
+          <button
+            onClick={() => router.push("/collections/woman")}
+            className="w-full bg-[#1a1a1a] text-white text-[13px] uppercase tracking-widest font-semibold rounded-[4px] py-3.5 hover:bg-black transition-colors"
+          >
+            Shop the Collection
+          </button>
+        </div>
+      </div>
     );
   }
 
-  /* ── Layout ──────────────────────────────────────────────────── */
+  const topUpsell = upsells[0];
+
   return (
-    <div className="min-h-screen bg-white font-sans">
-      {/* Spacer for the main fixed Header */}
-      <div className="h-[76px] md:h-[88px]" />
+    <div className="min-h-screen bg-white font-sans pt-20 md:pt-24 lg:pt-28">
+      <div className="lg:hidden border-b border-[#e5e5e0] bg-[#f5f5f5]">
+        <div className="flex items-center justify-between px-6 py-4">
+          <button
+            type="button"
+            onClick={() => setSummaryOpen(!summaryOpen)}
+            className="flex items-center gap-2 text-[14px] font-medium text-[#1a1a1a]"
+          >
+            <span>Order Summary</span>
+            <svg
+              className={`w-4 h-4 text-[#1a1a1a] transition-transform duration-200 ${
+                summaryOpen ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <span className="text-[15px] font-bold text-[#1a1a1a]">{fmt(total)}</span>
+        </div>
+        {summaryOpen && (
+          <div className="px-6 pb-6 border-t border-[#e5e5e0] pt-4 bg-[#f5f5f5]">
+            {renderOrderSummaryContent()}
+          </div>
+        )}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr]">
-
-        {/* ══ LEFT — form (white) ══════════════════════════════════════ */}
-        <div className="px-5 md:px-10 lg:px-14 pt-8 md:pt-12 pb-16">
-          <div className="max-w-[560px] space-y-0">
-
-            {/* Page title */}
-            <div className="mb-8">
-              <h1 className="text-[22px] font-semibold text-[#1a1a1a] font-sans">Checkout</h1>
-              <p className="text-[14px] text-[#767676] mt-1">
-                Delivery within Nigeria · Secure payment by Paystack
-              </p>
+      <div className="grid grid-cols-1 lg:grid-cols-[56%_44%] min-h-[calc(100vh-5rem)]">
+        <div className="px-6 md:px-16 lg:px-20 py-8 flex flex-col items-center">
+          <div className="w-full max-w-[540px] space-y-8">
+            <div>
+              <p className="text-center text-[12px] text-[#707070] uppercase tracking-wider mb-3 font-medium">Express Checkout</p>
+              <button
+                type="button"
+                onClick={handlePay}
+                className="w-full bg-[#000000] text-white rounded-[4px] py-3.5 flex items-center justify-center gap-2 hover:bg-[#222222] transition-colors"
+              >
+                <span className="text-[15px] font-semibold tracking-tight">G Pay</span>
+              </button>
+              <div className="relative flex py-5 items-center">
+                <div className="flex-grow border-t border-[#e5e5e0]"></div>
+                <span className="flex-shrink mx-4 text-[#707070] text-[11px] font-semibold uppercase tracking-widest">OR</span>
+                <div className="flex-grow border-t border-[#e5e5e0]"></div>
+              </div>
             </div>
 
+            {topUpsell && (
+              <div className="space-y-3">
+                <h3 className="text-[14px] font-bold text-[#1a1a1a]">Selected for You</h3>
+                <div className="flex items-center justify-between p-3 border border-[#e5e5e0] rounded-[8px] bg-[#fafafa]">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative w-[54px] h-[64px] rounded-[6px] bg-[#e5e5e0] flex-shrink-0 overflow-hidden">
+                      {(topUpsell.images?.find((i) => i.isPrimary)?.url ?? topUpsell.images?.[0]?.url) && (
+                        <Image
+                          src={topUpsell.images?.find((i) => i.isPrimary)?.url ?? topUpsell.images?.[0]?.url ?? ""}
+                          alt={topUpsell.name}
+                          fill
+                          className="object-cover"
+                          sizes="54px"
+                        />
+                      )}
+                      <span className="absolute top-1 left-1 w-4 h-4 rounded-full bg-black text-white text-[10px] font-semibold flex items-center justify-center">
+                        1
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-bold text-[#1a1a1a] truncate leading-tight">{topUpsell.name}</p>
+                      <p className="text-[11.5px] text-[#707070] truncate mt-0.5">
+                        {singleVariant(topUpsell)
+                          ? `${singleVariant(topUpsell)?.size} / ${singleVariant(topUpsell)?.colorLabel}`
+                          : "Multiple Sizes"}
+                      </p>
+                      <p className="text-[12px] font-bold text-[#1a1a1a] mt-0.5">{fmt(Number(topUpsell.basePrice))}</p>
+                    </div>
+                  </div>
+                  {singleVariant(topUpsell) ? (
+                    <button
+                      type="button"
+                      onClick={() => addUpsell(topUpsell)}
+                      disabled={upsellBusy === topUpsell.id}
+                      className="bg-[#000000] text-white text-[12px] font-semibold px-5 py-2 rounded-[8px] hover:bg-black transition-colors flex-shrink-0 disabled:opacity-50"
+                    >
+                      {upsellBusy === topUpsell.id ? "Adding…" : "Add"}
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/products/${topUpsell.slug}`}
+                      className="bg-[#000000] text-white text-[12px] font-semibold px-5 py-2 rounded-[8px] hover:bg-black transition-colors flex-shrink-0 text-center"
+                    >
+                      Select
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+
             {error && (
-              <div className="px-5 py-4 border border-[#1a1a1a] rounded-[4px] bg-white text-[15px] text-[#1a1a1a] mb-6">
+              <div className="px-4 py-3 border border-red-800 rounded-[4px] bg-red-50 text-[13px] text-red-800">
                 {error}
               </div>
             )}
 
-            <div className="space-y-8">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[18px] font-semibold text-[#1a1a1a]">Contact</h2>
+                {authState === "guest" && (
+                  <Link href="/login?next=/checkout" className="text-[13px] text-[#1a1a1a] underline underline-offset-2 hover:opacity-70">
+                    Sign in
+                  </Link>
+                )}
+              </div>
+              <FloatingInput
+                label="Email"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                required
+                icon={
+                  <span className="w-4 h-4 rounded-full border border-[#707070] text-[10px] flex items-center justify-center font-bold cursor-pointer">
+                    ?
+                  </span>
+                }
+              />
+              <CheckboxField
+                checked={newsletter}
+                onChange={setNewsletter}
+                label="Sign up to our email newsletter"
+              />
+            </div>
 
-
-            {/* 1 · Contact */}
-            <Card title="Contact"
-              action={authState === "guest" && (
-                <Link href="/login?next=/checkout" className="text-[13.5px] text-[#1a1a1a] underline underline-offset-2 hover:opacity-60 transition-opacity">
-                  Sign in
-                </Link>
-              )}>
-              <div>
-                <label className={labelCls}>Email *</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@email.com"
-                  className={inputCls}
+            <div className="space-y-4 pt-2">
+              <h2 className="text-[18px] font-semibold text-[#1a1a1a]">Delivery</h2>
+              <FloatingSelect
+                label="Country/Region"
+                value={countryCode}
+                options={countryOptions}
+                onChange={(v) => {
+                  setCountryCode(v);
+                  resetRates();
+                }}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FloatingInput
+                  label="First name (optional)"
+                  value={firstName}
+                  onChange={(v) => {
+                    setFirstName(v);
+                    resetRates();
+                  }}
+                />
+                <FloatingInput
+                  label="Last name"
+                  value={lastName}
+                  onChange={(v) => {
+                    setLastName(v);
+                    resetRates();
+                  }}
+                  required
                 />
               </div>
-            </Card>
-
-            {/* 2 · Delivery */}
-            <Card title="Delivery">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className={labelCls}>Country *</label>
-                  <select
-                    value={countryCode}
-                    onChange={e => {
-                      setCountryCode(e.target.value);
-                      setRates([]); setSelectedRate(null);
-                    }}
-                    className={inputCls}
-                  >
-                    <option value="" disabled>Select Country</option>
-                    {countryOptions.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className={labelCls}>Full Name *</label>
-                  <input value={fullName} onChange={e => onAddressChange(setFullName)(e.target.value)} className={inputCls} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={labelCls}>Street Address *</label>
-                  <input value={addressLine1} onChange={e => onAddressChange(setAddressLine1)(e.target.value)}
-                    placeholder="House number and street" className={inputCls} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={labelCls}>Apartment, Suite, etc. (optional)</label>
-                  <input value={addressLine2} onChange={e => onAddressChange(setAddressLine2)(e.target.value)} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>State *</label>
-                  <select
+              <FloatingInput
+                label="Address"
+                value={addressLine1}
+                onChange={(v) => {
+                  setAddressLine1(v);
+                  resetRates();
+                }}
+                required
+                icon={
+                  <svg className="w-4 h-4 text-[#707070]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                }
+              />
+              <FloatingInput
+                label="Apartment, suite, etc. (optional)"
+                value={addressLine2}
+                onChange={(v) => {
+                  setAddressLine2(v);
+                  resetRates();
+                }}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {stateOptions.length > 0 ? (
+                  <FloatingSelect
+                    label="State"
                     value={stateCode}
-                    onChange={e => {
-                      const code = e.target.value;
-                      const name = stateOptions.find(s => s.code === code)?.name || "";
+                    options={stateOptions}
+                    onChange={(v) => {
+                      const code = v;
+                      const name = stateOptions.find((s) => s.code === code)?.name || "";
                       setStateCode(code);
                       setState(name);
-                      setRates([]); setSelectedRate(null);
+                      resetRates();
                     }}
-                    className={inputCls}
-                  >
-                    <option value="" disabled>{locLoading ? "Loading states..." : "Select State"}</option>
-                    {stateOptions.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>City *</label>
-                  {cityOptions.length > 0 ? (
-                    <select
-                      value={city}
-                      onChange={e => { onAddressChange(setCity)(e.target.value); }}
-                      className={inputCls}
-                    >
-                      <option value="" disabled>{locLoading ? "Loading cities..." : "Select City"}</option>
-                      {cityOptions.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
-                    </select>
-                  ) : (
-                    <input
-                      value={city}
-                      onChange={e => onAddressChange(setCity)(e.target.value)}
-                      placeholder={locLoading ? "Loading cities..." : "City"}
-                      className={inputCls}
-                    />
-                  )}
-                </div>
-                <div>
-                  <label className={labelCls}>Postal Code (optional)</label>
-                  <input value={postalCode} onChange={e => onAddressChange(setPostalCode)(e.target.value)} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Phone *</label>
-                  <input value={phone} onChange={e => onAddressChange(setPhone)(e.target.value)}
-                    placeholder="+234 801 234 5678" className={inputCls} />
-                </div>
+                  />
+                ) : (
+                  <FloatingInput
+                    label="State"
+                    value={state}
+                    onChange={(v) => {
+                      setState(v);
+                      resetRates();
+                    }}
+                    required
+                  />
+                )}
+                {cityOptions.length > 0 ? (
+                  <FloatingSelect
+                    label="City"
+                    value={city}
+                    options={cityOptions.map((c) => ({ name: c.name, code: c.name }))}
+                    onChange={(v) => {
+                      setCity(v);
+                      resetRates();
+                    }}
+                  />
+                ) : (
+                  <FloatingInput
+                    label="City"
+                    value={city}
+                    onChange={(v) => {
+                      setCity(v);
+                      resetRates();
+                    }}
+                    required
+                  />
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FloatingInput
+                  label="Postcode (optional)"
+                  value={postalCode}
+                  onChange={(v) => {
+                    setPostalCode(v);
+                    resetRates();
+                  }}
+                />
+                <FloatingInput
+                  label="Phone"
+                  value={phone}
+                  onChange={(v) => {
+                    setPhone(v);
+                    resetRates();
+                  }}
+                  required
+                  icon={
+                    <span className="w-4 h-4 rounded-full border border-[#707070] text-[10px] flex items-center justify-center font-bold cursor-pointer">
+                      ?
+                    </span>
+                  }
+                />
               </div>
 
-              {/* Get rates */}
+              <div className="space-y-2 pt-2">
+                <CheckboxField
+                  checked={saveInfo}
+                  onChange={setSaveInfo}
+                  label="Save this information for next time"
+                />
+                <CheckboxField
+                  checked={smsNewsletter}
+                  onChange={setSmsNewsletter}
+                  label="Sign up to our SMS newsletter"
+                />
+              </div>
+
               <button
                 type="button"
                 onClick={fetchRates}
                 disabled={!addressComplete || ratesLoading}
-                className="mt-5 w-full border border-[#1a1a1a] rounded-[4px] bg-white text-[#1a1a1a] text-[14px] font-medium
-                  py-3.5 hover:bg-[#1a1a1a] hover:text-white
-                  transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#1a1a1a]"
+                className="w-full mt-3 border border-[#1a1a1a] rounded-[6px] bg-white text-[#1a1a1a] text-[13px] font-semibold uppercase tracking-wider py-3 hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {ratesLoading ? "Fetching couriers…" : "Get Shipping Rates"}
               </button>
-              {!addressComplete && (
-                <p className="text-[13.5px] text-[#8f8f8a] mt-2">
-                  Complete the required fields above to fetch delivery options.
-                </p>
-              )}
-            </Card>
+            </div>
 
-            {/* 3 · Shipping method */}
-            <Card title="Shipping Method">
+            <div className="space-y-4 pt-2">
+              <h2 className="text-[18px] font-semibold text-[#1a1a1a]">Shipping Method</h2>
               {ratesLoading ? (
-                <p className="text-[15px] text-[#767676] py-2">Contacting couriers…</p>
+                <div className="p-4 border border-[#e5e5e0] rounded-[6px] bg-[#fafafa] text-[13px] text-[#707070]">
+                  Contacting shipping carriers…
+                </div>
               ) : rates.length === 0 ? (
-                <p className="text-[15px] text-[#767676] py-2">
-                  {ratesError ?? "Enter your delivery address above to see available shipping methods."}
-                </p>
+                <div className="p-4 border border-[#e5e5e0] rounded-[6px] bg-[#fafafa] text-[13px] text-[#707070] text-center">
+                  {ratesError ?? "Enter your shipping address to view available shipping methods."}
+                </div>
               ) : (
-                <div className="space-y-3">
-                  {rates.map(rate => {
+                <div className="space-y-2">
+                  {rates.map((rate) => {
                     const selected = selectedRate?.id === rate.id;
                     return (
-                      <button key={rate.id} type="button" onClick={() => selectRate(rate)}
-                        className={`w-full flex items-center justify-between gap-4 px-5 py-4 border rounded-[4px] text-left transition-colors ${
-                          selected ? "border-[#1a1a1a] bg-[#f2f2f0]" : "border-[#d9d9d9] bg-white hover:border-[#8f8f8a]"
-                        }`}>
-                        <span className="flex items-center gap-4 min-w-0">
-                          <span className={`w-[16px] h-[16px] rounded-full border flex-shrink-0 ${
-                            selected ? "border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
-                          }`} />
-                          {rate.logo && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={rate.logo} alt={rate.carrier} className="h-6 w-auto flex-shrink-0" />
-                          )}
+                      <button
+                        key={rate.id}
+                        type="button"
+                        onClick={() => selectRate(rate)}
+                        className={`w-full flex items-center justify-between gap-4 px-4 py-3.5 border rounded-[6px] text-left transition-colors ${
+                          selected ? "border-[#1a1a1a] bg-[#fdfdfd]" : "border-[#d9d9d9] bg-white hover:border-[#8f8f8a]"
+                        }`}
+                      >
+                        <span className="flex items-center gap-3 min-w-0">
+                          <span
+                            className={`w-4 h-4 rounded-full border flex-shrink-0 ${
+                              selected ? "border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3px_#fff]" : "border-[#b5b5b0]"
+                            }`}
+                          />
                           <span className="min-w-0">
-                            <span className="block text-[15.5px] text-[#1a1a1a] truncate">{rate.carrier}</span>
+                            <span className="block text-[14px] font-medium text-[#1a1a1a] truncate">{rate.carrier}</span>
                             {rate.deliveryTime && (
-                              <span className="block text-[13.5px] text-[#767676] mt-0.5">{rate.deliveryTime}</span>
+                              <span className="block text-[12px] text-[#707070]">{rate.deliveryTime}</span>
                             )}
                           </span>
                         </span>
-                        <span className="text-[15.5px] text-[#1a1a1a] flex-shrink-0">{fmt(rate.amount)}</span>
+                        <span className="text-[14px] font-medium text-[#1a1a1a] flex-shrink-0">{fmt(rate.amount)}</span>
                       </button>
                     );
                   })}
                 </div>
               )}
-              {ratesError && rates.length === 0 && !ratesLoading && (
-                <p className="text-[14px] text-[#8f8f8a] mt-3">
-                  Double-check the street, city, and state, then try again.
-                </p>
-              )}
-            </Card>
+            </div>
 
-            {/* Selected for You — free-delivery progress + quick-add upsells */}
             {upsells.length > 0 && (
-              <Card title="Selected for You">
-                <div className="flex items-center gap-4 mb-5">
+              <div className="space-y-4 pt-4 border-t border-[#e5e5e0]">
+                <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <div className="h-[3px] bg-[#ececec] overflow-hidden rounded-full">
-                      <div className="h-full bg-[#1a1a1a] transition-all duration-500"
-                        style={{ width: `${Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100)}%` }} />
+                      <div
+                        className="h-full bg-[#1a1a1a] transition-all duration-500"
+                        style={{ width: `${Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100)}%` }}
+                      />
                     </div>
-                    <p className="text-[13px] text-[#1a1a1a] font-sans mt-2.5">
+                    <p className="text-[12.5px] text-[#1a1a1a] font-sans mt-2">
                       {subtotal >= FREE_DELIVERY_THRESHOLD
                         ? "You've unlocked free delivery!"
-                        : `Free delivery is ${fmt(FREE_DELIVERY_THRESHOLD - subtotal)} away!`}
+                        : `Free shipping is ${fmt(FREE_DELIVERY_THRESHOLD - subtotal)} away!`}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button type="button" aria-label="Scroll left"
-                      onClick={() => upsellScrollRef.current?.scrollBy({ left: -160, behavior: "smooth" })}
-                      className="w-8 h-8 flex items-center justify-center border border-[#d9d9d9] rounded-[4px] hover:border-[#1a1a1a] transition-colors">
+                    <button
+                      type="button"
+                      aria-label="Scroll left"
+                      onClick={() => upsellScrollRef.current?.scrollBy({ left: -180, behavior: "smooth" })}
+                      className="w-8 h-8 flex items-center justify-center border border-[#d9d9d9] rounded-[4px] hover:border-[#1a1a1a] transition-colors text-[13px]"
+                    >
                       ←
                     </button>
-                    <button type="button" aria-label="Scroll right"
-                      onClick={() => upsellScrollRef.current?.scrollBy({ left: 160, behavior: "smooth" })}
-                      className="w-8 h-8 flex items-center justify-center border border-[#d9d9d9] rounded-[4px] hover:border-[#1a1a1a] transition-colors">
+                    <button
+                      type="button"
+                      aria-label="Scroll right"
+                      onClick={() => upsellScrollRef.current?.scrollBy({ left: 180, behavior: "smooth" })}
+                      className="w-8 h-8 flex items-center justify-center border border-[#d9d9d9] rounded-[4px] hover:border-[#1a1a1a] transition-colors text-[13px]"
+                    >
                       →
                     </button>
                   </div>
                 </div>
 
-                <div ref={upsellScrollRef} className="flex gap-4 overflow-x-auto pb-1 -mx-1 px-1"
-                  style={{ scrollbarWidth: "none" }}>
-                  {upsells.map(p => {
-                    const img = p.images?.find(i => i.isPrimary)?.url ?? p.images?.[0]?.url;
+                <div
+                  ref={upsellScrollRef}
+                  className="flex gap-4 overflow-x-auto pb-2 pt-1 no-scrollbar"
+                  style={{ scrollbarWidth: "none" }}
+                >
+                  {upsells.map((p) => {
+                    const img = p.images?.find((i) => i.isPrimary)?.url ?? p.images?.[0]?.url;
                     const variant = singleVariant(p);
                     const busy = upsellBusy === p.id;
                     return (
-                      <div key={p.id} className="flex-shrink-0 w-[150px]">
+                      <div key={p.id} className="flex-shrink-0 w-[150px] space-y-2">
                         <Link href={`/products/${p.slug}`} className="group block">
-                          <div className="relative aspect-[3/4] rounded-[4px] bg-[#f5f5f4] overflow-hidden">
-                            {img && <Image src={img} alt={p.name} fill
-                              className="object-cover object-top group-hover:scale-[1.03] transition-transform duration-500" sizes="150px" />}
+                          <div className="relative aspect-[3/4] rounded-[6px] bg-[#f5f5f4] overflow-hidden">
+                            {img && (
+                              <Image
+                                src={img}
+                                alt={p.name}
+                                fill
+                                className="object-cover object-top group-hover:scale-[1.03] transition-transform duration-500"
+                                sizes="150px"
+                              />
+                            )}
                           </div>
-                          <p className="text-[13.5px] text-[#1a1a1a] mt-2 truncate">{p.name}</p>
-                          <p className="text-[13px] text-[#767676]">{fmt(Number(p.basePrice))}</p>
+                          <p className="text-[13px] font-medium text-[#1a1a1a] mt-2 truncate leading-tight">{p.name}</p>
+                          <p className="text-[12px] text-[#707070] mt-0.5">{fmt(Number(p.basePrice))}</p>
                         </Link>
                         {variant ? (
-                          <button type="button" onClick={() => addUpsell(p)} disabled={busy}
-                            className="mt-2 w-full bg-[#1a1a1a] text-white text-[13px] font-medium rounded-[4px]
-                              font-sans py-2.5 hover:bg-black transition-colors disabled:opacity-50">
+                          <button
+                            type="button"
+                            onClick={() => addUpsell(p)}
+                            disabled={busy}
+                            className="w-full bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-[20px] py-2 hover:bg-black transition-colors disabled:opacity-50"
+                          >
                             {busy ? "Adding…" : "Add"}
                           </button>
                         ) : (
-                          <Link href={`/products/${p.slug}`}
-                            className="mt-2 block w-full text-center bg-[#1a1a1a] text-white text-[13px] font-medium rounded-[4px]
-                              font-sans py-2.5 hover:bg-black transition-colors">
+                          <Link
+                            href={`/products/${p.slug}`}
+                            className="block w-full text-center bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-[20px] py-2 hover:bg-black transition-colors"
+                          >
                             Select
                           </Link>
                         )}
@@ -738,280 +1111,149 @@ export default function CheckoutPage() {
                     );
                   })}
                 </div>
-              </Card>
+              </div>
             )}
 
-            {/* 4 · Payment */}
-            <Card title="Payment">
-              <p className="text-[13.5px] text-[#8f8f8a] mb-4">All transactions are secure and encrypted.</p>
-              <div className="border border-[#1a1a1a] rounded-[4px] overflow-hidden">
-                <div className="flex items-center gap-3 px-5 py-4 bg-[#f2f2f0]">
-                  <span className="w-[16px] h-[16px] rounded-full border border-[#1a1a1a] bg-[#1a1a1a]
-                    shadow-[inset_0_0_0_3px_#fff] flex-shrink-0" />
-                  <p className="text-[15.5px] text-[#1a1a1a]">Paystack — Secure Checkout</p>
-                  <span className="ml-auto text-[12.5px] tracking-[0.1em] uppercase text-[#767676]">
-                    Card · Transfer · USSD · Opay
-                  </span>
+            <div className="space-y-4 pt-2">
+              <h2 className="text-[18px] font-semibold text-[#1a1a1a]">Payment</h2>
+              <p className="text-[13px] text-[#707070]">All transactions are secure and encrypted.</p>
+              <div className="border border-[#1a1a1a] rounded-[6px] overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3.5 bg-[#f5f5f5]">
+                  <div className="flex items-center gap-3">
+                    <span className="w-4 h-4 rounded-full border border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3px_#fff] flex-shrink-0" />
+                    <span className="text-[14px] font-medium text-[#1a1a1a]">Paystack — Secure Checkout</span>
+                  </div>
                 </div>
-                <p className="px-5 py-3 text-[14px] text-[#8f8f8a] border-t border-[#ececec]">
-                  You&apos;ll be redirected to Paystack&apos;s secure page to complete your purchase.
-                  We never see or store your card details.
-                </p>
+                <div className="px-4 py-3 text-[13px] text-[#707070] border-t border-[#e5e5e0] bg-white">
+                  You will be redirected to Paystack&apos;s secure platform to complete payment with Card, Bank Transfer, or USSD.
+                </div>
               </div>
-            </Card>
+            </div>
 
-            {/* 4b · Billing address */}
-            <Card title="Billing Address">
-              <div className="space-y-3">
-                <button type="button" onClick={() => setBillingSameAsShipping(true)}
-                  className={`w-full flex items-center gap-4 px-5 py-4 border rounded-[4px] text-left transition-colors ${
-                    billingSameAsShipping ? "border-[#1a1a1a] bg-[#f2f2f0]" : "border-[#d9d9d9] bg-white hover:border-[#8f8f8a]"
-                  }`}>
-                  <span className={`w-[16px] h-[16px] rounded-full border flex-shrink-0 ${
-                    billingSameAsShipping ? "border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
-                  }`} />
-                  <span className="text-[15.5px] text-[#1a1a1a]">Same as shipping address</span>
+            <div className="space-y-4 pt-2">
+              <h2 className="text-[18px] font-semibold text-[#1a1a1a]">Billing Address</h2>
+              <div className="border border-[#d9d9d9] rounded-[6px] overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setBillingSameAsShipping(true)}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors border-b border-[#e5e5e0] ${
+                    billingSameAsShipping ? "bg-[#f5f5f5]" : "bg-white"
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full border flex-shrink-0 ${
+                      billingSameAsShipping ? "border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3px_#fff]" : "border-[#b5b5b0]"
+                    }`}
+                  />
+                  <span className="text-[14px] font-medium text-[#1a1a1a]">Same as shipping address</span>
                 </button>
-                <button type="button" onClick={() => setBillingSameAsShipping(false)}
-                  className={`w-full flex items-center gap-4 px-5 py-4 border rounded-[4px] text-left transition-colors ${
-                    !billingSameAsShipping ? "border-[#1a1a1a] bg-[#f2f2f0]" : "border-[#d9d9d9] bg-white hover:border-[#8f8f8a]"
-                  }`}>
-                  <span className={`w-[16px] h-[16px] rounded-full border flex-shrink-0 ${
-                    !billingSameAsShipping ? "border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3.5px_#fff]" : "border-[#b5b5b0]"
-                  }`} />
-                  <span className="text-[15.5px] text-[#1a1a1a]">Use a different billing address</span>
+                <button
+                  type="button"
+                  onClick={() => setBillingSameAsShipping(false)}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors ${
+                    !billingSameAsShipping ? "bg-[#f5f5f5]" : "bg-white"
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full border flex-shrink-0 ${
+                      !billingSameAsShipping ? "border-[#1a1a1a] bg-[#1a1a1a] shadow-[inset_0_0_0_3px_#fff]" : "border-[#b5b5b0]"
+                    }`}
+                  />
+                  <span className="text-[14px] font-medium text-[#1a1a1a]">Use a different billing address</span>
                 </button>
               </div>
 
               {!billingSameAsShipping && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-5 border-t border-[#ececec]">
-                  <div className="md:col-span-2">
-                    <label className={labelCls}>Country *</label>
-                    <select value={billingCountryCode}
-                      onChange={e => { setBillingCountryCode(e.target.value); setBillingStateCode(""); setBillingState(""); }}
-                      className={inputCls}>
-                      <option value="" disabled>Select Country</option>
-                      {countryOptions.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
-                    </select>
+                <div className="space-y-3 pt-2">
+                  <FloatingSelect
+                    label="Country/Region"
+                    value={billingCountryCode}
+                    options={countryOptions}
+                    onChange={setBillingCountryCode}
+                  />
+                  <FloatingInput
+                    label="Full Name"
+                    value={billingFullName}
+                    onChange={setBillingFullName}
+                    required
+                  />
+                  <FloatingInput
+                    label="Address"
+                    value={billingAddressLine1}
+                    onChange={setBillingAddressLine1}
+                    required
+                  />
+                  <FloatingInput
+                    label="Apartment, suite, etc. (optional)"
+                    value={billingAddressLine2}
+                    onChange={setBillingAddressLine2}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {billingStateOptions.length > 0 ? (
+                      <FloatingSelect
+                        label="State"
+                        value={billingStateCode}
+                        options={billingStateOptions}
+                        onChange={(v) => {
+                          const code = v;
+                          const name = billingStateOptions.find((s) => s.code === code)?.name || "";
+                          setBillingStateCode(code);
+                          setBillingState(name);
+                        }}
+                      />
+                    ) : (
+                      <FloatingInput
+                        label="State"
+                        value={billingState}
+                        onChange={setBillingState}
+                        required
+                      />
+                    )}
+                    <FloatingInput
+                      label="City"
+                      value={billingCity}
+                      onChange={setBillingCity}
+                      required
+                    />
                   </div>
-                  <div className="md:col-span-2">
-                    <label className={labelCls}>Full Name *</label>
-                    <input value={billingFullName} onChange={e => setBillingFullName(e.target.value)} className={inputCls} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className={labelCls}>Street Address *</label>
-                    <input value={billingAddressLine1} onChange={e => setBillingAddressLine1(e.target.value)}
-                      placeholder="House number and street" className={inputCls} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className={labelCls}>Apartment, Suite, etc. (optional)</label>
-                    <input value={billingAddressLine2} onChange={e => setBillingAddressLine2(e.target.value)} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>State *</label>
-                    <select value={billingStateCode}
-                      onChange={e => {
-                        const code = e.target.value;
-                        const name = billingStateOptions.find(s => s.code === code)?.name || "";
-                        setBillingStateCode(code); setBillingState(name);
-                      }}
-                      className={inputCls}>
-                      <option value="" disabled>{billingLocLoading ? "Loading states..." : "Select State"}</option>
-                      {billingStateOptions.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>City *</label>
-                    <input value={billingCity} onChange={e => setBillingCity(e.target.value)} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Postal Code (optional)</label>
-                    <input value={billingPostalCode} onChange={e => setBillingPostalCode(e.target.value)} className={inputCls} />
-                  </div>
+                  <FloatingInput
+                    label="Postcode (optional)"
+                    value={billingPostalCode}
+                    onChange={setBillingPostalCode}
+                  />
                 </div>
               )}
-            </Card>
-
-            {/* 5 · Notes */}
-            <Card title="Order Notes (optional)">
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-                placeholder="Delivery instructions, gift note…" className={`${inputCls} resize-none`} />
-            </Card>
             </div>
-          </div>
-          </div>
 
-          {/* ══ RIGHT — summary (light-grey panel) ══════════════════════════════════ */}
-          <aside className="bg-[#f7f7f5] px-5 md:px-8 pt-8 md:pt-12 pb-16 lg:min-h-[calc(100vh-88px)]">
-            <div className="lg:sticky lg:top-[104px] max-w-[380px] space-y-6">
-            <div className="p-0">
-              <p className="text-[15px] font-semibold text-[#1a1a1a] font-sans mb-5">
-                Order Summary ({items.length})
-              </p>
+            <div className="pt-4 space-y-6">
+              <button
+                type="button"
+                onClick={handlePay}
+                disabled={paying || !selectedRate}
+                className="w-full bg-[#000000] text-white text-[15px] font-semibold rounded-[20px] py-3.5 hover:bg-[#222222] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {paying ? "Redirecting…" : "Pay Now"}
+              </button>
 
-              <div className="space-y-5 max-h-[360px] overflow-y-auto pr-1">
-                {items.map(item => {
-                  const price = Number(item.variant.priceOverride ?? item.product.basePrice);
-                  const busy = cartBusy === item.id;
-                  return (
-                    <div key={item.id} className="flex gap-4">
-                      <Link href={`/products/${item.product.slug}`}
-                        className="relative w-[64px] h-[80px] flex-shrink-0 rounded-[4px] bg-[#f0f0ee] overflow-hidden">
-                        {item.product.images[0] && (
-                          <Image src={item.product.images[0].url} alt={item.product.name}
-                            fill className="object-cover object-top" sizes="64px" />
-                        )}
-                        <span className="absolute -top-1.5 -right-1.5 w-[19px] h-[19px] rounded-full bg-[#1a1a1a] text-white
-                          text-[11px] font-medium flex items-center justify-center">
-                          {item.quantity}
-                        </span>
-                      </Link>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[15px] text-[#1a1a1a] leading-snug truncate">{item.product.name}</p>
-                        <p className="text-[13.5px] text-[#767676] mt-0.5">
-                          {item.variant.colorLabel} · {item.variant.size}
-                        </p>
-                        <div className="flex items-center justify-between mt-2.5">
-                          <div className="flex items-center border border-[#d9d9d9] rounded-[4px] overflow-hidden">
-                            <button disabled={busy || item.quantity <= 1}
-                              onClick={() => updateQty(item.id, item.quantity - 1)}
-                              className="w-7 h-7 text-[15.5px] text-[#1a1a1a] disabled:opacity-30">−</button>
-                            <span className="w-7 text-center text-[14px]">{busy ? "…" : item.quantity}</span>
-                            <button disabled={busy || item.quantity >= item.variant.stockQuantity}
-                              onClick={() => updateQty(item.id, item.quantity + 1)}
-                              className="w-7 h-7 text-[15.5px] text-[#1a1a1a] disabled:opacity-30">+</button>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-[14.5px] text-[#1a1a1a]">{fmt(price * item.quantity)}</span>
-                            <button disabled={busy} onClick={() => removeItem(item.id)}
-                              className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a] disabled:opacity-30">
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Discount code */}
-              <div className="border-t border-[#ececec] mt-6 pt-5">
-                {appliedDiscount ? (
-                  <div className="flex items-center justify-between px-3 py-2.5 border border-[#1a1a1a] rounded-[4px] bg-[#f2f2f0] text-[14px]">
-                    <span className="text-[#1a1a1a]">Code <b>{appliedDiscount.code}</b> applied</span>
-                    <button type="button" onClick={removeDiscount}
-                      className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a]">
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input value={discountInput} onChange={e => setDiscountInput(e.target.value)}
-                      placeholder="Discount code or gift card"
-                      className="flex-1 border border-[#d9d9d9] rounded-[4px] bg-white px-3.5 py-2.5 text-[14px] text-[#1a1a1a]
-                        outline-none focus:border-[#1a1a1a] transition-colors placeholder:text-[#8f8f8a]" />
-                    <button type="button" onClick={applyDiscount}
-                      disabled={applyingDiscount || !discountInput.trim()}
-                      className="px-5 rounded-[4px] text-[14px] font-medium bg-[#ececec] text-[#8f8f8a]
-                        enabled:bg-[#1a1a1a] enabled:text-white transition-colors disabled:cursor-not-allowed">
-                      {applyingDiscount ? "…" : "Apply"}
-                    </button>
-                  </div>
-                )}
-                {discountError && <p className="text-[13px] text-red-700 mt-2">{discountError}</p>}
-              </div>
-
-              <div className="mt-5 pt-5 space-y-2.5">
-                <Row label="Subtotal" value={fmt(subtotal)} />
-                {appliedDiscount && (
-                  <Row label="Discount" value={`− ${fmt(discountAmount)}`} />
-                )}
-                <Row label="Delivery"
-                  value={selectedRate ? fmt(shippingFee) : "—"}
-                  hint={!selectedRate ? "Select a courier" : undefined} />
-                <div className="flex items-center justify-between pt-3 border-t border-[#ececec] mt-3 mb-1">
-                  <span className="text-[14.5px] font-semibold text-[#1a1a1a]">Total</span>
-                  <span className="text-[20px] text-[#1a1a1a]">{fmt(total)}</span>
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <PayButton paying={paying} ready={!!selectedRate} total={total} onClick={handlePay} />
-              </div>
-
-              <div className="flex items-center justify-center gap-4 mt-4">
-                <Link href="/returns" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a]">
+              <div className="border-t border-[#e5e5e0] pt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-[#1a1a1a]">
+                <Link href="/policies/refund-policy" className="underline underline-offset-2 hover:opacity-70">
                   Refund Policy
                 </Link>
-                <Link href="/shipping-policy" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a]">
+                <Link href="/policies/shipping-policy" className="underline underline-offset-2 hover:opacity-70">
                   Shipping
                 </Link>
-                <Link href="/terms" className="text-[12.5px] text-[#8f8f8a] underline underline-offset-2 hover:text-[#1a1a1a]">
-                  Terms of Service
+                <Link href="/policies/terms-of-service" className="underline underline-offset-2 hover:opacity-70">
+                  Terms of service
                 </Link>
               </div>
             </div>
-            </div>
-
-          </aside>
+          </div>
         </div>
-      </div>
-  );
-}
 
-/* ── Small pieces ──────────────────────────────────────────────── */
-function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <section className="pb-8 border-b border-[#ececec] last:border-b-0">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-[19px] font-semibold text-[#1a1a1a] font-sans">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-[14.5px] text-[#767676]">{label}</span>
-      <span className="text-[15px] text-[#1a1a1a]">
-        {value}{hint && <span className="text-[12.5px] text-[#b5b5b0] ml-2">{hint}</span>}
-      </span>
-    </div>
-  );
-}
-
-function PayButton({ paying, ready, total, onClick }: {
-  paying: boolean; ready: boolean; total: number; onClick: () => void;
-}) {
-  return (
-    <button onClick={onClick} disabled={paying || !ready}
-      className="w-full bg-[#1a1a1a] text-white text-[15px] font-medium py-3.5 rounded-[4px]
-        hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-      {paying ? "Redirecting to Paystack…" : ready ? `Pay ${fmt(total)}` : "Select delivery to continue"}
-    </button>
-  );
-}
-
-function Gate({ title, body, cta }: {
-  title: string; body: string; cta: { label: string; onClick: () => void };
-}) {
-  return (
-    <div className="min-h-screen bg-[#ffffff] font-sans">
-      <div className="h-[76px] md:h-[88px]" />
-      <div className="flex items-center justify-center px-6 py-28">
-        <div className="text-center max-w-sm">
-          <p className="text-[22px] font-semibold text-[#1a1a1a] mb-3 font-sans">
-            {title}
-          </p>
-          <p className="text-[15px] text-[#767676] leading-relaxed mb-7">{body}</p>
-          <button onClick={cta.onClick}
-            className="bg-[#1a1a1a] text-white text-[14px] font-medium rounded-[4px] px-8 py-3.5 hover:bg-black transition-colors">
-            {cta.label}
-          </button>
+        <div className="hidden lg:block bg-[#f5f5f5] border-l border-[#e5e5e0] px-6 md:px-12 lg:px-16 py-10">
+          <div className="sticky top-28 max-w-[440px]">
+            {renderOrderSummaryContent()}
+          </div>
         </div>
       </div>
     </div>

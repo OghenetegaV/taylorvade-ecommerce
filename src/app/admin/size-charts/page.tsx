@@ -15,6 +15,56 @@ function emptyRow(sizes: string[]): Row {
   return { label: "", values: Object.fromEntries(sizes.map(s => [s, ""])) };
 }
 
+// Ready-made international size templates (metric cm + UK/US/EU number
+// equivalents) — Taylor Vade ships out of Nigeria but sells globally, so
+// every template leads with the size-number conversions a US/UK/EU shopper
+// needs before they ever look at a cm measurement. Loading a template just
+// fills the draft below; nothing saves until "Save Chart" is pressed.
+const TEMPLATES: Record<string, { sizeCols: string[]; rows: Row[] }> = {
+  "Women's Tops & Dresses": {
+    sizeCols: ["XS", "S", "M", "L", "XL", "XXL"],
+    rows: [
+      { label: "UK Size",    values: { XS: "6",  S: "8",  M: "10", L: "12",  XL: "14",  XXL: "16"  } },
+      { label: "US Size",    values: { XS: "2",  S: "4",  M: "6",  L: "8",   XL: "10",  XXL: "12"  } },
+      { label: "EU Size",    values: { XS: "34", S: "36", M: "38", L: "40",  XL: "42",  XXL: "44"  } },
+      { label: "Bust (cm)",  values: { XS: "81", S: "86", M: "91", L: "97",  XL: "103", XXL: "109" } },
+      { label: "Waist (cm)", values: { XS: "63", S: "68", M: "73", L: "79",  XL: "85",  XXL: "91"  } },
+      { label: "Hip (cm)",   values: { XS: "89", S: "94", M: "99", L: "105", XL: "111", XXL: "117" } },
+    ],
+  },
+  "Women's Bottoms": {
+    sizeCols: ["XS", "S", "M", "L", "XL", "XXL"],
+    rows: [
+      { label: "UK Size",     values: { XS: "6",  S: "8",  M: "10", L: "12",  XL: "14",  XXL: "16"  } },
+      { label: "US Size",     values: { XS: "2",  S: "4",  M: "6",  L: "8",   XL: "10",  XXL: "12"  } },
+      { label: "EU Size",     values: { XS: "34", S: "36", M: "38", L: "40",  XL: "42",  XXL: "44"  } },
+      { label: "Waist (cm)",  values: { XS: "63", S: "68", M: "73", L: "79",  XL: "85",  XXL: "91"  } },
+      { label: "Hip (cm)",    values: { XS: "89", S: "94", M: "99", L: "105", XL: "111", XXL: "117" } },
+      { label: "Inseam (cm)", values: { XS: "75", S: "76", M: "76", L: "77",  XL: "77",  XXL: "78"  } },
+    ],
+  },
+  "Men's Tops & Outerwear": {
+    sizeCols: ["XS", "S", "M", "L", "XL", "XXL"],
+    rows: [
+      { label: "UK/US Size",         values: { XS: "34", S: "36", M: "38", L: "40",  XL: "42",  XXL: "44"  } },
+      { label: "EU Size",            values: { XS: "44", S: "46", M: "48", L: "50",  XL: "52",  XXL: "54"  } },
+      { label: "Chest (cm)",         values: { XS: "86", S: "91", M: "96", L: "101", XL: "106", XXL: "111" } },
+      { label: "Waist (cm)",         values: { XS: "71", S: "76", M: "81", L: "86",  XL: "91",  XXL: "96"  } },
+      { label: "Neck (cm)",          values: { XS: "36", S: "38", M: "39", L: "41",  XL: "43",  XXL: "44"  } },
+      { label: "Sleeve Length (cm)", values: { XS: "83", S: "84", M: "85", L: "86",  XL: "87",  XXL: "88"  } },
+    ],
+  },
+  "Men's Bottoms": {
+    sizeCols: ["XS", "S", "M", "L", "XL", "XXL"],
+    rows: [
+      { label: "Waist (in)",  values: { XS: "28", S: "30", M: "32", L: "34",  XL: "36",  XXL: "38"  } },
+      { label: "Waist (cm)",  values: { XS: "71", S: "76", M: "81", L: "86",  XL: "91",  XXL: "96"  } },
+      { label: "Hip (cm)",    values: { XS: "89", S: "94", M: "99", L: "104", XL: "109", XXL: "114" } },
+      { label: "Inseam (cm)", values: { XS: "80", S: "81", M: "81", L: "82",  XL: "82",  XXL: "83"  } },
+    ],
+  },
+};
+
 export default function SizeChartsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedId, setSelectedId] = useState("");
@@ -75,6 +125,13 @@ export default function SizeChartsPage() {
       return { ...r, values: rest };
     }));
   }
+  function applyTemplate(name: string) {
+    const template = TEMPLATES[name];
+    if (!template) return;
+    setSizeCols(template.sizeCols);
+    setRows(template.rows.map(r => ({ label: r.label, values: { ...r.values } })));
+    setSaved(false);
+  }
 
   async function handleSave() {
     if (!selectedId) return;
@@ -110,6 +167,17 @@ export default function SizeChartsPage() {
           <div className="text-sm text-slate-400 py-6 text-center">Loading…</div>
         ) : (
           <>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500">Quick start:</span>
+              {Object.keys(TEMPLATES).map(name => (
+                <button key={name} onClick={() => applyTemplate(name)}
+                  className="px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200
+                    text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">
+                  {name}
+                </button>
+              ))}
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <thead>
