@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Plus, Trash2, Save, CheckCircle2 } from "lucide-react";
 
-type Category = { id: string; name: string; gender: string };
+type Category = { id: string; name: string; gender: string; hasChart: boolean };
 type Row = { label: string; values: Record<string, string> };
 
 const inputClass = `w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm
@@ -65,6 +65,18 @@ const TEMPLATES: Record<string, { sizeCols: string[]; rows: Row[] }> = {
   },
 };
 
+// Best-guess template for a category, used by "Apply to all remaining
+// categories" — bottoms keywords route to the *Bottoms template for that
+// gender, everything else gets *Tops & Dresses/Outerwear. Unisex categories
+// have no confident match (men's and women's blocks fit too differently) so
+// they're left for manual assignment.
+function guessTemplate(name: string, gender: string): string | null {
+  const isBottom = /trouser|pant|jean|short|skirt|legging|jogger/i.test(name);
+  if (gender === "WOMEN") return isBottom ? "Women's Bottoms" : "Women's Tops & Dresses";
+  if (gender === "MEN")   return isBottom ? "Men's Bottoms" : "Men's Tops & Outerwear";
+  return null;
+}
+
 export default function SizeChartsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedId, setSelectedId] = useState("");
@@ -74,17 +86,22 @@ export default function SizeChartsPage() {
   const [loadingChart, setLoadingChart] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
 
-  useEffect(() => {
+  const refreshCategories = () =>
     fetch("/api/admin/categories").then(r => r.json()).then(d => {
       if (d.success) setCategories(d.data);
     });
-  }, []);
+
+  useEffect(() => { refreshCategories(); }, []);
 
   useEffect(() => {
     if (!selectedId) return;
     setLoadingChart(true);
     setSaved(false);
+    setSaveError(null);
     fetch(`/api/admin/categories/${selectedId}/size-chart`).then(r => r.json()).then(d => {
       const chart = d.success ? d.data : null;
       if (chart?.sizes?.length) {
@@ -131,26 +148,77 @@ export default function SizeChartsPage() {
     setSizeCols(template.sizeCols);
     setRows(template.rows.map(r => ({ label: r.label, values: { ...r.values } })));
     setSaved(false);
+    setSaveError(null);
   }
 
   async function handleSave() {
     if (!selectedId) return;
+    const cleanRows = rows.filter(r => r.label.trim());
+    if (cleanRows.length === 0) {
+      setSaveError("Add at least one row with a measurement label (e.g. \"Chest (cm)\") before saving — blank-label rows aren't saved.");
+      return;
+    }
     setSaving(true);
     setSaved(false);
-    const cleanRows = rows.filter(r => r.label.trim());
-    const res = await fetch(`/api/admin/categories/${selectedId}/size-chart`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sizes: cleanRows }),
-    });
-    const d = await res.json();
-    setSaving(false);
-    if (d.success) setSaved(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/admin/categories/${selectedId}/size-chart`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sizes: cleanRows }),
+      });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.error ?? "Could not save chart");
+      setSaved(true);
+      setCategories(prev => prev.map(c => c.id === selectedId ? { ...c, hasChart: true } : c));
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Could not save chart");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // One click to fill in every category that has no chart yet, using the
+  // best-guess template for its gender/name. Existing charts are left alone.
+  async function applyToAllRemaining() {
+    const targets = categories.filter(c => !c.hasChart);
+    if (targets.length === 0) return;
+    setBulkRunning(true);
+    setBulkResult(null);
+    let applied = 0, skipped = 0;
+    for (const c of targets) {
+      const templateName = guessTemplate(c.name, c.gender);
+      const template = templateName ? TEMPLATES[templateName] : null;
+      if (!template) { skipped++; continue; }
+      const res = await fetch(`/api/admin/categories/${c.id}/size-chart`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sizes: template.rows }),
+      });
+      const d = await res.json();
+      if (d.success) applied++; else skipped++;
+    }
+    await refreshCategories();
+    setBulkResult(
+      `Applied a standard chart to ${applied} categor${applied === 1 ? "y" : "ies"}.` +
+      (skipped ? ` Skipped ${skipped} (unisex or no confident match) — assign those manually.` : "")
+    );
+    setBulkRunning(false);
   }
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
-      <h1 className="text-xl font-bold text-slate-900">Size Charts</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-slate-900">Size Charts</h1>
+        {categories.some(c => !c.hasChart) && (
+          <button onClick={applyToAllRemaining} disabled={bulkRunning}
+            className="flex items-center gap-2 text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50">
+            {bulkRunning && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Apply standard charts to all remaining categories
+          </button>
+        )}
+      </div>
+      {bulkResult && <p className="text-xs text-slate-500">{bulkResult}</p>}
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6 space-y-5">
         <div>
@@ -158,7 +226,9 @@ export default function SizeChartsPage() {
           <select value={selectedId} onChange={e => setSelectedId(e.target.value)} className={inputClass}>
             <option value="">Select a category…</option>
             {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.gender} — {c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.gender} — {c.name} {c.hasChart ? "✓ has chart" : "— no chart yet"}
+              </option>
             ))}
           </select>
         </div>
@@ -246,6 +316,9 @@ export default function SizeChartsPage() {
                 <span className="flex items-center gap-1.5 text-sm text-emerald-600">
                   <CheckCircle2 className="w-4 h-4" /> Saved
                 </span>
+              )}
+              {saveError && (
+                <span className="text-sm text-red-600">{saveError}</span>
               )}
             </div>
           </>

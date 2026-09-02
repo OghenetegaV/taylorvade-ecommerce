@@ -6,8 +6,12 @@ import { requireAdmin } from "@/lib/admin";
 export async function GET() {
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
-  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
-  return NextResponse.json({ success: true, data: categories });
+  const categories = await prisma.category.findMany({
+    orderBy: { name: "asc" },
+    include: { sizeChart: { select: { id: true } } },
+  });
+  const data = categories.map(({ sizeChart, ...c }) => ({ ...c, hasChart: !!sizeChart }));
+  return NextResponse.json({ success: true, data });
 }
 
 export async function POST(req: NextRequest) {

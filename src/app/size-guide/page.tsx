@@ -9,7 +9,7 @@ async function loadCharts() {
     include: { sizeChart: { select: { sizes: true } } },
     orderBy: [{ gender: "asc" }, { name: "asc" }],
   });
-  return categories as (typeof categories[number] & {
+  return categories.filter(c => Array.isArray(c.sizeChart?.sizes) && c.sizeChart.sizes.length > 0) as (typeof categories[number] & {
     sizeChart: { sizes: { label: string; values: Record<string, string> }[] };
   })[];
 }
