@@ -1,8 +1,8 @@
 // src/app/admin/size-charts/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, Plus, Trash2, Save, CheckCircle2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Plus, Trash2, Save, CheckCircle2, Pencil } from "lucide-react";
 
 type Category = { id: string; name: string; gender: string; hasChart: boolean };
 type Row = { label: string; values: Record<string, string> };
@@ -89,6 +89,12 @@ export default function SizeChartsPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkResult, setBulkResult] = useState<string | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  function editChart(id: string) {
+    setSelectedId(id);
+    editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   const refreshCategories = () =>
     fetch("/api/admin/categories").then(r => r.json()).then(d => {
@@ -220,7 +226,31 @@ export default function SizeChartsPage() {
       </div>
       {bulkResult && <p className="text-xs text-slate-500">{bulkResult}</p>}
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6 space-y-5">
+      {categories.some(c => c.hasChart) && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
+          <h2 className="text-sm font-bold text-slate-900 mb-3">
+            Existing Size Charts ({categories.filter(c => c.hasChart).length})
+          </h2>
+          <div className="divide-y divide-slate-100">
+            {categories.filter(c => c.hasChart).map(c => (
+              <div key={c.id} className="flex items-center justify-between py-2.5">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mr-2">{c.gender}</span>
+                  <span className="text-sm text-slate-800">{c.name}</span>
+                </div>
+                <button onClick={() => editChart(c.id)}
+                  className={`flex items-center gap-1.5 text-xs font-semibold flex-shrink-0 ${
+                    selectedId === c.id ? "text-blue-700" : "text-blue-600 hover:text-blue-700"
+                  }`}>
+                  <Pencil className="w-3 h-3" /> Edit
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div ref={editorRef} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6 space-y-5 scroll-mt-6">
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5">Category</label>
           <select value={selectedId} onChange={e => setSelectedId(e.target.value)} className={inputClass}>

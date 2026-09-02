@@ -1,5 +1,6 @@
 // src/app/size-guide/page.tsx
 import prisma from "@/lib/prisma";
+import SizeGuideBrowser from "./SizeGuideBrowser";
 
 export const metadata = { title: "Size Guide — Taylor Vade" };
 
@@ -9,9 +10,14 @@ async function loadCharts() {
     include: { sizeChart: { select: { sizes: true } } },
     orderBy: [{ gender: "asc" }, { name: "asc" }],
   });
-  return categories.filter(c => Array.isArray(c.sizeChart?.sizes) && c.sizeChart.sizes.length > 0) as (typeof categories[number] & {
-    sizeChart: { sizes: { label: string; values: Record<string, string> }[] };
-  })[];
+  return categories
+    .filter(c => Array.isArray(c.sizeChart?.sizes) && c.sizeChart.sizes.length > 0)
+    .map(c => ({
+      id: c.id,
+      name: c.name,
+      gender: c.gender,
+      sizes: c.sizeChart!.sizes as { label: string; values: Record<string, string> }[],
+    }));
 }
 
 export default async function SizeGuidePage() {
@@ -32,45 +38,7 @@ export default async function SizeGuidePage() {
             notes on individual product pages.
           </p>
         ) : (
-          <div className="space-y-10">
-            {categories.map(cat => {
-              const rows = cat.sizeChart.sizes;
-              const cols = Object.keys(rows[0]?.values ?? {});
-              return (
-                <div key={cat.id}>
-                  <h2 className="text-[14.5px] tracking-[0.14em] uppercase text-[#1a1008] mb-3">
-                    {cat.gender === "MEN" ? "Men — " : cat.gender === "WOMEN" ? "Women — " : ""}{cat.name}
-                  </h2>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-[14px] border-collapse">
-                      <thead>
-                        <tr className="border-b border-[#e8e2db]">
-                          <th className="text-left py-2 pr-3 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">Measurement</th>
-                          {cols.map(size => (
-                            <th key={size} className="text-center py-2 px-2 text-[#8a7a6a] uppercase tracking-[0.06em] text-[12px]">
-                              {size}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map(row => (
-                          <tr key={row.label} className="border-b border-[#e8e2db]">
-                            <td className="py-2 pr-3 text-[#3a2e22]">{row.label}</td>
-                            {cols.map(size => (
-                              <td key={size} className="text-center py-2 px-2 text-[#5a4a3a]">
-                                {row.values[size] || "—"}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <SizeGuideBrowser categories={categories} />
         )}
       </div>
     </div>
