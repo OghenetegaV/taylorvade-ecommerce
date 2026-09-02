@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { sendGAEvent } from "@next/third-parties/google";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { COUNTRY_CODE_NAMES } from "@/lib/shipping";
+import { useCurrency } from "@/lib/currency";
 
 type CartItem = {
   id: string;
@@ -34,9 +35,6 @@ type Upsell = {
 };
 
 const FREE_DELIVERY_THRESHOLD = 250000;
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 2 }).format(n);
 
 function FloatingInput({
   label,
@@ -109,6 +107,28 @@ function FloatingSelect({
   );
 }
 
+function InfoTooltip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        aria-label="More info"
+        onClick={() => setOpen((o) => !o)}
+        onBlur={() => setOpen(false)}
+        className="w-4 h-4 rounded-full border border-[#707070] text-[10px] flex items-center justify-center font-bold text-[#707070] hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors"
+      >
+        ?
+      </button>
+      {open && (
+        <span className="absolute z-20 right-0 top-6 w-52 p-2.5 text-[11.5px] leading-snug text-white bg-[#1a1a1a] rounded-[6px] shadow-lg">
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function CheckboxField({
   checked,
   onChange,
@@ -133,6 +153,7 @@ function CheckboxField({
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { format: fmt } = useCurrency();
 
   const [authState, setAuthState] = useState<"loading" | "guest" | "authed">("loading");
   const [email, setEmail] = useState("");
@@ -488,6 +509,14 @@ export default function CheckoutPage() {
       return;
     }
 
+    if ((newsletter || smsNewsletter) && emailValid) {
+      fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, categories: ["All"], smsOptIn: smsNewsletter }),
+      }).catch(() => {});
+    }
+
     setPaying(true);
     try {
       const shippingAddress = {
@@ -656,9 +685,7 @@ export default function CheckoutPage() {
         <div className="flex items-center justify-between text-[13.5px]">
           <span className="flex items-center gap-1.5 text-[#333333]">
             Shipping
-            <span className="w-3.5 h-3.5 rounded-full border border-[#707070] text-[9px] flex items-center justify-center font-bold text-[#707070]">
-              ?
-            </span>
+            <InfoTooltip text="Calculated once you enter your delivery address and choose a courier above." />
           </span>
           <span className="text-[#707070]">
             {selectedRate ? fmt(shippingFee) : "Enter shipping address"}
@@ -666,10 +693,7 @@ export default function CheckoutPage() {
         </div>
         <div className="flex items-baseline justify-between pt-3 border-t border-[#e5e5e0]">
           <span className="text-[15px] font-semibold text-[#1a1a1a]">Total</span>
-          <div className="text-right">
-            <span className="text-[11px] text-[#707070] mr-2 font-mono">NGN</span>
-            <span className="text-[18px] font-bold text-[#1a1a1a]">{fmt(total)}</span>
-          </div>
+          <span className="text-[18px] font-bold text-[#1a1a1a]">{fmt(total)}</span>
         </div>
       </div>
     </div>
@@ -824,11 +848,7 @@ export default function CheckoutPage() {
                 value={email}
                 onChange={setEmail}
                 required
-                icon={
-                  <span className="w-4 h-4 rounded-full border border-[#707070] text-[10px] flex items-center justify-center font-bold cursor-pointer">
-                    ?
-                  </span>
-                }
+                icon={<InfoTooltip text="We'll send your order confirmation and delivery updates to this email." />}
               />
               <CheckboxField
                 checked={newsletter}
@@ -953,11 +973,7 @@ export default function CheckoutPage() {
                     resetRates();
                   }}
                   required
-                  icon={
-                    <span className="w-4 h-4 rounded-full border border-[#707070] text-[10px] flex items-center justify-center font-bold cursor-pointer">
-                      ?
-                    </span>
-                  }
+                  icon={<InfoTooltip text="Your courier will contact you on this number to coordinate delivery." />}
                 />
               </div>
 
