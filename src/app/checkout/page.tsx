@@ -701,26 +701,32 @@ export default function CheckoutPage() {
 
   if (authState === "loading" || !cartLoaded) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center font-sans pt-24 pb-12">
-        <p className="text-[14px] text-[#707070]">Loading checkout…</p>
+      <div className="min-h-screen bg-white font-sans">
+        <div className="h-[66px] md:h-[86px]" />
+        <div className="flex items-center justify-center pb-12">
+          <p className="text-[14px] text-[#707070]">Loading checkout…</p>
+        </div>
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-white font-sans flex items-center justify-center px-6 pt-28 pb-16">
-        <div className="text-center max-w-sm">
-          <p className="text-[20px] font-semibold text-[#1a1a1a] mb-2 font-serif">Your bag is empty</p>
-          <p className="text-[14px] text-[#707070] leading-relaxed mb-6">
-            Add something you love to your cart, then return to complete checkout.
-          </p>
-          <button
-            onClick={() => router.push("/collections/woman")}
-            className="w-full bg-[#1a1a1a] text-white text-[13px] uppercase tracking-widest font-semibold rounded-[4px] py-3.5 hover:bg-black transition-colors"
-          >
-            Shop the Collection
-          </button>
+      <div className="min-h-screen bg-white font-sans">
+        <div className="h-[66px] md:h-[86px]" />
+        <div className="flex items-center justify-center px-6 pb-16">
+          <div className="text-center max-w-sm">
+            <p className="text-[20px] font-semibold text-[#1a1a1a] mb-2 font-serif">Your bag is empty</p>
+            <p className="text-[14px] text-[#707070] leading-relaxed mb-6">
+              Add something you love to your cart, then return to complete checkout.
+            </p>
+            <button
+              onClick={() => router.push("/collections/woman")}
+              className="w-full bg-[#1a1a1a] text-white text-[13px] uppercase tracking-widest font-semibold rounded-[4px] py-3.5 hover:bg-black transition-colors"
+            >
+              Shop the Collection
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -729,8 +735,15 @@ export default function CheckoutPage() {
   const topUpsell = upsells[0];
 
   return (
-    <div className="min-h-screen bg-white font-sans pt-20 md:pt-24 lg:pt-28">
-      <div className="lg:hidden border-b border-[#e5e5e0] bg-[#f5f5f5]">
+    <div className="relative min-h-screen bg-white font-sans">
+      {/* Order-summary backdrop — spans the full page height (behind the
+          transparent-on-desktop header too) so it's visible immediately,
+          not just once the header's clearance has scrolled past. */}
+      <div className="hidden lg:block absolute inset-y-0 right-0 w-[44%] bg-[#f5f5f5] border-l border-[#e5e5e0]" />
+
+      <div className="h-[66px] md:h-[86px]" />
+
+      <div className="lg:hidden sticky top-[66px] md:top-[86px] z-40 border-b border-[#e5e5e0] bg-[#f5f5f5]">
         <div className="flex items-center justify-between px-6 py-4">
           <button
             type="button"
@@ -752,13 +765,13 @@ export default function CheckoutPage() {
           <span className="text-[15px] font-bold text-[#1a1a1a]">{fmt(total)}</span>
         </div>
         {summaryOpen && (
-          <div className="px-6 pb-6 border-t border-[#e5e5e0] pt-4 bg-[#f5f5f5]">
+          <div className="px-6 pb-6 border-t border-[#e5e5e0] pt-4 bg-[#f5f5f5] max-h-[calc(100vh-140px)] overflow-y-auto">
             {renderOrderSummaryContent()}
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[56%_44%] min-h-[calc(100vh-5rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-[56%_44%] min-h-[calc(100vh-66px)] md:min-h-[calc(100vh-86px)]">
         <div className="px-6 md:px-16 lg:px-20 py-8 flex flex-col items-center">
           <div className="w-full max-w-[540px] space-y-8">
             <div>
@@ -1241,7 +1254,7 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <div className="pt-4 space-y-6">
+            <div className="pt-4">
               <button
                 type="button"
                 onClick={handlePay}
@@ -1250,27 +1263,27 @@ export default function CheckoutPage() {
               >
                 {paying ? "Redirecting…" : "Pay Now"}
               </button>
-
-              <div className="border-t border-[#e5e5e0] pt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-[#1a1a1a]">
-                <Link href="/policies/refund-policy" className="underline underline-offset-2 hover:opacity-70">
-                  Refund Policy
-                </Link>
-                <Link href="/policies/shipping-policy" className="underline underline-offset-2 hover:opacity-70">
-                  Shipping
-                </Link>
-                <Link href="/policies/terms-of-service" className="underline underline-offset-2 hover:opacity-70">
-                  Terms of service
-                </Link>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="hidden lg:block bg-[#f5f5f5] border-l border-[#e5e5e0] px-6 md:px-12 lg:px-16 py-10">
-          <div className="sticky top-28 max-w-[440px]">
+        <div className="hidden lg:block relative px-6 md:px-12 lg:px-16 py-10">
+          <div className="sticky top-[86px] max-w-[440px]">
             {renderOrderSummaryContent()}
           </div>
         </div>
+      </div>
+
+      <div className="border-t border-[#e5e5e0] px-6 py-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-[#1a1a1a]">
+        <Link href="/returns" className="underline underline-offset-2 hover:opacity-70">
+          Refund Policy
+        </Link>
+        <Link href="/shipping-policy" className="underline underline-offset-2 hover:opacity-70">
+          Shipping
+        </Link>
+        <Link href="/terms" className="underline underline-offset-2 hover:opacity-70">
+          Terms of service
+        </Link>
       </div>
     </div>
   );

@@ -216,6 +216,7 @@ const primaryLinks = [
 const secondaryLinks = [
   { label: "About Us",   href: "/about" },
   { label: "Collection",  href: "/collection" },
+  { label: "Size Chart",  href: "/size-guide" },
   // { label: "",  href: "/rewards" },
 ];
 
