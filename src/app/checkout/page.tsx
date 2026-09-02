@@ -735,11 +735,14 @@ export default function CheckoutPage() {
   const topUpsell = upsells[0];
 
   return (
-    <div className="relative min-h-screen bg-white font-sans">
-      {/* Order-summary backdrop — spans the full page height (behind the
-          transparent-on-desktop header too) so it's visible immediately,
-          not just once the header's clearance has scrolled past. */}
-      <div className="hidden lg:block absolute inset-y-0 right-0 w-[44%] bg-[#f5f5f5] border-l border-[#e5e5e0]" />
+    <div className="min-h-screen bg-white font-sans">
+      <div className="relative">
+        {/* Order-summary backdrop — spans this wrapper's full height, starting
+            at the true top of the page (behind the transparent-on-desktop
+            header) so it's visible immediately, not just once scrolled past.
+            Stops before the policy links bar below, which sits outside this
+            wrapper so the backdrop can't bleed into it. */}
+        <div className="hidden lg:block absolute inset-y-0 right-0 w-[44%] bg-[#f5f5f5] border-l border-[#e5e5e0]" />
 
       <div className="h-[66px] md:h-[86px]" />
 
@@ -1272,9 +1275,10 @@ export default function CheckoutPage() {
             {renderOrderSummaryContent()}
           </div>
         </div>
+        </div>
       </div>
 
-      <div className="border-t border-[#e5e5e0] px-6 py-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-[#1a1a1a]">
+      <div className="border-t border-[#e5e5e0] px-6 md:px-16 lg:px-20 py-6 flex flex-wrap items-center justify-start gap-x-6 gap-y-2 text-[13px] text-[#1a1a1a]">
         <Link href="/returns" className="underline underline-offset-2 hover:opacity-70">
           Refund Policy
         </Link>

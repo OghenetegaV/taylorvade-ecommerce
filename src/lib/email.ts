@@ -5,7 +5,7 @@ import { Resend } from "resend";
 import prisma from "@/lib/prisma";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
-const FROM   = process.env.RESEND_FROM_EMAIL ?? "orders@taylorvade.com";
+const FROM   = process.env.RESEND_FROM_EMAIL ?? "omonighooghenetega16@yahoo.com";
 // Where new-order alerts go. Unset by default — sendOrderNotificationEmail
 // no-ops until STORE_NOTIFICATION_EMAIL is configured.
 const STORE_EMAIL = process.env.STORE_NOTIFICATION_EMAIL;
@@ -102,7 +102,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
           </p>
         </div>
         <div class="footer">
-          Taylor Vade · Luxury Fashion · orders@taylorvade.com
+          Taylor Vade · Luxury Fashion · omonighooghenetega16@yahoo.com
         </div>
       </div>
     </body>
