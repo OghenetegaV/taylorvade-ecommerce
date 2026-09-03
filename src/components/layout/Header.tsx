@@ -8,7 +8,8 @@ import { X, ShoppingBag } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CURRENCY_CHANGE_EVENT, formatConverted } from "@/lib/currency";
 import { FREE_SHIPPING_THRESHOLD_NGN } from "@/lib/shipping";
-import { InstagramIcon, XIcon as XSocialIcon, WhatsAppIcon } from "@/components/icons/SocialIcons";
+import { prepareStorefrontCategories } from "@/lib/categoryOrder";
+import { InstagramIcon, FacebookIcon, TikTokIcon, WhatsAppIcon } from "@/components/icons/SocialIcons";
 import CartSidebar from "./CartSidebar";
 import SearchOverlay from "./SearchOverlay";
 
@@ -211,7 +212,7 @@ const CountryFlag = ({ country, className }: { country: string; className?: stri
 const primaryLinks = [
   { label: "Taylor Vade Woman",  href: "/collections/woman",  gender: "WOMEN" },
   { label: "Taylor Vade Man",    href: "/collections/man",    gender: "MEN" },
-  { label: "Taylor Vade Unisex", href: "/collections/unisex", gender: null },
+  // { label: "Taylor Vade Unisex", href: "/collections/unisex", gender: null },
 ];
 const secondaryLinks = [
   { label: "About Us",   href: "/about" },
@@ -220,13 +221,13 @@ const secondaryLinks = [
   // { label: "",  href: "/rewards" },
 ];
 
-// Socials — Instagram matches the real handle used in the footer. X has no
-// confirmed real handle yet; WhatsApp needs the business number — both are
-// left as "#" placeholders until you give me the real links.
+const WHATSAPP_NUMBER = "2349030305584";
+
 const SOCIALS = [
+  { label: "WhatsApp",  href: `https://wa.me/${WHATSAPP_NUMBER}`, Icon: WhatsAppIcon },
   { label: "Instagram", href: "https://www.instagram.com/taylor_vade/", Icon: InstagramIcon },
-  { label: "X",         href: "#", Icon: XSocialIcon },
-  { label: "WhatsApp",  href: "#", Icon: WhatsAppIcon },
+  { label: "TikTok",    href: "https://www.tiktok.com/@taylorvade", Icon: TikTokIcon },
+  { label: "Facebook",  href: "https://www.facebook.com/taylorvade", Icon: FacebookIcon },
 ];
 
 const SUGGESTED_CURRENCIES = ["NGN", "USD", "GBP", "CAD"];
@@ -256,10 +257,14 @@ export default function Header() {
   const [expandedGender, setExpandedGender] = useState<string | null>(null);
 
   const isHome = pathname === "/";
+  const isCheckout = pathname.startsWith("/checkout");
   const iconColor = overHero ? "#FAF9F7" : "#3a2e22";
   // Mobile: solid header at rest, fading to transparent on scroll (skipped on
   // the homepage, which already has its own transparent-over-hero treatment).
-  const mobileBgClass = isHome ? "" : scrolled ? "bg-transparent" : "bg-[#FAF9F7]";
+  // Checkout stays solid always — its content (order summary, form fields)
+  // scrolls directly under the header, so a transparent header there would
+  // let that content show through behind the logo/icons.
+  const mobileBgClass = isHome ? "" : isCheckout ? "bg-[#FAF9F7]" : scrolled ? "bg-transparent" : "bg-[#FAF9F7]";
 
   function openCart(tab: "basket" | "wishlist") {
     setCartTab(tab);
@@ -414,7 +419,9 @@ export default function Header() {
 
         <nav className="flex flex-col px-5 pt-4">
           {primaryLinks.map(l => {
-            const subcats = l.gender ? navCategories.filter(c => c.gender === l.gender) : [];
+            const subcats = l.gender
+              ? prepareStorefrontCategories(navCategories.filter(c => c.gender === l.gender))
+              : [];
             const expanded = expandedGender === l.gender;
             return (
               <div key={l.href}>

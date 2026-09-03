@@ -1,10 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { InstagramIcon, FacebookIcon, XIcon, TikTokIcon } from "@/components/icons/SocialIcons";
+import Link from "next/link";
+import { InstagramIcon, FacebookIcon, TikTokIcon, WhatsAppIcon } from "@/components/icons/SocialIcons";
+import { VisaIcon, MastercardIcon, ApplePayIcon, PaystackIcon } from "@/components/icons/PaymentIcons";
 
 const BRAND_LINKS = [
   { text: "About Us", href: "/about" },
+];
+
+const WHATSAPP_NUMBER = "2349030305584";
+
+const SOCIALS = [
+  { Icon: WhatsAppIcon,  href: `https://wa.me/${WHATSAPP_NUMBER}` },
+  { Icon: InstagramIcon, href: "https://www.instagram.com/taylor_vade/" },
+  { Icon: TikTokIcon,    href: "https://www.tiktok.com/@taylorvade" },
+  { Icon: FacebookIcon,  href: "https://www.facebook.com/taylorvade" },
+];
+
+const PAYMENT_METHODS = [
+  { Icon: PaystackIcon,    label: "Paystack" },
+  { Icon: ApplePayIcon,    label: "Apple Pay" },
+  { Icon: VisaIcon,        label: "Visa" },
+  { Icon: MastercardIcon,  label: "Mastercard" },
 ];
 
 const CUSTOMER_LINKS = [
@@ -49,10 +67,12 @@ export default function Footer() {
         </div>
 
         <div className="flex justify-center gap-6 py-8">
-          {[InstagramIcon, FacebookIcon, XIcon, TikTokIcon].map((Icon, i) => (
+          {SOCIALS.map(({ Icon, href }, i) => (
             <a
               key={i}
-              href="#"
+              href={href}
+              target="_blank"
+              rel="noreferrer"
               className="w-10 h-10 rounded-full bg-[#1A1A18] text-[#FAF9F7] flex items-center justify-center hover:opacity-80 transition-opacity"
             >
               <Icon className="w-5 h-5" />
@@ -103,7 +123,7 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-col space-y-2 text-[14px] md:pl-16">
-            <a href="#" className="hover:text-[#575754] transition-colors py-1">About Us</a>
+            <Link href="/about" className="hover:text-[#575754] transition-colors py-1">About Us</Link>
             
             {/* <details className="group cursor-pointer">
               <summary className="flex justify-between items-center hover:text-[#575754] transition-colors py-1 list-none">
@@ -157,10 +177,8 @@ export default function Footer() {
             </div>
 
             <div className="flex flex-wrap justify-center md:justify-end gap-2 items-center">
-              {["VISA", "PAYSTACK", "APPLE", "GOOGLE"].map((gateway) => (
-                <div key={gateway} className="bg-[#1A1A18] text-white px-2 py-1 text-[9px] font-sans font-bold tracking-widest rounded-sm">
-                  {gateway}
-                </div>
+              {PAYMENT_METHODS.map(({ Icon, label }) => (
+                <Icon key={label} className="h-6 w-9" />
               ))}
             </div>
           </div>
