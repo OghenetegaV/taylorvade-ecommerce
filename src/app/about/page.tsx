@@ -1,6 +1,14 @@
 // src/app/about/page.tsx
 // Brand story page — content supplied by the client ("ABOUT TAYLOR VADE" doc).
 
+import { Dancing_Script } from "next/font/google";
+
+// The sitewide script font (Pinyon Script, via --font-script) is a single
+// thin weight — elegant, but hard to read at heading size. Dancing Script's
+// bold weight keeps the cursive feel while actually being legible, scoped to
+// this page only so it doesn't change script headings elsewhere on the site.
+const scriptFont = Dancing_Script({ subsets: ["latin"], weight: ["600", "700"] });
+
 export const metadata = {
   title: "About — Taylor Vade",
   description: "Designed for the discerning. The story, purpose, and philosophy behind Taylor Vade.",
@@ -14,8 +22,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 
 function Heading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-[28px] md:text-[34px] text-[#1a1008] leading-tight mb-6"
-      style={{ fontFamily: "var(--font-script), cursive" }}>
+    <h2 className={`${scriptFont.className} text-[30px] md:text-[38px] font-bold text-[#1a1008] leading-tight mb-6`}>
       {children}
     </h2>
   );
@@ -41,8 +48,7 @@ export default function AboutPage() {
       {/* ── Hero ── */}
       <div className="max-w-3xl mx-auto px-5 md:px-8 pt-16 md:pt-24 pb-4 text-center">
         <Eyebrow>About Taylor Vade</Eyebrow>
-        <h1 className="text-[42px] md:text-[58px] text-[#1a1008] leading-[1.05]"
-          style={{ fontFamily: "var(--font-script), cursive" }}>
+        <h1 className={`${scriptFont.className} text-[42px] md:text-[58px] font-bold text-[#1a1008] leading-[1.05]`}>
           Designed for the Discerning.
         </h1>
       </div>
@@ -133,8 +139,7 @@ export default function AboutPage() {
 
         {/* ── Philosophy pull-quote ── */}
         <div className="text-center max-w-2xl mx-auto">
-          <p className="text-[22px] md:text-[28px] text-[#1a1008] italic leading-snug"
-            style={{ fontFamily: "var(--font-script), cursive" }}>
+          <p className={`${scriptFont.className} text-[22px] md:text-[28px] font-bold text-[#1a1008] leading-snug`}>
             Fashion is temporary. Character is enduring.
           </p>
           <div className="mt-6 space-y-4 text-[14.5px] leading-[1.9] tracking-[0.02em] text-[#5a4a3a] max-w-[560px] mx-auto">
@@ -274,7 +279,7 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="mt-10">
-            <p className="text-[26px] text-[#1a1008]" style={{ fontFamily: "var(--font-script), cursive" }}>
+            <p className={`${scriptFont.className} text-[26px] font-bold text-[#1a1008]`}>
               Victor Adeyanju
             </p>
             <p className="text-[12px] tracking-[0.15em] text-[#9a8a7a] uppercase mt-1">

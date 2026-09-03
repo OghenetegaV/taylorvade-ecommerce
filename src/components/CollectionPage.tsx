@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductCard from "./ProductCard";
+import { prepareStorefrontCategories } from "@/lib/categoryOrder";
 
 type Product = {
   id: string; name: string; slug: string; type: string;
@@ -90,7 +91,8 @@ export default function CollectionPage({ title, gender }: Props) {
   const categoryOptions = useMemo(() => {
     const seen = new Map<string, string>(); // slug -> name
     for (const p of products) if (p.category) seen.set(p.category.slug, p.category.name);
-    return Array.from(seen.entries());
+    const entries = Array.from(seen.entries()).map(([slug, name]) => ({ slug, name }));
+    return prepareStorefrontCategories(entries);
   }, [products]);
 
   const colorOptions = useMemo(() => {
@@ -286,7 +288,7 @@ export default function CollectionPage({ title, gender }: Props) {
             <div>
               <p className="text-[11.5px] tracking-[0.2em] uppercase text-[#999] mb-3">Category</p>
               <div className="flex flex-wrap gap-2">
-                {categoryOptions.map(([slug, name]) => {
+                {categoryOptions.map(({ slug, name }) => {
                   const on = fCategories.includes(slug);
                   return (
                     <button key={slug} onClick={() => toggleCategory(slug)}

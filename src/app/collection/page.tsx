@@ -7,6 +7,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import { prepareStorefrontCategories } from "@/lib/categoryOrder";
 
 export const metadata = { title: "Collection — Taylor Vade" };
 
@@ -39,7 +40,7 @@ async function loadCategories() {
       },
     },
   });
-  return categories
+  const shoppable = categories
     .filter(c => c.products.length > 0)
     .map(c => ({
       id: c.id,
@@ -48,6 +49,13 @@ async function loadCategories() {
       gender: c.gender,
       image: c.products[0].images[0]?.url ?? null,
     }));
+
+  // Reorder within each gender (New Arrival, Tops, Bottom, Outerwear, Set,
+  // Essential, Tailoring last) while keeping the MEN → WOMEN → UNISEX grouping.
+  const genderOrder = ["MEN", "WOMEN", "UNISEX"] as const;
+  return genderOrder.flatMap(gender =>
+    prepareStorefrontCategories(shoppable.filter(c => c.gender === gender))
+  );
 }
 
 export default async function CollectionIndexPage() {
