@@ -22,7 +22,7 @@ type Variant = {
 export interface ProductCardProps {
   id: string; slug: string; name: string; type: string;
   description?: string;
-  basePrice: number; isNew: boolean; gender: string;
+  basePrice: number; isNew: boolean; genders: string[];
   images: { url: string }[];
   variants: Variant[];
 }

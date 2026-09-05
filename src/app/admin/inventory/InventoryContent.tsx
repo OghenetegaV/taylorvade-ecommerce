@@ -13,7 +13,7 @@ type Variant = {
   stockQuantity: number; priceOverride: number | null;
 };
 type Product = {
-  id: string; name: string; type: string; gender: string; isPublished: boolean;
+  id: string; name: string; type: string; genders: string[]; isPublished: boolean;
   images: { url: string }[];
   variants: Variant[];
   stockSummary: { total: number; outOfStock: number; lowStock: number };
@@ -145,7 +145,7 @@ export default function InventoryContent() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-900 truncate">{product.name}</p>
                   <p className="text-xs text-slate-400 capitalize">
-                    {product.type} · {product.gender.toLowerCase()}
+                    {product.type} · {product.genders.join(" / ").toLowerCase()}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">

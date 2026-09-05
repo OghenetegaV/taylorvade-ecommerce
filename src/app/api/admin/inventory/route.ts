@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     prisma.product.findMany({
       where, skip, take: limit, orderBy: { name: "asc" },
       select: {
-        id: true, name: true, slug: true, type: true, gender: true, isPublished: true,
+        id: true, name: true, slug: true, type: true, genders: true, isPublished: true,
         images: { where: { isPrimary: true }, take: 1, select: { url: true } },
         variants: {
           where: variantFilter,

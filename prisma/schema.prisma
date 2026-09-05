@@ -81,8 +81,11 @@ model Category {
 
   parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children  Category[] @relation("CategoryTree")
-  products  Product[]
-  sizeChart SizeChart?
+  // Deprecated: reverse side of Product.categoryId (single category per
+  // product). Dropped once Product.categories (multi) fully replaces it.
+  products      Product[] @relation("PrimaryCategory")
+  productsMulti Product[] @relation("ProductCategories")
+  sizeChart     SizeChart?
 
   @@map("categories")
 }
@@ -114,12 +117,19 @@ model Product {
   isNew           Boolean  @default(false) @map("is_new")
   isFeatured      Boolean  @default(false) @map("is_featured")
   isPublished     Boolean  @default(false) @map("is_published")
-  gender          Gender   @default(UNISEX)
-  categoryId      String   @map("category_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  category   Category         @relation(fields: [categoryId], references: [id])
+  // Deprecated: single gender/category, superseded by genders/categories
+  // below. Kept only until the multi-select rollout is verified in prod,
+  // then dropped along with the "PrimaryCategory" relation.
+  gender     Gender   @default(UNISEX)
+  categoryId String   @map("category_id")
+  category   Category @relation("PrimaryCategory", fields: [categoryId], references: [id])
+
+  genders    Gender[]   @default([UNISEX])
+  categories Category[] @relation("ProductCategories")
+
   variants   ProductVariant[]
   images     ProductImage[]
   orderItems OrderItem[]

@@ -16,7 +16,7 @@ async function loadProduct(slug: string) {
   const product = await prisma.product.findUnique({
     where: { slug, isPublished: true },
     include: {
-      category: {
+      categories: {
         select: {
           id: true, name: true, slug: true,
           sizeChart: { select: { sizes: true } },
@@ -34,7 +34,7 @@ async function loadProduct(slug: string) {
 
   const selectedForYou = await prisma.product.findMany({
     where: {
-      categoryId: product.categoryId,
+      categories: { some: { id: { in: product.categories.map(c => c.id) } } },
       isPublished: true,
       id: { not: product.id },
     },
@@ -155,7 +155,7 @@ export default async function ProductRoute({
       type={product.type}
       price={Number(product.basePrice)}
       isNew={product.isNew}
-      gender={product.gender}
+      genders={product.genders}
       images={images}
       swatchImages={swatchImages}
       sizes={sizes}
@@ -165,7 +165,7 @@ export default async function ProductRoute({
       shopTheLook={lookItems}
       selectedForYou={relatedItems}
       productId={product.id}
-      sizeChart={(product.category.sizeChart?.sizes as { label: string; values: Record<string, string> }[]) ?? null}
+      sizeChart={(product.categories.find(c => c.sizeChart)?.sizeChart?.sizes as { label: string; values: Record<string, string> }[]) ?? null}
       variants={product.variants.map((v: any) => ({
         id: v.id,
         size: v.size,

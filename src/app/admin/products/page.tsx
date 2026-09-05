@@ -12,9 +12,9 @@ import {
 
 type Product = {
   id: string; name: string; slug: string; type: string;
-  basePrice: number; gender: string; isNew: boolean;
+  basePrice: number; genders: string[]; isNew: boolean;
   isPublished: boolean; isFeatured: boolean; createdAt: string;
-  category: { name: string } | null;
+  categories: { name: string }[];
   images: { url: string }[];
   variants: { id: string; stockQuantity: number; colorLabel: string; size: string }[];
   _count: { variants: number; orderItems: number };
@@ -187,8 +187,8 @@ function ProductsContent() {
                         </div>
                       </td>
                       <td className="px-5 py-3.5 text-xs text-slate-500">
-                        {product.category?.name ?? "—"}
-                        <p className="text-[11.5px] text-slate-400 capitalize">{product.gender.toLowerCase()}</p>
+                        {product.categories.map(c => c.name).join(", ") || "—"}
+                        <p className="text-[11.5px] text-slate-400 capitalize">{product.genders.join(" / ").toLowerCase()}</p>
                       </td>
                       <td className="px-5 py-3.5 text-sm font-semibold text-slate-800">
                         ₦{Number(product.basePrice).toLocaleString()}

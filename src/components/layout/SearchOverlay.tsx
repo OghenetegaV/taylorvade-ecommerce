@@ -11,23 +11,26 @@ type Product = {
   images: { url: string }[];
 };
 
-type Props = { open: boolean; onClose: () => void };
+type Props = { open: boolean; onClose: () => void; initialQuery?: string };
 
-export default function SearchOverlay({ open, onClose }: Props) {
+export default function SearchOverlay({ open, onClose, initialQuery = "" }: Props) {
   const [query,   setQuery]   = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Focus input when opened
+  // Focus input when opened, pre-filling whatever was typed in the mobile
+  // drawer's search field (if that's what triggered this open).
   useEffect(() => {
     if (open) {
+      setQuery(initialQuery);
       setTimeout(() => inputRef.current?.focus(), 80);
     } else {
       setQuery("");
       setResults([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Close on Escape

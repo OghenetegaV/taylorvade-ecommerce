@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { X, ShoppingBag } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CURRENCY_CHANGE_EVENT, formatConverted } from "@/lib/currency";
@@ -212,7 +212,7 @@ const CountryFlag = ({ country, className }: { country: string; className?: stri
 const primaryLinks = [
   { label: "Taylor Vade Woman",  href: "/collections/woman",  gender: "WOMEN" },
   { label: "Taylor Vade Man",    href: "/collections/man",    gender: "MEN" },
-  // { label: "Taylor Vade Unisex", href: "/collections/unisex", gender: null },
+  { label: "Taylor Vade Unisex", href: "/collections/unisex", gender: null },
 ];
 const secondaryLinks = [
   { label: "About Us",   href: "/about" },
@@ -237,7 +237,6 @@ const ALL_CURRENCIES: string[] = ["AED","AFN","ALL","AMD","ANG","AOA","ARS","AUD
 const ICON = "w-[17px] h-[17px] md:w-[22px] md:h-[22px]";
 
 export default function Header() {
-  const router = useRouter();
   const pathname = usePathname();
 
   const [menuOpen,   setMenuOpen]   = useState(false);
@@ -270,6 +269,15 @@ export default function Header() {
     setCartTab(tab);
     setCartOpen(true);
   }
+
+  // Product page dispatches this right after a successful add-to-cart so the
+  // bag drawer pops open, matching the reference site's behaviour.
+  useEffect(() => {
+    const onOpenCartDrawer = () => openCart("basket");
+    window.addEventListener("openCartDrawer", onOpenCartDrawer);
+    return () => window.removeEventListener("openCartDrawer", onOpenCartDrawer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const savedCountry  = localStorage.getItem("tv_country");
@@ -336,7 +344,7 @@ export default function Header() {
     e.preventDefault();
     if (!search.trim()) return;
     setMenuOpen(false);
-    router.push(`/search?q=${encodeURIComponent(search.trim())}`);
+    setSearchOpen(true);
   }
 
   return (
@@ -547,7 +555,7 @@ export default function Header() {
         </div>
       )}
 
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} initialQuery={search} />
 
       <CartSidebar
         open={cartOpen}

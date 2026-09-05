@@ -114,13 +114,30 @@ export default function NewProductPage() {
   const [slug,       setSlug]       = useState("");
   const [slugTouched,setSlugTouched]= useState(false);
   const [type,       setType]       = useState("");
-  const [basePrice,  setBasePrice]  = useState("");
-  const [gender,     setGender]     = useState("WOMEN");
-  const [categoryId, setCategoryId] = useState("");
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [newCat,     setNewCat]     = useState("");
-  const [addingCat,  setAddingCat]  = useState(false);
+  const [basePrice,   setBasePrice]   = useState("");
+  const [genders,     setGenders]     = useState<string[]>(["WOMEN"]);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [categories,  setCategories]  = useState<Category[]>([]);
+  const [newCat,      setNewCat]      = useState("");
+  const [newCatGender, setNewCatGender] = useState("WOMEN");
+  const [addingCat,   setAddingCat]   = useState(false);
   const [deletingCat, setDeletingCat] = useState<string | null>(null);
+
+  function toggleGender(value: string) {
+    setGenders(prev => {
+      const next = prev.includes(value) ? prev.filter(g => g !== value) : [...prev, value];
+      // Drop categories that no longer belong to any selected gender.
+      setCategoryIds(ids => ids.filter(id => {
+        const cat = categories.find(c => c.id === id);
+        return cat ? next.includes(cat.gender) : true;
+      }));
+      return next;
+    });
+  }
+
+  function toggleCategory(id: string) {
+    setCategoryIds(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+  }
 
   // Step 2 — Content
   const [description,     setDescription]     = useState("");
@@ -158,12 +175,13 @@ export default function NewProductPage() {
     const r = await fetch("/api/admin/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newCat, gender }),
+      body: JSON.stringify({ name: newCat, gender: newCatGender }),
     });
     const d = await r.json();
     if (d.success) {
       setCategories(prev => [...prev, d.data]);
-      setCategoryId(d.data.id);
+      setCategoryIds(prev => [...prev, d.data.id]);
+      if (!genders.includes(newCatGender)) setGenders(prev => [...prev, newCatGender]);
       setNewCat("");
     } else alert(d.error ?? "Failed to create category");
     setAddingCat(false);
@@ -176,7 +194,7 @@ export default function NewProductPage() {
     const d = await r.json();
     if (d.success) {
       setCategories(prev => prev.filter(c => c.id !== id));
-      if (categoryId === id) setCategoryId("");
+      setCategoryIds(prev => prev.filter(c => c !== id));
     } else {
       alert(d.error ?? "Failed to delete category");
     }
@@ -284,7 +302,8 @@ export default function NewProductPage() {
       if (!name.trim())      return "Product name is required.";
       if (!type.trim())      return "Product type is required.";
       if (!basePrice || parseFloat(basePrice) <= 0) return "Enter a valid price.";
-      if (!categoryId)       return "Select or create a category.";
+      if (genders.length === 0) return "Select at least one gender.";
+      if (categoryIds.length === 0) return "Select or create at least one category.";
       return null;
     }
     if (s === 2) {
@@ -351,7 +370,7 @@ export default function NewProductPage() {
       body: JSON.stringify({
         name: name.trim(), slug, type: type.trim(),
         description, editorNotes, sizeFit, deliveryReturns,
-        basePrice: parseFloat(basePrice), gender, categoryId,
+        basePrice: parseFloat(basePrice), genders, categoryIds,
         isNew, isFeatured, isPublished,
         variants, images: imagePayload,
       }),
@@ -421,13 +440,14 @@ export default function NewProductPage() {
             </div>
 
             <div>
-              <label className={labelClass}>Gender</label>
+              <label className={labelClass}>Gender <span className="text-red-500">*</span></label>
+              <p className="text-[12px] text-slate-400 mb-1.5">Select every collection this product should appear under.</p>
               <div className="grid grid-cols-3 gap-2">
                 {GENDERS.map(g => (
                   <button key={g.value} type="button"
-                    onClick={() => { setGender(g.value); setCategoryId(""); }}
+                    onClick={() => toggleGender(g.value)}
                     className={`py-2.5 rounded-xl text-sm font-semibold border transition-all ${
-                      gender === g.value
+                      genders.includes(g.value)
                         ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/25"
                         : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
                     }`}>
@@ -438,13 +458,15 @@ export default function NewProductPage() {
             </div>
 
             <div>
-              <label className={labelClass}>Category <span className="text-red-500">*</span></label>
-              {categories.filter(c => c.gender === gender).length === 0 ? (
-                <p className="text-xs text-slate-400 py-1.5">No {gender.toLowerCase()} categories yet — create one below.</p>
+              <label className={labelClass}>Categories <span className="text-red-500">*</span></label>
+              {categories.filter(c => genders.includes(c.gender)).length === 0 ? (
+                <p className="text-xs text-slate-400 py-1.5">
+                  {genders.length === 0 ? "Pick a gender above first." : "No categories yet for the selected gender(s) — create one below."}
+                </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {categories.filter(c => c.gender === gender).map(c => {
-                    const selected = categoryId === c.id;
+                  {categories.filter(c => genders.includes(c.gender)).map(c => {
+                    const selected = categoryIds.includes(c.id);
                     return (
                       <div key={c.id}
                         className={`group flex items-center rounded-xl border transition-all overflow-hidden ${
@@ -452,7 +474,7 @@ export default function NewProductPage() {
                             ? "bg-blue-600 border-blue-600 shadow-sm shadow-blue-500/25"
                             : "bg-white border-slate-200 hover:border-blue-300"
                         }`}>
-                        <button type="button" onClick={() => setCategoryId(selected ? "" : c.id)}
+                        <button type="button" onClick={() => toggleCategory(c.id)}
                           className={`pl-3.5 pr-2 py-2 text-xs font-semibold transition-colors ${
                             selected ? "text-white" : "text-slate-600"
                           }`}>
@@ -480,6 +502,10 @@ export default function NewProductPage() {
                 </div>
               )}
               <div className="flex gap-2 mt-2">
+                <select value={newCatGender} onChange={e => setNewCatGender(e.target.value)}
+                  className={`${inputClass} w-[110px] flex-shrink-0`}>
+                  {GENDERS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
+                </select>
                 <input type="text" value={newCat} onChange={e => setNewCat(e.target.value)}
                   placeholder="Or create a new category…"
                   className={`${inputClass} flex-1`} />
@@ -742,8 +768,8 @@ export default function NewProductPage() {
                 ["Name",     name || "—"],
                 ["Type",     type || "—"],
                 ["Price",    basePrice ? `₦${Number(basePrice).toLocaleString()}` : "—"],
-                ["Gender",   GENDERS.find(g => g.value === gender)?.label ?? gender],
-                ["Category", categories.find(c => c.id === categoryId)?.name ?? "—"],
+                ["Gender",   genders.map(g => GENDERS.find(x => x.value === g)?.label ?? g).join(", ") || "—"],
+                ["Categories", categories.filter(c => categoryIds.includes(c.id)).map(c => c.name).join(", ") || "—"],
                 ["Colours",  colors.map(c => c.label).filter(Boolean).join(", ") || "—"],
                 ["Variants", String(totalVariants)],
                 ["Images",   String(images.length)],

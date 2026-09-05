@@ -15,7 +15,7 @@ export async function GET(
     const product = await prisma.product.findUnique({
       where: { slug, isPublished: true },
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        categories: { select: { id: true, name: true, slug: true } },
         images: { orderBy: { position: "asc" } },
         variants: {
           orderBy: [{ colorLabel: "asc" }, { size: "asc" }],
@@ -36,7 +36,7 @@ export async function GET(
     // Fetch "Selected for You" — same category, exclude current product
     const selectedForYou = await prisma.product.findMany({
       where: {
-        categoryId: product.categoryId,
+        categories: { some: { id: { in: product.categories.map(c => c.id) } } },
         isPublished: true,
         id: { not: product.id },
       },

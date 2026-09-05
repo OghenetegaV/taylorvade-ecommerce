@@ -7,7 +7,7 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
 import { Cormorant_Garamond, Pinyon_Script, Fraunces } from "next/font/google";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import ConditionalAnalytics from "@/components/ConditionalAnalytics";
 import ConditionalHeader from "@/components/layout/ConditionalHeader";
 import ConditionalFooter from "@/components/layout/ConditionalFooter";
 
@@ -79,8 +79,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {children}
         <ConditionalFooter />
       </body>
-      {/* Loads gtag.js after hydration, off the critical path */}
-      {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
+      {/* Loads gtag.js after hydration, off the critical path, and only once
+          the cookie banner has been accepted */}
+      {GA_ID && <ConditionalAnalytics gaId={GA_ID} />}
     </html>
   );
 }

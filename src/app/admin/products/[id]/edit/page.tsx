@@ -42,9 +42,24 @@ export default function EditProductPage({ params }: Props) {
   const [sizeFit,         setSizeFit]         = useState("");
   const [deliveryReturns, setDeliveryReturns] = useState("");
   const [basePrice,       setBasePrice]       = useState("");
-  const [gender,          setGender]          = useState("UNISEX");
-  const [categoryId,      setCategoryId]      = useState("");
+  const [genders,         setGenders]         = useState<string[]>(["UNISEX"]);
+  const [categoryIds,     setCategoryIds]     = useState<string[]>([]);
   const [categories,      setCategories]      = useState<{ id: string; name: string; gender: string }[]>([]);
+
+  function toggleGender(value: string) {
+    setGenders(prev => {
+      const next = prev.includes(value) ? prev.filter(g => g !== value) : [...prev, value];
+      setCategoryIds(ids => ids.filter(id => {
+        const cat = categories.find(c => c.id === id);
+        return cat ? next.includes(cat.gender) : true;
+      }));
+      return next;
+    });
+  }
+
+  function toggleCategory(id: string) {
+    setCategoryIds(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+  }
   const [isNew,           setIsNew]           = useState(false);
   const [isFeatured,      setIsFeatured]      = useState(false);
   const [isPublished,     setIsPublished]     = useState(false);
@@ -63,8 +78,8 @@ export default function EditProductPage({ params }: Props) {
         setSizeFit(p.sizeFit ?? "");
         setDeliveryReturns(p.deliveryReturns ?? "");
         setBasePrice(String(p.basePrice ?? ""));
-        setGender(p.gender ?? "UNISEX");
-        setCategoryId(p.categoryId ?? "");
+        setGenders(p.genders?.length ? p.genders : ["UNISEX"]);
+        setCategoryIds((p.categories ?? []).map((c: { id: string }) => c.id));
         setIsNew(p.isNew ?? false);
         setIsFeatured(p.isFeatured ?? false);
         setIsPublished(p.isPublished ?? false);
@@ -94,7 +109,7 @@ export default function EditProductPage({ params }: Props) {
       body: JSON.stringify({
         name, type, description, editorNotes, sizeFit, deliveryReturns,
         basePrice: parseFloat(basePrice),
-        gender, categoryId, isNew, isFeatured, isPublished,
+        genders, categoryIds, isNew, isFeatured, isPublished,
       }),
     });
     const data = await res.json();
@@ -167,29 +182,51 @@ export default function EditProductPage({ params }: Props) {
             </div>
             <div>
               <label className={labelClass}>Gender</label>
-              <select value={gender}
-                onChange={e => { setGender(e.target.value); setCategoryId(""); }}
-                className={inputClass}>
-                <option value="MEN">Men</option>
-                <option value="WOMEN">Women</option>
-                <option value="UNISEX">Unisex</option>
-              </select>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "MEN",    label: "Men"    },
+                  { value: "WOMEN",  label: "Women"  },
+                  { value: "UNISEX", label: "Unisex" },
+                ].map(g => (
+                  <button key={g.value} type="button"
+                    onClick={() => toggleGender(g.value)}
+                    className={`py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                      genders.includes(g.value)
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/25"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
+                    }`}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div className="mt-4">
-            <label className={labelClass}>Category</label>
-            {categories.filter(c => c.gender === gender).length === 0 ? (
+            <label className={labelClass}>Categories</label>
+            {categories.filter(c => genders.includes(c.gender)).length === 0 ? (
               <p className="text-xs text-slate-400 py-1.5">
-                No {gender.toLowerCase()} categories yet — add one from{" "}
+                No categories yet for the selected gender(s) — add one from{" "}
                 <Link href="/admin/products/new" className="underline">New Product</Link>.
               </p>
             ) : (
-              <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputClass}>
-                <option value="">Select a category…</option>
-                {categories.filter(c => c.gender === gender).map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+              <div className="flex flex-wrap gap-2">
+                {categories.filter(c => genders.includes(c.gender)).map(c => {
+                  const selected = categoryIds.includes(c.id);
+                  return (
+                    <button key={c.id} type="button" onClick={() => toggleCategory(c.id)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                        selected
+                          ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/25"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
+                      }`}>
+                      {c.name}
+                      <span className={`ml-1 text-[10.5px] uppercase ${
+                        selected ? "text-blue-200" : "text-slate-400"
+                      }`}>{c.gender}</span>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
           <div className="mt-4">

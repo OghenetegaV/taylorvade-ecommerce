@@ -15,8 +15,8 @@ import { prepareStorefrontCategories } from "@/lib/categoryOrder";
 type Product = {
   id: string; name: string; slug: string; type: string;
   description?: string;
-  basePrice: number; gender: string; isNew: boolean;
-  category?: { id: string; name: string; slug: string } | null;
+  basePrice: number; genders: string[]; isNew: boolean;
+  categories: { id: string; name: string; slug: string }[];
   images: { url: string }[];
   variants: {
     id: string; size: string; colorLabel: string;
@@ -51,6 +51,13 @@ export default function CollectionPage({ title, gender }: Props) {
     const c = searchParams.get("category");
     return c ? [c] : [];
   });
+  // Re-sync from the URL on every navigation — clicking a different category
+  // link while already on this route only changes the query string (same
+  // component instance), so the lazy useState initializer above never re-runs.
+  useEffect(() => {
+    const c = searchParams.get("category");
+    setFCategories(c ? [c] : []);
+  }, [searchParams]);
   const [fColors,  setFColors]  = useState<string[]>([]);
   const [fMin,     setFMin]     = useState("");
   const [fMax,     setFMax]     = useState("");
@@ -90,7 +97,7 @@ export default function CollectionPage({ title, gender }: Props) {
   // Available category/colour options, derived from the fetched product set.
   const categoryOptions = useMemo(() => {
     const seen = new Map<string, string>(); // slug -> name
-    for (const p of products) if (p.category) seen.set(p.category.slug, p.category.name);
+    for (const p of products) for (const c of p.categories) seen.set(c.slug, c.name);
     const entries = Array.from(seen.entries()).map(([slug, name]) => ({ slug, name }));
     return prepareStorefrontCategories(entries);
   }, [products]);
@@ -116,7 +123,7 @@ export default function CollectionPage({ title, gender }: Props) {
         if (!product.variants.some(v => v.stockQuantity > 0)) return false;
       }
       if (fCategories.length > 0) {
-        if (!product.category || !fCategories.includes(product.category.slug)) return false;
+        if (!product.categories.some(c => fCategories.includes(c.slug))) return false;
       }
       if (fColors.length > 0) {
         if (!product.variants.some(v => fColors.includes(v.colorLabel))) return false;
@@ -254,7 +261,7 @@ export default function CollectionPage({ title, gender }: Props) {
                   id={product.id} slug={product.slug} name={product.name}
                   type={product.type} description={product.description}
                   basePrice={product.basePrice} isNew={product.isNew}
-                  gender={product.gender} images={product.images}
+                  genders={product.genders} images={product.images}
                   variants={product.variants}
                 />
               </div>

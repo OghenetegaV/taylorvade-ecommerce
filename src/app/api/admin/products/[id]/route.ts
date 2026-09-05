@@ -15,9 +15,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const product = await prisma.product.findUnique({
     where: { id },
     include: {
-      category: true,
-      variants: { orderBy: [{ colorLabel: "asc" }, { size: "asc" }] },
-      images:   { orderBy: { position: "asc" } },
+      categories: true,
+      variants:   { orderBy: [{ colorLabel: "asc" }, { size: "asc" }] },
+      images:     { orderBy: { position: "asc" } },
     },
   });
   if (!product) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
@@ -39,8 +39,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.sizeFit         !== undefined) updateData.sizeFit         = body.sizeFit         || null;
     if (body.deliveryReturns !== undefined) updateData.deliveryReturns = body.deliveryReturns || null;
     if (body.basePrice       !== undefined) updateData.basePrice       = parseFloat(body.basePrice);
-    if (body.gender          !== undefined) updateData.gender          = body.gender;
-    if (body.categoryId      !== undefined) updateData.categoryId      = body.categoryId;
+    if (body.genders         !== undefined) {
+      updateData.genders = body.genders.length ? body.genders : ["UNISEX"];
+      // Deprecated single gender column, kept in sync until dropped.
+      updateData.gender = updateData.genders[0];
+    }
+    if (body.categoryIds     !== undefined) {
+      updateData.categories = { set: body.categoryIds.map((id: string) => ({ id })) };
+      // Deprecated single category column, kept in sync until dropped.
+      if (body.categoryIds[0]) updateData.categoryId = body.categoryIds[0];
+    }
     if (body.isNew           !== undefined) updateData.isNew           = body.isNew;
     if (body.isFeatured      !== undefined) updateData.isFeatured      = body.isFeatured;
     if (body.isPublished     !== undefined) updateData.isPublished     = body.isPublished;

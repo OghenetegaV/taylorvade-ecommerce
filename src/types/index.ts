@@ -17,8 +17,8 @@ export type ProductWithDetails = {
   basePrice: number;
   isNew: boolean;
   isFeatured: boolean;
-  gender: "MEN" | "WOMEN" | "UNISEX";
-  category: { id: string; name: string; slug: string };
+  genders: ("MEN" | "WOMEN" | "UNISEX")[];
+  categories: { id: string; name: string; slug: string }[];
   variants: {
     id: string;
     colorLabel: string;

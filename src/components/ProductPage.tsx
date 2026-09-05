@@ -23,7 +23,7 @@ export interface ProductPageProps {
   type:           string;
   price:          number;
   isNew?:         boolean;
-  gender?:        string;
+  genders?:       string[];
   images:         string[];
   swatchImages?:  SwatchImage[];
   sizes?:         string[];
@@ -121,7 +121,7 @@ function Accordion({ label, content, isOpen, onToggle }: {
 
 export default function ProductPage({
   name, colorLabel, type, price,
-  isNew, gender, images = [], swatchImages = [], sizes = [],
+  isNew, genders = [], images = [], swatchImages = [], sizes = [],
   orderDeadline, editorNotes, sizeFit, deliveryReturns,
   shopTheLook = [], selectedForYou = [],
   productId, variants = [], sizeChart,
@@ -267,6 +267,7 @@ export default function ProductPage({
       if (data.success) {
         setCartMsg("added");
         window.dispatchEvent(new Event("cartUpdated"));
+        window.dispatchEvent(new Event("openCartDrawer"));
       } else {
         setCartMsg("error");
       }
@@ -383,16 +384,16 @@ export default function ProductPage({
           <div className={`md:w-1/2 px-5 md:px-0 pt-6 md:pt-[104px] pb-6 md:pb-8 ${loaded ? "" : "opacity-0"}`}
             style={loaded ? { animation: "ppFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both" } : {}}>
             <div className="text-center">
-              {(outOfStock || gender || isNew) && (
+              {(outOfStock || genders.length > 0 || isNew) && (
                 <div className="flex items-center justify-center gap-3 mb-2 pp-anim-1">
                   {outOfStock && (
                     <span className="italic underline underline-offset-2 tracking-[0.02em] text-[12px] text-[#3a2e22]">
                       Notify Me When Available
                     </span>
                   )}
-                  {gender && GENDER_LABEL[gender] && (
+                  {genders.length > 0 && (
                     <span className="italic underline underline-offset-2 tracking-[0.02em] text-[12px] text-[#3a2e22]">
-                      {GENDER_LABEL[gender]}
+                      {genders.map(g => GENDER_LABEL[g] ?? g).join(" / ")}
                     </span>
                   )}
                   {isNew && (

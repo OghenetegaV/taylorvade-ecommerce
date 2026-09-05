@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   const skip    = (page - 1) * limit;
 
   const where: any = {
-    ...(gender ? { gender } : {}),
+    ...(gender ? { genders: { has: gender } } : {}),
     ...(search ? { OR: [
       { name: { contains: search, mode: "insensitive" } },
       { type: { contains: search, mode: "insensitive" } },
@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
       where, skip, take: limit,
       orderBy: { createdAt: "desc" },
       include: {
-        category: { select: { name: true } },
-        images:   { where: { isPrimary: true }, take: 1, select: { url: true } },
+        categories: { select: { name: true } },
+        images:     { where: { isPrimary: true }, take: 1, select: { url: true } },
         variants: { select: { id: true, stockQuantity: true, size: true, colorLabel: true } },
         _count:   { select: { variants: true, orderItems: true } },
       },
@@ -51,14 +51,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       name, slug, type, description, editorNotes, sizeFit, deliveryReturns,
-      basePrice, gender, categoryId, isNew, isFeatured, isPublished,
+      basePrice, genders, categoryIds, isNew, isFeatured, isPublished,
       variants, images,
     } = body;
 
     // Validate required fields
-    if (!name || !slug || !type || !basePrice || !categoryId) {
+    if (!name || !slug || !type || !basePrice || !categoryIds?.length) {
       return NextResponse.json(
-        { success: false, error: "name, slug, type, basePrice, categoryId are required" },
+        { success: false, error: "name, slug, type, basePrice, categoryIds are required" },
         { status: 400 }
       );
     }
@@ -80,8 +80,12 @@ export async function POST(req: NextRequest) {
         sizeFit:        sizeFit        || null,
         deliveryReturns: deliveryReturns || null,
         basePrice:      parseFloat(basePrice),
-        gender:         gender         || "UNISEX",
-        categoryId,
+        // Deprecated single gender/category, kept in sync with the first
+        // selected value until these columns are dropped.
+        gender:         genders?.[0]   || "UNISEX",
+        categoryId:     categoryIds[0],
+        genders:        genders?.length ? genders : ["UNISEX"],
+        categories:     { connect: categoryIds.map((id: string) => ({ id })) },
         isNew:          isNew          ?? false,
         isFeatured:     isFeatured     ?? false,
         isPublished:    isPublished    ?? false,

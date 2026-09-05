@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { InstagramIcon, FacebookIcon, TikTokIcon, WhatsAppIcon } from "@/components/icons/SocialIcons";
 import { VisaIcon, MastercardIcon, ApplePayIcon, PaystackIcon } from "@/components/icons/PaymentIcons";
+import { getCookieConsent, setCookieConsent } from "@/lib/cookieConsent";
 
 const BRAND_LINKS = [
   { text: "About Us", href: "/about" },
@@ -41,8 +42,20 @@ const LEGAL_LINKS = [
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [preferences, setPreferences] = useState({ woman: true, man: false, all: false });
-  const [cookieVisible, setCookieVisible] = useState(true);
+  const [cookieVisible, setCookieVisible] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
+
+  // Only show the banner if the shopper hasn't already made a choice —
+  // previously this always started true and never persisted, so it
+  // reappeared on every page load regardless of Accept/Decline.
+  useEffect(() => {
+    if (!getCookieConsent()) setCookieVisible(true);
+  }, []);
+
+  function handleCookieChoice(choice: "accepted" | "declined") {
+    setCookieConsent(choice);
+    setCookieVisible(false);
+  }
 
   const togglePreference = (key: "woman" | "man" | "all") => {
     setPreferences((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -194,8 +207,8 @@ export default function Footer() {
           <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:max-w-sm border border-[#E5E5E0] bg-[#FAF9F7] p-4 text-[#575754] rounded shadow-2xl z-40 flex flex-col gap-3 font-sans text-[12px]">
             <p className="leading-relaxed">We utilize secure cookies to personalize your transaction pathways, regional parameters, and browsing choices.</p>
             <div className="flex gap-2 justify-end text-[11px] font-bold tracking-wider">
-              <button onClick={() => setCookieVisible(false)} className="bg-[#1A1A18] text-white px-3 py-1.5 uppercase hover:bg-[#575754] transition-colors">ACCEPT</button>
-              <button onClick={() => setCookieVisible(false)} className="border border-[#B5B5B0] text-[#1A1A18] px-3 py-1.5 uppercase hover:bg-black/5 transition-colors">DECLINE</button>
+              <button onClick={() => handleCookieChoice("accepted")} className="bg-[#1A1A18] text-white px-3 py-1.5 uppercase hover:bg-[#575754] transition-colors">ACCEPT</button>
+              <button onClick={() => handleCookieChoice("declined")} className="border border-[#B5B5B0] text-[#1A1A18] px-3 py-1.5 uppercase hover:bg-black/5 transition-colors">DECLINE</button>
             </div>
           </div>
         )}

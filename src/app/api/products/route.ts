@@ -25,11 +25,11 @@ export async function GET(request: NextRequest) {
 
 const where: Prisma.ProductWhereInput = {      isPublished: true,
       ...(gender && ["MEN", "WOMEN", "UNISEX"].includes(gender)
-        ? { gender: gender as "MEN" | "WOMEN" | "UNISEX" }
+        ? { genders: { has: gender as "MEN" | "WOMEN" | "UNISEX" } }
         : {}),
       ...(isNew ? { isNew: true } : {}),
       ...(featured ? { isFeatured: true } : {}),
-      ...(category ? { category: { slug: category } } : {}),
+      ...(category ? { categories: { some: { slug: category } } } : {}),
       ...(search
         ? {
             OR: [
@@ -48,7 +48,7 @@ const where: Prisma.ProductWhereInput = {      isPublished: true,
         take: limit,
         orderBy: { [sortBy]: order as "asc" | "desc" },
         include: {
-          category: { select: { id: true, name: true, slug: true } },
+          categories: { select: { id: true, name: true, slug: true } },
           images: {
             where: { isPrimary: true },
             take: 1,
