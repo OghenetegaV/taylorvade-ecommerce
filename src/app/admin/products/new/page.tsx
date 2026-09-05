@@ -501,20 +501,27 @@ export default function NewProductPage() {
                   })}
                 </div>
               )}
-              <div className="flex gap-2 mt-2">
-                <select value={newCatGender} onChange={e => setNewCatGender(e.target.value)}
-                  className={`${inputClass} w-[110px] flex-shrink-0`}>
-                  {GENDERS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
-                </select>
-                <input type="text" value={newCat} onChange={e => setNewCat(e.target.value)}
-                  placeholder="Or create a new category…"
-                  className={`${inputClass} flex-1`} />
-                <button type="button" disabled={addingCat || !newCat.trim()} onClick={handleAddCategory}
-                  className="flex items-center gap-1.5 px-4 rounded-xl bg-slate-900 text-white
-                    text-xs font-semibold hover:bg-slate-700 transition-colors disabled:opacity-40">
-                  {addingCat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                  Add
-                </button>
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <label className={labelClass}>Add a New Category</label>
+                <p className="text-[12px] text-slate-400 mb-2">
+                  Pick the gender it belongs to, name it, then add it — it'll be checked above automatically.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select value={newCatGender} onChange={e => setNewCatGender(e.target.value)}
+                    className={`${inputClass} w-full sm:w-[130px] sm:flex-shrink-0`}>
+                    {GENDERS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
+                  </select>
+                  <input type="text" value={newCat} onChange={e => setNewCat(e.target.value)}
+                    placeholder="e.g. Outerwear"
+                    className={`${inputClass} w-full sm:flex-1`} />
+                  <button type="button" disabled={addingCat || !newCat.trim()} onClick={handleAddCategory}
+                    className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 text-white
+                      text-xs font-semibold hover:bg-slate-700 transition-colors disabled:opacity-40
+                      w-full sm:w-auto sm:flex-shrink-0">
+                    {addingCat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                    Add
+                  </button>
+                </div>
               </div>
             </div>
           </div>
