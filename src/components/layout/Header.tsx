@@ -210,8 +210,8 @@ const CountryFlag = ({ country, className }: { country: string; className?: stri
 };
 
 const primaryLinks = [
-  { label: "Taylor Vade Woman",  href: "/collections/woman",  gender: "WOMEN" },
   { label: "Taylor Vade Man",    href: "/collections/man",    gender: "MEN" },
+  { label: "Taylor Vade Woman",  href: "/collections/woman",  gender: "WOMEN" },
   { label: "Taylor Vade Unisex", href: "/collections/unisex", gender: null },
 ];
 const secondaryLinks = [
