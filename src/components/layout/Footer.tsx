@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { InstagramIcon, FacebookIcon, TikTokIcon, WhatsAppIcon } from "@/components/icons/SocialIcons";
 import { VisaIcon, MastercardIcon, ApplePayIcon, PaystackIcon } from "@/components/icons/PaymentIcons";
@@ -183,10 +184,8 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-col items-center md:items-end justify-between h-full space-y-8 md:space-y-6">
-            <div className="w-28 h-28 bg-white border border-[#E5E5E0] p-2 flex items-center justify-center">
-              <div className="w-full h-full bg-[#1A1A18] text-white flex items-center justify-center text-[10px] text-center">
-                QR CODE<br/>PLACEHOLDER
-              </div>
+            <div className="relative w-28 h-28 bg-white border border-[#E5E5E0] p-2">
+              <Image src="/qrcode.png" alt="Scan to visit Taylor Vade" fill className="object-contain p-1" />
             </div>
 
             <div className="flex flex-wrap justify-center md:justify-end gap-2 items-center">
