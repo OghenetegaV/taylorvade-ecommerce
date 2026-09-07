@@ -6,7 +6,7 @@
 
 import type { Metadata } from "next";
 import "@/app/globals.css";
-import { Cormorant_Garamond, Pinyon_Script, Fraunces } from "next/font/google";
+import { Cormorant_Garamond, Playfair_Display, Fraunces } from "next/font/google";
 import ConditionalAnalytics from "@/components/ConditionalAnalytics";
 import ConditionalHeader from "@/components/layout/ConditionalHeader";
 import ConditionalFooter from "@/components/layout/ConditionalFooter";
@@ -18,12 +18,16 @@ const cormorant = Cormorant_Garamond({
 });
 
 // Snell Roundhand (used by the reference brand for script headings) is a
-// paid, self-hosted commercial font — Pinyon Script is the closest free
-// equivalent: a restrained, formal script rather than an ornate flourish.
-const pinyonScript = Pinyon_Script({
+// paid, self-hosted commercial font. Pinyon Script was the original free
+// stand-in, but its hairline strokes fused together at small sizes (product
+// card names especially) and the client flagged it as unreadable — Playfair
+// Display Italic keeps an elegant, editorial feel while staying legible at
+// every size it's used at.
+const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-script",
-  weight: "400",
+  weight: "600",
+  style: "italic",
 });
 
 // MADE Mirage (the reference brand's body font) is also a paid, self-hosted
@@ -73,7 +77,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${cormorant.variable} ${pinyonScript.variable} ${fraunces.variable} antialiased`}
+        className={`${cormorant.variable} ${playfairDisplay.variable} ${fraunces.variable} antialiased`}
       >
         <ConditionalHeader />
         {children}
