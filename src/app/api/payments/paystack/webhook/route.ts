@@ -2,7 +2,7 @@
 // POST /api/payments/paystack/webhook
 // Paystack sends signed POST requests here after every payment event
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import crypto from "crypto";
 import prisma from "@/lib/prisma";
 import { sendOrderConfirmationEmail, sendOrderNotificationEmail } from "@/lib/email";
@@ -119,13 +119,18 @@ export async function POST(request: NextRequest) {
         });
       });
 
-      // Send confirmation + store notification emails (non-blocking)
-      sendOrderConfirmationEmail(order.id).catch((e) =>
-        console.error("[Email] Failed to send order confirmation:", e)
-      );
-      sendOrderNotificationEmail(order.id).catch((e) =>
-        console.error("[Email] Failed to send order notification:", e)
-      );
+      // Send confirmation + store notification emails after the response;
+      // after() keeps the function alive until they finish.
+      after(async () => {
+        await Promise.allSettled([
+          sendOrderConfirmationEmail(order.id).catch((e) =>
+            console.error("[Email] Failed to send order confirmation:", e)
+          ),
+          sendOrderNotificationEmail(order.id).catch((e) =>
+            console.error("[Email] Failed to send order notification:", e)
+          ),
+        ]);
+      });
 
       console.log("[Paystack Webhook] Order", order.id, "marked as PAID");
     }

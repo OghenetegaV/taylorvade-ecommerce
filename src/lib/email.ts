@@ -1,14 +1,39 @@
 // src/lib/email.ts
-// Order confirmation emails via Resend (free: 3,000/month)
+// Order emails sent through the store's Gmail account (SMTP + App Password).
+// Needs GMAIL_USER and GMAIL_APP_PASSWORD; sends no-op with a warning without them.
 
-import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 import prisma from "@/lib/prisma";
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
-const FROM   = process.env.RESEND_FROM_EMAIL ?? "omonighooghenetega16@yahoo.com";
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+const FROM = `Taylor Vade <${GMAIL_USER}>`;
 // Where new-order alerts go. Unset by default — sendOrderNotificationEmail
 // no-ops until STORE_NOTIFICATION_EMAIL is configured.
 const STORE_EMAIL = process.env.STORE_NOTIFICATION_EMAIL;
+
+let transporter: Transporter | null = null;
+
+async function send({ to, subject, html }: { to: string; subject: string; html: string }) {
+  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+    console.warn("[Email] GMAIL_USER / GMAIL_APP_PASSWORD not set — email not sent:", subject);
+    return;
+  }
+  transporter ??= nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+  });
+  await transporter.sendMail({ from: FROM, to, subject, html });
+}
+
+/** Customer-supplied text goes into HTML templates, so escape it. */
+function esc(value: string | null | undefined): string {
+  return (value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 export async function sendOrderConfirmationEmail(orderId: string) {
   const order = await prisma.order.findUnique({
@@ -34,7 +59,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
       (item) =>
         `<tr>
           <td style="padding:8px 0; border-bottom:1px solid #f0eeeb;">
-            ${item.product.name} — ${item.variant.colorLabel}, ${item.variant.size}
+            ${esc(item.product.name)} — ${esc(item.variant.colorLabel)}, ${esc(item.variant.size)}
           </td>
           <td style="padding:8px 0; border-bottom:1px solid #f0eeeb; text-align:right;">
             x${item.quantity}
@@ -71,7 +96,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
         </div>
         <div class="body">
           <p style="font-size:15px; color:#1a1008; margin-bottom:24px;">
-            Thank you, ${order.profile.fullName ?? "valued customer"}. Your order has been confirmed.
+            Thank you, ${esc(order.profile.fullName) || "valued customer"}. Your order has been confirmed.
           </p>
 
           <div class="label">Order Reference</div>
@@ -79,10 +104,10 @@ export async function sendOrderConfirmationEmail(orderId: string) {
 
           <div class="label">Delivery Address</div>
           <div class="value">
-            ${order.address.fullName}<br/>
-            ${order.address.addressLine1}<br/>
-            ${order.address.city}, ${order.address.state}<br/>
-            ${order.address.country}
+            ${esc(order.address.fullName)}<br/>
+            ${esc(order.address.addressLine1)}<br/>
+            ${esc(order.address.city)}, ${esc(order.address.state)}<br/>
+            ${esc(order.address.country)}
           </div>
 
           <div class="label">Items</div>
@@ -102,15 +127,14 @@ export async function sendOrderConfirmationEmail(orderId: string) {
           </p>
         </div>
         <div class="footer">
-          Taylor Vade · Luxury Fashion · omonighooghenetega16@yahoo.com
+          Taylor Vade · Luxury Fashion · ${GMAIL_USER ?? ""}
         </div>
       </div>
     </body>
     </html>
   `;
 
-  await resend.emails.send({
-    from: FROM,
+  await send({
     to: order.profile.email,
     subject: `Order Confirmed — #${orderRef}`,
     html,
@@ -144,7 +168,7 @@ export async function sendOrderNotificationEmail(orderId: string) {
       (item) =>
         `<tr>
           <td style="padding:6px 0; border-bottom:1px solid #f0eeeb;">
-            ${item.product.name} — ${item.variant.colorLabel}, ${item.variant.size} (${item.variant.sku})
+            ${esc(item.product.name)} — ${esc(item.variant.colorLabel)}, ${esc(item.variant.size)} (${esc(item.variant.sku)})
           </td>
           <td style="padding:6px 0; border-bottom:1px solid #f0eeeb; text-align:right;">x${item.quantity}</td>
           <td style="padding:6px 0; border-bottom:1px solid #f0eeeb; text-align:right;">
@@ -167,35 +191,34 @@ export async function sendOrderNotificationEmail(orderId: string) {
           <p style="font-size:13px; color:#1a1008;">
             ${order.currency} ${Number(order.totalAmount).toLocaleString()}
             ${order.discountAmount && Number(order.discountAmount) > 0
-              ? ` (discount applied: ${order.discountCode ?? ""} −${order.currency} ${Number(order.discountAmount).toLocaleString()})`
+              ? ` (discount applied: ${esc(order.discountCode)} −${order.currency} ${Number(order.discountAmount).toLocaleString()})`
               : ""}
           </p>
           <div style="font-size:11px; letter-spacing:0.1em; color:#8a7a6a; text-transform:uppercase; margin-top:18px;">Customer</div>
           <div style="font-size:13px; color:#1a1008; margin-top:4px;">
-            ${order.profile.fullName ?? "—"}<br/>
-            ${order.profile.email}<br/>
-            ${order.address.phone}
+            ${esc(order.profile.fullName) || "—"}<br/>
+            ${esc(order.profile.email)}<br/>
+            ${esc(order.address.phone)}
           </div>
           <div style="font-size:11px; letter-spacing:0.1em; color:#8a7a6a; text-transform:uppercase; margin-top:18px;">Delivery Address</div>
           <div style="font-size:13px; color:#1a1008; margin-top:4px;">
-            ${order.address.fullName}<br/>
-            ${order.address.addressLine1}${order.address.addressLine2 ? `, ${order.address.addressLine2}` : ""}<br/>
-            ${order.address.city}, ${order.address.state}<br/>
-            ${order.address.country}
+            ${esc(order.address.fullName)}<br/>
+            ${esc(order.address.addressLine1)}${order.address.addressLine2 ? `, ${esc(order.address.addressLine2)}` : ""}<br/>
+            ${esc(order.address.city)}, ${esc(order.address.state)}<br/>
+            ${esc(order.address.country)}
           </div>
           <div style="font-size:11px; letter-spacing:0.1em; color:#8a7a6a; text-transform:uppercase; margin-top:18px;">Items</div>
           <table style="width:100%; border-collapse:collapse; margin-top:6px;">
             ${itemRows}
           </table>
-          ${order.notes ? `<p style="font-size:12px; color:#5a4a3a; margin-top:16px;">Notes: ${order.notes}</p>` : ""}
+          ${order.notes ? `<p style="font-size:12px; color:#5a4a3a; margin-top:16px;">Notes: ${esc(order.notes)}</p>` : ""}
         </div>
       </div>
     </body>
     </html>
   `;
 
-  await resend.emails.send({
-    from: FROM,
+  await send({
     to: STORE_EMAIL,
     subject: `New Order — #${orderRef} (${order.currency} ${Number(order.totalAmount).toLocaleString()})`,
     html,

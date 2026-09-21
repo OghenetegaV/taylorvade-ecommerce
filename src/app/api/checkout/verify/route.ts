@@ -4,7 +4,7 @@
 // variant stock, clears the cart, sends the confirmation email. Safe to call
 // repeatedly and safe alongside the Paystack webhook (both check status first).
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { sendOrderConfirmationEmail, sendOrderNotificationEmail } from "@/lib/email";
@@ -79,8 +79,13 @@ export async function GET(req: NextRequest) {
       await tx.cartItem.deleteMany({ where: { profileId: order.profileId } });
     });
 
-    sendOrderConfirmationEmail(order.id).catch(console.error);
-    sendOrderNotificationEmail(order.id).catch(console.error);
+    // after() keeps the function alive until the emails send; failures are logged only.
+    after(async () => {
+      await Promise.allSettled([
+        sendOrderConfirmationEmail(order.id).catch((e) => console.error("[Email] confirmation failed:", e)),
+        sendOrderNotificationEmail(order.id).catch((e) => console.error("[Email] notification failed:", e)),
+      ]);
+    });
 
     return NextResponse.json({ success: true, data: shape(order) });
   } catch (e) {
