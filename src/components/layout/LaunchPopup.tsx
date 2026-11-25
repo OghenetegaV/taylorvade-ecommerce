@@ -3,7 +3,10 @@
 // page and captures early-access emails (source "launch-popup", see
 // /api/newsletter/subscribe). Signups appear at /admin/subscribers.
 //
-// Shown again after DISMISS_DAYS if closed; never again once subscribed.
+// Timing (per visit/browser session): opens on arrival, then again every
+// REOPEN_MINUTES after it was last closed, at most MAX_SHOWS_PER_VISIT times.
+// A new visit starts the cycle again. Never shows once the visitor subscribes.
+// The LaunchConcierge pill links to /launch the rest of the time.
 
 "use client";
 
@@ -14,10 +17,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, ArrowRight, Loader2 } from "lucide-react";
 import { SUBSCRIBER_DISCOUNT_PERCENT } from "@/lib/subscriberOffer";
 
-const DISMISSED_KEY  = "tv_launch_dismissed";
-const SUBSCRIBED_KEY = "tv_newsletter_subscribed";
-const DISMISS_DAYS   = 3;
-const OPEN_DELAY_MS  = 700;
+export const SUBSCRIBED_KEY = "tv_newsletter_subscribed";
+const SHOWN_COUNT_KEY     = "tv_launch_shown";      // sessionStorage
+const LAST_CLOSED_KEY     = "tv_launch_closed_at";  // sessionStorage
+const OPEN_DELAY_MS       = 700;
+const REOPEN_MINUTES      = 4;
+const MAX_SHOWS_PER_VISIT = 3;
 
 const CREAM = "#f3ede4";
 const INK   = "#15110e";
@@ -28,6 +33,12 @@ function readStorage(key: string) {
 }
 function writeStorage(key: string, value: string) {
   try { localStorage.setItem(key, value); } catch {}
+}
+function readSession(key: string) {
+  try { return sessionStorage.getItem(key); } catch { return null; }
+}
+function writeSession(key: string, value: string) {
+  try { sessionStorage.setItem(key, value); } catch {}
 }
 
 const rise = {
@@ -49,6 +60,8 @@ export default function LaunchPopup({ standalone = false }: { standalone?: boole
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [msg,   setMsg]   = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  // Bumped on every close so the scheduling effect re-runs.
+  const [closedTick, setClosedTick] = useState(0);
 
   useEffect(() => {
     if (standalone) {
@@ -56,11 +69,22 @@ export default function LaunchPopup({ standalone = false }: { standalone?: boole
       return () => clearTimeout(t);
     }
     if (readStorage(SUBSCRIBED_KEY)) return;
-    const dismissed = Number(readStorage(DISMISSED_KEY));
-    if (dismissed && (Date.now() - dismissed) / 86_400_000 < DISMISS_DAYS) return;
-    const t = setTimeout(() => setOpen(true), OPEN_DELAY_MS);
+    const shown = Number(readSession(SHOWN_COUNT_KEY) ?? 0);
+    if (shown >= MAX_SHOWS_PER_VISIT) return;
+
+    const lastClosed = Number(readSession(LAST_CLOSED_KEY) ?? 0);
+    const wait = shown === 0
+      ? OPEN_DELAY_MS
+      : Math.max(OPEN_DELAY_MS, lastClosed + REOPEN_MINUTES * 60_000 - Date.now());
+
+    const t = setTimeout(() => {
+      if (readStorage(SUBSCRIBED_KEY)) return;
+      writeSession(SHOWN_COUNT_KEY, String(Number(readSession(SHOWN_COUNT_KEY) ?? 0) + 1));
+      setState(s => (s === "done" ? s : "idle"));
+      setOpen(true);
+    }, wait);
     return () => clearTimeout(t);
-  }, [standalone]);
+  }, [standalone, closedTick]);
 
   // Lock page scroll, close on Escape, focus the email field.
   useEffect(() => {
@@ -79,9 +103,12 @@ export default function LaunchPopup({ standalone = false }: { standalone?: boole
   }, [open]);
 
   function dismiss() {
-    if (state !== "done") writeStorage(DISMISSED_KEY, String(Date.now()));
     setOpen(false);
-    if (standalone) router.push("/");
+    // Also on /launch, so the site popup doesn't pop straight back up on the
+    // homepage they're sent to.
+    writeSession(LAST_CLOSED_KEY, String(Date.now()));
+    if (standalone) { router.push("/"); return; }
+    setClosedTick(n => n + 1);
   }
 
   async function submit(e: React.FormEvent) {
@@ -98,6 +125,7 @@ export default function LaunchPopup({ standalone = false }: { standalone?: boole
       if (d.success) {
         setState("done");
         writeStorage(SUBSCRIBED_KEY, "true");
+        window.dispatchEvent(new Event("tv:subscribed"));
         if (!standalone) setTimeout(() => setOpen(false), 4500);
       } else {
         setState("error");
