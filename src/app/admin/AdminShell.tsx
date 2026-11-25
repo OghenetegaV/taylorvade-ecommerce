@@ -8,7 +8,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Package, ShoppingCart, Boxes,
   Store, Menu, X, ChevronRight, Sparkles,
-  BarChart3, ExternalLink, LogOut, Loader2, Percent, Ruler,
+  BarChart3, ExternalLink, LogOut, Loader2, Percent, Ruler, Mail,
 } from "lucide-react";
 
 type Profile = { fullName: string | null; email: string; role: string };
@@ -20,6 +20,7 @@ const NAV = [
   { href: "/admin/inventory", label: "Inventory", icon: Boxes           },
   { href: "/admin/discounts", label: "Discounts", icon: Percent         },
   { href: "/admin/size-charts", label: "Size Charts", icon: Ruler       },
+  { href: "/admin/subscribers", label: "Subscribers", icon: Mail        },
 ];
 
 // Point this at the GA property once it's created:
@@ -168,7 +169,8 @@ export default function AdminShell({
     pathname.startsWith("/admin/products/new")  ? "New Product"  :
     pathname.startsWith("/admin/products")      ? "Products"     :
     pathname.startsWith("/admin/orders")        ? "Orders"       :
-    pathname.startsWith("/admin/inventory")     ? "Inventory"    : "Admin";
+    pathname.startsWith("/admin/inventory")     ? "Inventory"    :
+    pathname.startsWith("/admin/subscribers")   ? "Subscribers"  : "Admin";
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">

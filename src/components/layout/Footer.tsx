@@ -6,6 +6,7 @@ import Link from "next/link";
 import { InstagramIcon, FacebookIcon, TikTokIcon, WhatsAppIcon } from "@/components/icons/SocialIcons";
 import { VisaIcon, MastercardIcon, ApplePayIcon, PaystackIcon } from "@/components/icons/PaymentIcons";
 import { getCookieConsent, setCookieConsent } from "@/lib/cookieConsent";
+import { SUBSCRIBER_DISCOUNT_PERCENT } from "@/lib/subscriberOffer";
 
 const BRAND_LINKS = [
   { text: "About Us", href: "/about" },
@@ -43,6 +44,36 @@ const LEGAL_LINKS = [
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [preferences, setPreferences] = useState({ woman: true, man: false, all: false });
+  const [subState, setSubState] = useState<"idle" | "busy" | "done" | "error">("idle");
+  const [subMsg, setSubMsg] = useState("");
+
+  async function handleSubscribe(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || subState === "busy") return;
+    const categories = (["woman", "man", "all"] as const)
+      .filter(k => preferences[k])
+      .map(k => k.charAt(0).toUpperCase() + k.slice(1));
+    setSubState("busy");
+    try {
+      const r = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, categories, smsOptIn: false }),
+      });
+      const d = await r.json();
+      if (d.success) {
+        setSubState("done");
+        setEmail("");
+        try { localStorage.setItem("tv_newsletter_subscribed", "true"); } catch {}
+      } else {
+        setSubState("error");
+        setSubMsg(d.error ?? "Something went wrong. Please try again.");
+      }
+    } catch {
+      setSubState("error");
+      setSubMsg("Something went wrong. Please try again.");
+    }
+  }
   const [cookieVisible, setCookieVisible] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
 
@@ -96,15 +127,22 @@ export default function Footer() {
 
         <div className="max-w-[1600px] mx-auto px-8 pb-10 grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-4 items-start">
           <div className="flex flex-col space-y-6">
-            <h3 className="text-[15px] font-bold tracking-wide text-center md:text-left">Sign up to Our Newsletter</h3>
+            <div className="space-y-1.5">
+              <h3 className="text-[15px] font-bold tracking-wide text-center md:text-left">Sign up to Our Newsletter</h3>
+              <p className="text-[13px] text-[#575754] text-center md:text-left">
+                Get {SUBSCRIBER_DISCOUNT_PERCENT}% off your order when you subscribe.
+              </p>
+            </div>
             
-            <div className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubscribe}>
               <div className="w-full border-b border-[#1A1A18] pb-2">
                 <input
                   type="email"
+                  required
+                  aria-label="Email"
                   placeholder="Email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); if (subState !== "busy") setSubState("idle"); }}
                   className="w-full bg-transparent text-[14px] outline-none placeholder:text-[#A3A3A0]"
                 />
               </div>
@@ -129,11 +167,18 @@ export default function Footer() {
                     </label>
                   ))}
                 </div>
-                <button className="w-full sm:w-auto border border-[#1A1A18] px-8 py-2.5 text-[13px] hover:bg-[#1A1A18] hover:text-[#FAF9F7] transition-colors">
-                  Subscribe
+                <button type="submit" disabled={subState === "busy"}
+                  className="w-full sm:w-auto border border-[#1A1A18] px-8 py-2.5 text-[13px] hover:bg-[#1A1A18] hover:text-[#FAF9F7] transition-colors disabled:opacity-50">
+                  {subState === "busy" ? "Subscribing…" : "Subscribe"}
                 </button>
               </div>
-            </div>
+              {subState === "done" && (
+                <p className="text-[13px] text-[#575754] text-center md:text-left" role="status">Thank you — check your inbox for your {SUBSCRIBER_DISCOUNT_PERCENT}% off code.</p>
+              )}
+              {subState === "error" && (
+                <p className="text-[13px] text-red-600 text-center md:text-left" role="alert">{subMsg}</p>
+              )}
+            </form>
           </div>
 
           <div className="flex flex-col space-y-2 text-[14px] md:pl-16">

@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
     let discountAmount = 0;
     let appliedCode: string | null = null;
     if (discountCode && String(discountCode).trim()) {
-      const result = await resolveDiscount(String(discountCode), subtotal);
+      const result = await resolveDiscount(String(discountCode), subtotal, email);
       if ("error" in result) {
         return NextResponse.json({ success: false, error: result.error }, { status: 400 });
       }

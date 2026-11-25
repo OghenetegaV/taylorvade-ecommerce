@@ -238,10 +238,34 @@ model Discount {
   value     Decimal      @db.Decimal(10, 2)
   isActive  Boolean      @default(true) @map("is_active")
   expiresAt DateTime?    @map("expires_at")
+  // Null = unlimited. Uses are counted from successfully paid orders.
+  maxUses   Int?         @map("max_uses")
+  // When set, the code only works for a checkout with this email
+  // (personal subscriber coupons).
+  email     String?
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
   @@map("discounts")
+}
+
+// Email list — newsletter signups (footer drawer, checkout) and early-access
+// signups from the New Collection launch popup. One row per email; a person
+// who joins both ways keeps their first `source` and gets `earlyAccess` set.
+model NewsletterSubscriber {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  categories  String[] @default([])
+  smsOptIn    Boolean  @default(false) @map("sms_opt_in")
+  earlyAccess Boolean  @default(false) @map("early_access")
+  source      String   @default("website")
+  // Personal one-time 30% welcome code (matches a row in discounts).
+  couponCode  String?  @unique @map("coupon_code")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@map("newsletter_subscribers")
 }
 
 model CartItem {

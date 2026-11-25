@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   TrendingUp, ShoppingBag, Users, Clock, Truck,
-  AlertTriangle, PackageX, ArrowUpRight, Package,
+  AlertTriangle, PackageX, ArrowUpRight, Package, Sparkles, Mail,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -28,6 +28,7 @@ type Stats = {
   revenue:   { allTime: number; thisMonth: number; today: number };
   customers: number;
   inventory: { lowStock: number; outOfStock: number };
+  subscribers: { earlyAccess: number; total: number; thisWeek: number };
   recentOrders: any[];
 };
 type Analytics = {
@@ -177,7 +178,7 @@ export default function AdminDashboard() {
           sub="Awaiting payment" warn={stats.orders.pending > 0} />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         <KpiCard label="Processing" value={stats.orders.processing}
           icon={Package} iconBg="bg-orange-100" iconColor="text-orange-600"
           sub="Being packed" />
@@ -192,6 +193,12 @@ export default function AdminDashboard() {
           icon={PackageX} iconBg="bg-red-100" iconColor="text-red-600"
           sub="0 units" warn={stats.inventory.outOfStock > 0}
           href="/admin/inventory?filter=out" />
+        <KpiCard label="Early Access"  value={stats.subscribers.earlyAccess}
+          icon={Sparkles} iconBg="bg-amber-100" iconColor="text-amber-700"
+          sub="New Collection signups" href="/admin/subscribers" />
+        <KpiCard label="Subscribers"   value={stats.subscribers.total}
+          icon={Mail} iconBg="bg-teal-100" iconColor="text-teal-600"
+          sub={`${stats.subscribers.thisWeek} this week`} href="/admin/subscribers" />
       </div>
 
       {/* ── Charts row 1 ── */}

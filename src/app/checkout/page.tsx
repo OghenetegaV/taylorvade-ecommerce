@@ -8,6 +8,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { COUNTRY_CODE_NAMES } from "@/lib/shipping";
 import { useCurrency } from "@/lib/currency";
+import { SUBSCRIBER_DISCOUNT_PERCENT } from "@/lib/subscriberOffer";
 
 type CartItem = {
   id: string;
@@ -427,7 +428,7 @@ export default function CheckoutPage() {
       const res = await fetch("/api/discounts/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: discountInput.trim(), subtotal }),
+        body: JSON.stringify({ code: discountInput.trim(), subtotal, email: email.trim() || null }),
       });
       const d = await res.json();
       if (!d.success) throw new Error(d.error ?? "Invalid code");
@@ -513,7 +514,7 @@ export default function CheckoutPage() {
       fetch("/api/newsletter/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, categories: ["All"], smsOptIn: smsNewsletter }),
+        body: JSON.stringify({ email, categories: ["All"], smsOptIn: smsNewsletter, source: "checkout" }),
       }).catch(() => {});
     }
 
@@ -869,7 +870,7 @@ export default function CheckoutPage() {
               <CheckboxField
                 checked={newsletter}
                 onChange={setNewsletter}
-                label="Sign up to our email newsletter"
+                label={`Sign up to our email newsletter and get ${SUBSCRIBER_DISCOUNT_PERCENT}% off your next order`}
               />
             </div>
 

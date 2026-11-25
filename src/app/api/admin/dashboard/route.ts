@@ -17,6 +17,7 @@ export async function GET() {
     pending, processing, shipped,
     revAll, revMonth, revToday,
     customerGroups, lowStock, outOfStock, recentOrders,
+    subsEarly, subsTotal, subsWeek,
   ] = await prisma.$transaction([
     prisma.order.count({ where: { paymentStatus: "SUCCESS" } }),
     prisma.order.count({ where: { paymentStatus: "SUCCESS", createdAt: { gte: todayStart } } }),
@@ -41,6 +42,9 @@ export async function GET() {
         items:   { select: { id: true } },
       },
     }),
+    prisma.newsletterSubscriber.count({ where: { earlyAccess: true } }),
+    prisma.newsletterSubscriber.count(),
+    prisma.newsletterSubscriber.count({ where: { createdAt: { gte: weekStart } } }),
   ]);
 
   return NextResponse.json({
@@ -55,6 +59,7 @@ export async function GET() {
       // Distinct customers who have ordered.
       customers: customerGroups.length,
       inventory: { lowStock, outOfStock },
+      subscribers: { earlyAccess: subsEarly, total: subsTotal, thisWeek: subsWeek },
       recentOrders,
     },
   });

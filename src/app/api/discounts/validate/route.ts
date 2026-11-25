@@ -8,7 +8,7 @@ import { resolveDiscount } from "@/lib/discount";
 
 export async function POST(req: NextRequest) {
   try {
-    const { code, subtotal } = await req.json();
+    const { code, subtotal, email } = await req.json();
     if (!code || typeof code !== "string") {
       return NextResponse.json({ success: false, error: "Enter a code" }, { status: 400 });
     }
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid subtotal" }, { status: 400 });
     }
 
-    const result = await resolveDiscount(code, numSubtotal);
+    const result = await resolveDiscount(code, numSubtotal, typeof email === "string" ? email : null);
     if ("error" in result) {
       return NextResponse.json({ success: false, error: result.error }, { status: 400 });
     }

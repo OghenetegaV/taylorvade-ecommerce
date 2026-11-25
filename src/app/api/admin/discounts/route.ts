@@ -6,7 +6,12 @@ import { requireAdmin } from "@/lib/admin";
 export async function GET() {
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
-  const discounts = await prisma.discount.findMany({ orderBy: { createdAt: "desc" } });
+  // Personal subscriber welcome codes (email-locked) live on /admin/subscribers,
+  // so they don't flood this list.
+  const discounts = await prisma.discount.findMany({
+    where: { email: null },
+    orderBy: { createdAt: "desc" },
+  });
   return NextResponse.json({ success: true, data: discounts });
 }
 
