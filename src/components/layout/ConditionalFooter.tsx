@@ -1,15 +1,12 @@
 // src/components/layout/ConditionalFooter.tsx
-// Renders Footer + the signup popup + the floating /launch concierge on store pages only.
-// During the New Collection campaign the LaunchPopup replaces the regular
-// NewsletterDrawer (two popups at once would be too much) — swap them back
-// after the December drop.
+// Renders Footer + NewsletterDrawer on store pages only.
+// (/launch is the pre-launch holding page with its own full-screen layout.)
 
 "use client";
 
 import { usePathname } from "next/navigation";
 import Footer from "./Footer";
-import LaunchPopup from "./LaunchPopup";
-import LaunchConcierge from "./LaunchConcierge";
+import NewsletterDrawer from "./NewsletterDrawer";
 
 const HIDDEN_ON = [
   "/admin",
@@ -28,8 +25,7 @@ export default function ConditionalFooter() {
   return (
     <>
       <Footer />
-      <LaunchPopup />
-      <LaunchConcierge />
+      <NewsletterDrawer />
     </>
   );
 }

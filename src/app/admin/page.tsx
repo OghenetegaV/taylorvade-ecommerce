@@ -195,7 +195,7 @@ export default function AdminDashboard() {
           href="/admin/inventory?filter=out" />
         <KpiCard label="Early Access"  value={stats.subscribers.earlyAccess}
           icon={Sparkles} iconBg="bg-amber-100" iconColor="text-amber-700"
-          sub="New Collection signups" href="/admin/subscribers" />
+          sub="Launch waitlist" href="/admin/subscribers" />
         <KpiCard label="Subscribers"   value={stats.subscribers.total}
           icon={Mail} iconBg="bg-teal-100" iconColor="text-teal-600"
           sub={`${stats.subscribers.thisWeek} this week`} href="/admin/subscribers" />

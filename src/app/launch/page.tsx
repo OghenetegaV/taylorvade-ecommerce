@@ -1,19 +1,16 @@
 // src/app/launch/page.tsx
-// Shareable New Collection launch page — taylorvade.com/launch.
-// Same design as the site-wide popup, always shown; closing it goes to the homepage.
+// Pre-launch holding page. While the site is private (src/lib/launch.ts) every
+// store page redirects here; after launch src/proxy.ts sends /launch to "/".
 
 import type { Metadata } from "next";
-import LaunchPopup from "@/components/layout/LaunchPopup";
+import LaunchSignup from "./LaunchSignup";
+import { launchLabel } from "@/lib/launch";
 
 export const metadata: Metadata = {
-  title: "The New Collection — Dropping December",
-  description: "The new Taylor Vade collection drops in December. Sign up for early access and 30% off your order.",
+  title: "Something Worth Waiting For",
+  description: "Taylor Vade launches 11 December. Join the early access list for 30% off your first order.",
 };
 
 export default function LaunchPage() {
-  return (
-    <main className="min-h-svh bg-[#0b0908]">
-      <LaunchPopup standalone />
-    </main>
-  );
+  return <LaunchSignup launchLabel={launchLabel()} />;
 }

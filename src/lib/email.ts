@@ -51,8 +51,8 @@ export async function sendSubscriberCouponEmail(to: string, code: string, percen
           <p style="font-size:11px; letter-spacing:0.3em; color:#8a7a6a; text-transform:uppercase; margin:0 0 14px;">Welcome to the Vaders</p>
           <p style="font-size:26px; font-style:italic; margin:0 0 12px;">${percent}% off is yours.</p>
           <p style="font-size:14px; color:#5a4a3a; line-height:1.6; margin:0 0 28px;">
-            Thank you for signing up. The New Collection drops this December, and you'll hear about it first.
-            Here is your personal code, ready to use now.
+            Thank you for signing up. Here is your personal code for ${percent}% off your first order.
+            If you joined before our launch on 11 December, it's ready for you from launch day.
           </p>
           <div style="display:inline-block; border:1px solid #1a1008; padding:16px 28px; font-size:20px; letter-spacing:0.18em; font-family:'Courier New', monospace;">
             ${esc(code)}

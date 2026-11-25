@@ -1,5 +1,5 @@
 // src/app/admin/subscribers/page.tsx
-// Email list — early-access (New Collection popup) and newsletter signups,
+// Email list — launch waitlist (/launch page) and newsletter signups,
 // with search, filter tabs and CSV export.
 
 "use client";
@@ -22,7 +22,7 @@ type Subscriber = {
 type Tab = "all" | "early" | "newsletter";
 
 const SOURCE_LABEL: Record<string, string> = {
-  "launch-popup": "Collection popup",
+  "launch-popup": "Launch page",
   checkout:       "Checkout",
   website:        "Newsletter form",
 };
@@ -97,7 +97,7 @@ export default function SubscribersPage() {
 
   const TABS: { id: Tab; label: string; count: number }[] = [
     { id: "all",        label: "All",                    count: counts.all },
-    { id: "early",      label: "New Collection",         count: counts.early },
+    { id: "early",      label: "Launch waitlist",         count: counts.early },
     { id: "newsletter", label: "Newsletter only",        count: counts.newsletter },
   ];
 
@@ -118,7 +118,7 @@ export default function SubscribersPage() {
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "New Collection early access", value: counts.early, icon: Sparkles, bg: "bg-amber-100", fg: "text-amber-700" },
+          { label: "Launch waitlist signups", value: counts.early, icon: Sparkles, bg: "bg-amber-100", fg: "text-amber-700" },
           { label: "Total subscribers",           value: counts.all,   icon: Users,    bg: "bg-blue-100",  fg: "text-blue-600" },
           { label: "Joined in the last 7 days",   value: counts.week,  icon: Mail,     bg: "bg-emerald-100", fg: "text-emerald-600" },
         ].map(c => (
@@ -189,7 +189,7 @@ export default function SubscribersPage() {
                       <div className="flex flex-wrap gap-1.5">
                         {s.earlyAccess && (
                           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">
-                            New Collection
+                            Launch waitlist
                           </span>
                         )}
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">

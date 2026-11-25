@@ -1,6 +1,6 @@
 // src/app/api/newsletter/subscribe/route.ts
 // Single entry point for every email signup: footer drawer, checkout opt-in,
-// newsletter band and the New Collection launch popup (source "launch-popup").
+// newsletter band and the pre-launch /launch page (source "launch-popup").
 // Rows live in newsletter_subscribers and are listed at /admin/subscribers.
 //
 // New subscribers get a personal one-time welcome code, sent by EMAIL ONLY —
