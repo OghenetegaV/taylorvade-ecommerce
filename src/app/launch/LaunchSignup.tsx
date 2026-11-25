@@ -161,7 +161,7 @@ export default function LaunchSignup({ launchLabel }: { launchLabel: string }) {
                   className="mt-6 [@media(max-height:720px)]:md:mt-4 text-[14.5px] font-serif tracking-[0.03em] leading-relaxed text-pretty"
                   style={{ color: `${CREAM}b3` }}
                 >
-                  Be among the first to experience the new Taylor Vade. Join our early access list and get{" "}
+                  Be among the first to experience the next chapter of Taylor Vade. Join our exclusive early access list and get{" "}
                   <span style={{ color: TAN }}>{SUBSCRIBER_DISCOUNT_PERCENT}% off</span>{" "}
                   <span style={{ color: CREAM }}>your first order.</span>
                 </motion.p>
