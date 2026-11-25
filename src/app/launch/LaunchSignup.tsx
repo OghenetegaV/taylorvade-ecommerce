@@ -3,28 +3,28 @@
 // (see src/lib/launch.ts and src/proxy.ts). Captures early-access emails
 // (source "launch-popup") — signups appear at /admin/subscribers and each new
 // subscriber is emailed a personal welcome code.
+//
+// Design: the dark two-column campaign card (film left, copy right).
 
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { SUBSCRIBER_DISCOUNT_PERCENT } from "@/lib/subscriberOffer";
 
 const SUBSCRIBED_KEY = "tv_newsletter_subscribed";
 
-const PAPER      = "#f4f1ec";
-const PAPER_DEEP = "#e9e5de";
-const INK        = "#141210";
-const MUTED      = "#6f6a63";
-
+const CREAM = "#f3ede4";
+const INK   = "#15110e";
+const TAN   = "#c9a77c";
 
 const rise = {
   hidden: { opacity: 0, y: 14 },
   show:   (i: number) => ({
     opacity: 1, y: 0,
-    transition: { delay: 0.15 + i * 0.08, duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { delay: 0.25 + i * 0.09, duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
   }),
 };
 
@@ -35,7 +35,7 @@ export default function LaunchSignup({ launchLabel }: { launchLabel: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const f = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 700);
+    const f = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 800);
     return () => clearTimeout(f);
   }, []);
 
@@ -64,136 +64,163 @@ export default function LaunchSignup({ launchLabel }: { launchLabel: string }) {
   }
 
   return (
-    <main
-      className="min-h-svh flex items-center justify-center p-4 font-sans"
-      style={{ background: PAPER_DEEP, color: INK }}
-    >
+    <main className="relative z-10 min-h-svh flex items-center justify-center sm:p-6">
       <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        initial={{ opacity: 0, y: 40, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-[420px] rounded-[22px] p-4 sm:p-5 shadow-[0_30px_80px_rgba(0,0,0,0.14)]"
-        style={{ background: PAPER }}
+        className="relative w-full sm:max-w-[900px] max-h-svh sm:max-h-[90svh] overflow-y-auto
+          [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+          grid grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] shadow-[0_30px_80px_rgba(0,0,0,0.5)]"
+        style={{ background: INK, color: CREAM }}
       >
-        {/* Header: logo + label */}
-        <motion.div custom={0} variants={rise} initial="hidden" animate="show"
-          className="flex items-center justify-between px-1 pb-3"
-        >
-          <h1 className="relative w-[104px] h-[30px]">
-            <Image src="/logo.png" alt="Taylor Vade" fill priority sizes="104px"
-              className="object-contain object-left" style={{ filter: "brightness(0)" }} />
-          </h1>
-          <span className="text-[11px] tracking-[0.18em] uppercase font-medium" style={{ color: MUTED }}>
-            Coming Soon
-          </span>
-        </motion.div>
-
-        {/* Image */}
-        <motion.div custom={1} variants={rise} initial="hidden" animate="show"
-          className="relative w-full overflow-hidden rounded-[16px]"
-          style={{ height: "clamp(110px, calc(94svh - 470px), 300px)", background: PAPER_DEEP }}
-        >
+        {/* ── Visual ── */}
+        <div className="relative h-[210px] sm:h-[260px] md:h-auto md:min-h-[min(580px,90svh)] overflow-hidden">
           <Image
             src="/videos/campaign-poster.jpg"
-            alt="Taylor Vade campaign"
+            alt=""
             fill
             priority
-            sizes="420px"
-            className="object-cover object-[50%_22%]"
+            sizes="(min-width: 768px) 460px, 100vw"
+            className="object-cover object-[50%_25%] md:hidden"
           />
-          <span className="absolute left-3 bottom-3 rounded-full px-3 py-1 text-[11px] font-medium backdrop-blur-md"
-            style={{ background: "rgba(255,255,255,0.72)", color: INK }}>
-            Launching {launchLabel}
+          <video
+            className="hidden md:block absolute inset-0 w-full h-full object-cover"
+            src="/videos/campaign.mp4"
+            poster="/videos/campaign-poster.jpg"
+            autoPlay muted loop playsInline
+            aria-hidden
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#15110e] via-[#15110e]/10 to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#15110e]/60" />
+          <span
+            className="absolute left-5 bottom-4 md:left-6 md:bottom-6 text-[10.5px] tracking-[0.4em] uppercase font-serif"
+            style={{ color: CREAM, opacity: 0.85 }}
+          >
+            Lagos &mdash; Dec &rsquo;26
           </span>
-        </motion.div>
+        </div>
 
-        <AnimatePresence mode="wait">
-          {state === "done" ? (
-            <motion.div
-              key="done"
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="text-center px-2 pt-7 pb-5"
-              role="status"
-            >
-              <p className="text-[11px] tracking-[0.2em] uppercase font-medium" style={{ color: MUTED }}>
-                You&apos;re on the list
-              </p>
-              <p className="mt-2 text-[26px] leading-tight font-semibold tracking-[-0.01em] text-balance">
-                Welcome to the next chapter.
-              </p>
-              <p className="mt-3 text-[14.5px] leading-relaxed text-pretty" style={{ color: MUTED }}>
-                Check your inbox: your personal {SUBSCRIBER_DISCOUNT_PERCENT}% off code is on its way,
-                ready for launch day on {launchLabel}.
-              </p>
-            </motion.div>
-          ) : (
-            <motion.div key="form" exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}
-              className={`text-center px-1 sm:px-2 pt-5 [@media(max-height:700px)]:pt-3.5`}
-            >
-              <motion.p custom={2} variants={rise} initial="hidden" animate="show"
-                className="text-[11px] tracking-[0.2em] uppercase font-medium" style={{ color: MUTED }}>
-                A New Chapter Begins
-              </motion.p>
+        {/* ── Copy + form ── */}
+        <div className="relative flex flex-col justify-center px-7 sm:px-10 md:px-12 pt-7 pb-9 md:py-14 [@media(max-height:720px)]:md:py-7 text-center md:text-left">
+          <motion.div custom={0} variants={rise} initial="hidden" animate="show"
+            className="relative w-[118px] h-[34px] mx-auto md:mx-0"
+            style={{ filter: "brightness(0) invert(1)" }}
+          >
+            <Image src="/logo.png" alt="Taylor Vade" fill priority className="object-contain object-center md:object-left" sizes="118px" />
+          </motion.div>
 
-              <motion.h2 custom={3} variants={rise} initial="hidden" animate="show"
-                className={`mt-2 text-[27px] sm:text-[30px] [@media(max-height:700px)]:text-[24px] leading-[1.12] font-semibold tracking-[-0.015em] text-balance`}
+          <AnimatePresence mode="wait">
+            {state === "done" ? (
+              <motion.div
+                key="done"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mt-12 md:mt-16"
+                role="status"
               >
-                Something Worth Waiting For.
-              </motion.h2>
-
-              <motion.p custom={4} variants={rise} initial="hidden" animate="show"
-                className={`mt-3 [@media(max-height:700px)]:mt-2 text-[14.5px] [@media(max-height:700px)]:text-[13.5px] leading-relaxed text-pretty`}
-                style={{ color: MUTED }}
-              >
-                Be among the first to experience the new Taylor Vade, launching {launchLabel}.
-                Join our early access list and get{" "}
-                <span className="font-semibold" style={{ color: INK }}>{SUBSCRIBER_DISCOUNT_PERCENT}% off</span> your first order.
-              </motion.p>
-
-              <motion.form custom={5} variants={rise} initial="hidden" animate="show"
-                onSubmit={submit} className={`mt-5 [@media(max-height:700px)]:mt-3.5 space-y-2.5`}
-              >
-                <label htmlFor="launch-email" className="sr-only">Email address</label>
-                <input
-                  ref={inputRef}
-                  id="launch-email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={e => { setEmail(e.target.value); if (state === "error") setState("idle"); }}
-                  placeholder="Your email address"
-                  className={`w-full rounded-[12px] bg-white px-4 py-3.5 [@media(max-height:700px)]:py-3 text-[15px] text-center outline-none
-                    border border-black/10 focus:border-black/50 transition-colors placeholder:text-black/35`}
-                  style={{ color: INK }}
-                />
-                <button
-                  type="submit"
-                  disabled={state === "busy"}
-                  className={`w-full rounded-[12px] py-3.5 [@media(max-height:700px)]:py-3 text-[13.5px] tracking-[0.14em] uppercase font-semibold
-                    flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60`}
-                  style={{ background: INK, color: PAPER }}
+                <p className="text-[10.5px] tracking-[0.42em] uppercase font-serif" style={{ color: TAN }}>
+                  You&apos;re on the list
+                </p>
+                <p className="mt-3 leading-[1.05]"
+                  style={{ fontFamily: "var(--font-script), serif", fontSize: "clamp(30px,4vw,42px)" }}>
+                  Welcome to the next chapter.
+                </p>
+                <p className="mt-4 text-[13.5px] font-serif tracking-[0.04em] leading-relaxed" style={{ color: `${CREAM}b3` }}>
+                  Check your inbox &mdash; your personal{" "}
+                  <span style={{ color: TAN }}>{SUBSCRIBER_DISCOUNT_PERCENT}% off</span> code is on its way,
+                  ready for launch day on {launchLabel}.
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div key="form" exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
+                <motion.p custom={1} variants={rise} initial="hidden" animate="show"
+                  className="mt-10 md:mt-14 [@media(max-height:720px)]:md:mt-6 text-[10.5px] tracking-[0.42em] uppercase font-serif"
+                  style={{ color: TAN }}
                 >
-                  {state === "busy" ? <Loader2 size={16} className="animate-spin" /> : "Join the waitlist"}
-                </button>
-                {state === "error" && (
-                  <p className="text-[12.5px] text-red-600" role="alert">{msg}</p>
-                )}
-              </motion.form>
+                  A New Chapter Begins
+                </motion.p>
 
-              <motion.p custom={6} variants={rise} initial="hidden" animate="show"
-                className={`mt-3.5 [@media(max-height:700px)]:mt-2.5 text-[12px]`} style={{ color: MUTED }}>
-                Early access. First releases. {SUBSCRIBER_DISCOUNT_PERCENT}% off.
-              </motion.p>
-              <motion.p custom={7} variants={rise} initial="hidden" animate="show"
-                className="mt-1 pb-1 text-[11px]" style={{ color: MUTED, opacity: 0.75 }}>
-                By joining you agree to our{" "}
-                <a href="/privacy" className="underline underline-offset-2">Privacy Policy</a>
-              </motion.p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <motion.h1 custom={2} variants={rise} initial="hidden" animate="show"
+                  className="mt-3 leading-[1.04] text-balance text-[clamp(30px,3.5vw,42px)] [@media(max-height:720px)]:md:text-[34px]"
+                  style={{ fontFamily: "var(--font-script), serif" }}
+                >
+                  Something Worth Waiting For.
+                </motion.h1>
+
+                <motion.div custom={3} variants={rise} initial="hidden" animate="show"
+                  className="mt-5 flex items-center justify-center md:justify-start gap-3"
+                >
+                  <span className="h-px w-5 sm:w-8 shrink-0" style={{ background: TAN }} />
+                  <span className="whitespace-nowrap text-[12px] tracking-[0.28em] sm:tracking-[0.38em] uppercase font-serif">
+                    Launching {launchLabel}
+                  </span>
+                  <span className="h-px w-5 sm:w-8 shrink-0 md:hidden" style={{ background: TAN }} />
+                </motion.div>
+
+                <motion.p custom={4} variants={rise} initial="hidden" animate="show"
+                  className="mt-6 [@media(max-height:720px)]:md:mt-4 text-[14.5px] font-serif tracking-[0.03em] leading-relaxed text-pretty"
+                  style={{ color: `${CREAM}b3` }}
+                >
+                  Be among the first to experience the new Taylor Vade. Join our early access list and get{" "}
+                  <span style={{ color: TAN }}>{SUBSCRIBER_DISCOUNT_PERCENT}% off</span>{" "}
+                  <span style={{ color: CREAM }}>your first order.</span>
+                </motion.p>
+
+                <motion.form custom={5} variants={rise} initial="hidden" animate="show"
+                  onSubmit={submit} className="mt-5"
+                >
+                  <label htmlFor="launch-email" className="sr-only">Email address</label>
+                  <div className="border transition-colors focus-within:border-[#f3ede4]"
+                    style={{ borderColor: `${CREAM}40` }}
+                  >
+                    <input
+                      ref={inputRef}
+                      id="launch-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={email}
+                      onChange={e => { setEmail(e.target.value); if (state === "error") setState("idle"); }}
+                      placeholder="Your email address"
+                      className="w-full bg-transparent px-4 py-3.5 text-[14.5px] font-serif text-center md:text-left
+                        outline-none placeholder:text-[#f3ede4]/35"
+                      style={{ color: CREAM }}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={state === "busy"}
+                    className="group mt-2.5 w-full py-3.5 flex items-center justify-center gap-2.5 text-[11.5px] tracking-[0.26em]
+                      uppercase font-serif transition-opacity disabled:opacity-60 hover:opacity-90"
+                    style={{ background: CREAM, color: INK }}
+                  >
+                    {state === "busy"
+                      ? <Loader2 size={15} className="animate-spin" />
+                      : <>Join the waitlist<ArrowRight size={15} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" /></>}
+                  </button>
+                  {state === "error" && (
+                    <p className="mt-2.5 text-[12.5px] font-serif text-red-300" role="alert">{msg}</p>
+                  )}
+                </motion.form>
+
+                <motion.p custom={6} variants={rise} initial="hidden" animate="show"
+                  className="mt-4 text-[10px] sm:text-[10.5px] tracking-[0.16em] sm:tracking-[0.3em] uppercase font-serif"
+                  style={{ color: `${CREAM}99` }}
+                >
+                  Early access &middot; First releases &middot; {SUBSCRIBER_DISCOUNT_PERCENT}% off
+                </motion.p>
+
+                <motion.p custom={7} variants={rise} initial="hidden" animate="show"
+                  className="mt-3 text-[11px] font-serif tracking-[0.04em]"
+                  style={{ color: `${CREAM}66` }}
+                >
+                  By signing up you agree to our{" "}
+                  <a href="/privacy" className="underline underline-offset-2 hover:text-[#f3ede4]">Privacy Policy</a>.
+                </motion.p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </motion.div>
     </main>
   );
