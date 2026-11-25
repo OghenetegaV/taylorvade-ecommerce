@@ -96,7 +96,7 @@ export default function LaunchSignup({ launchLabel }: { launchLabel: string }) {
             className="absolute left-5 bottom-4 md:left-6 md:bottom-6 text-[10.5px] tracking-[0.4em] uppercase font-serif"
             style={{ color: CREAM, opacity: 0.85 }}
           >
-            Lagos &mdash; Dec &rsquo;26
+            Launching &mdash; Dec &rsquo;26
           </span>
         </div>
 
