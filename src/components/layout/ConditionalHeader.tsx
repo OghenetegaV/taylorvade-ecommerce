@@ -13,6 +13,7 @@ const HIDDEN_ON = [
   "/register",
   "/reset-password",
   "/update-password",
+  "/launch",
 ];
 
 export default function ConditionalHeader() {

@@ -8,6 +8,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, ArrowRight, Loader2 } from "lucide-react";
@@ -37,7 +38,12 @@ const rise = {
   }),
 };
 
-export default function LaunchPopup() {
+/**
+ * `standalone` = the /launch page: always shown (ignores dismiss/subscribed
+ * memory), and closing it takes the visitor to the homepage.
+ */
+export default function LaunchPopup({ standalone = false }: { standalone?: boolean }) {
+  const router = useRouter();
   const [open,  setOpen]  = useState(false);
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
@@ -45,12 +51,16 @@ export default function LaunchPopup() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (standalone) {
+      const t = setTimeout(() => setOpen(true), 50);
+      return () => clearTimeout(t);
+    }
     if (readStorage(SUBSCRIBED_KEY)) return;
     const dismissed = Number(readStorage(DISMISSED_KEY));
     if (dismissed && (Date.now() - dismissed) / 86_400_000 < DISMISS_DAYS) return;
     const t = setTimeout(() => setOpen(true), OPEN_DELAY_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [standalone]);
 
   // Lock page scroll, close on Escape, focus the email field.
   useEffect(() => {
@@ -71,6 +81,7 @@ export default function LaunchPopup() {
   function dismiss() {
     if (state !== "done") writeStorage(DISMISSED_KEY, String(Date.now()));
     setOpen(false);
+    if (standalone) router.push("/");
   }
 
   async function submit(e: React.FormEvent) {
@@ -87,7 +98,7 @@ export default function LaunchPopup() {
       if (d.success) {
         setState("done");
         writeStorage(SUBSCRIBED_KEY, "true");
-        setTimeout(() => setOpen(false), 4500);
+        if (!standalone) setTimeout(() => setOpen(false), 4500);
       } else {
         setState("error");
         setMsg(d.error ?? "Something went wrong. Please try again.");
@@ -124,6 +135,7 @@ export default function LaunchPopup() {
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             className="relative w-full sm:max-w-[900px] max-h-[100svh] sm:max-h-[90svh] overflow-y-auto
+              [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
               grid grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] shadow-[0_30px_80px_rgba(0,0,0,0.5)]"
             style={{ background: INK, color: CREAM }}
           >
@@ -138,7 +150,7 @@ export default function LaunchPopup() {
             </button>
 
             {/* ── Visual ── */}
-            <div className="relative h-[210px] sm:h-[260px] md:h-auto md:min-h-[580px] overflow-hidden">
+            <div className="relative h-[210px] sm:h-[260px] md:h-auto md:min-h-[min(580px,90svh)] overflow-hidden">
               <Image
                 src="/videos/campaign-poster.jpg"
                 alt=""
@@ -164,7 +176,7 @@ export default function LaunchPopup() {
             </div>
 
             {/* ── Copy + form ── */}
-            <div className="relative flex flex-col justify-center px-7 sm:px-10 md:px-12 pt-7 pb-9 md:py-14 text-center md:text-left">
+            <div className="relative flex flex-col justify-center px-7 sm:px-10 md:px-12 pt-7 pb-9 md:py-14 [@media(max-height:720px)]:md:py-7 text-center md:text-left">
               <motion.div custom={0} variants={rise} initial="hidden" animate="show"
                 className="relative w-[118px] h-[34px] mx-auto md:mx-0"
                 style={{ filter: "brightness(0) invert(1)" }}
@@ -192,7 +204,7 @@ export default function LaunchPopup() {
                 ) : (
                   <motion.div key="form" exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
                     <motion.p custom={1} variants={rise} initial="hidden" animate="show"
-                      className="mt-10 md:mt-14 text-[10.5px] tracking-[0.42em] uppercase font-serif"
+                      className="mt-10 md:mt-14 [@media(max-height:720px)]:md:mt-6 text-[10.5px] tracking-[0.42em] uppercase font-serif"
                       style={{ color: TAN }}
                     >
                       Coming soon

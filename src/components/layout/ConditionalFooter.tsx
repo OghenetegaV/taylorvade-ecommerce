@@ -17,6 +17,7 @@ const HIDDEN_ON = [
   "/reset-password",
   "/update-password",
   "/checkout",
+  "/launch",
 ];
 
 export default function ConditionalFooter() {
